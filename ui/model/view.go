@@ -598,12 +598,21 @@ func (m Model) centerFrame(frame string) string {
 	return strings.Repeat("\n", padTop) + strings.Join(lines, "\n")
 }
 
+func (m Model) titleBarContextLabel() string {
+	if screen := m.activeScreen(); screen != screenMain {
+		return screen.label()
+	}
+	if m.focus == focusProvider && m.provider != nil {
+		if name := m.provider.Name(); name != "" {
+			return name
+		}
+	}
+	return m.focus.label()
+}
+
 func (m Model) renderTitle() string {
 	title := titleStyle.Render("C L I A M P")
-	label := m.focus.label()
-	if screen := m.activeScreen(); screen != screenMain {
-		label = screen.label()
-	}
+	label := m.titleBarContextLabel()
 	if label == "" {
 		return title
 	}
