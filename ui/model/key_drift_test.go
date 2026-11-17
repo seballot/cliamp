@@ -354,7 +354,7 @@ var subKeyHandlers = map[string]commandMode{
 }
 
 // listKeys move the cursor or change the view size the same way in every
-// list. The keymap shows them once, in its player and library section.
+// list. The keymap shows them in its Queue section.
 var listKeys = []string{"up", "down", "k", "j", "pgup", "pgdown", "ctrl+u", "ctrl+d", "home", "end", "g", "G", "ctrl+x"}
 
 // unlistedKeys holds the keys that a handler takes but that commandRegistry

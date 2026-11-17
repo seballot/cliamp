@@ -765,13 +765,12 @@ func TestRadioPlaybackFavoritePreservesPendingTrackLoad(t *testing.T) {
 
 func TestTrackFavoriteHelpRequiresPlaylistFocus(t *testing.T) {
 	for _, tc := range []struct {
-		name    string
-		focus   focusArea
-		enabled bool
+		name  string
+		focus focusArea
 	}{
-		{"playlist", focusPlaylist, true},
-		{"provider", focusProvider, false},
-		{"volume", focusVolume, false},
+		{"playlist", focusPlaylist},
+		{"provider", focusProvider},
+		{"volume", focusVolume},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m, _, _ := radioFavoriteTestModel(t)
@@ -786,8 +785,8 @@ func TestTrackFavoriteHelpRequiresPlaylistFocus(t *testing.T) {
 			for _, entry := range m.buildKeymapEntries() {
 				found = found || entry.action == "Favorite"
 			}
-			if found != tc.enabled {
-				t.Fatalf("track favorite keymap visibility = %v, want %v", found, tc.enabled)
+			if !found {
+				t.Fatal("keymap should list Favorite regardless of focus")
 			}
 			if tc.focus == focusPlaylist {
 				m.handleKey(tea.KeyPressMsg{Text: "f"})
