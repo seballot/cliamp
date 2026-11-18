@@ -227,8 +227,8 @@ func TestMetadataToggleDefaultsAndPersistence(t *testing.T) {
 			t.Errorf("metadata key %q is not reserved", key)
 		}
 	}
-	if !ReservedKeys()["I"] {
-		t.Error("Shift+I Cliamp Radios shortcut is not reserved")
+	if ReservedKeys()["I"] {
+		t.Error("the removed Shift+I shortcut is still reserved")
 	}
 }
 
@@ -239,8 +239,8 @@ func TestMetadataShortcutLeavesTabNavigationIntact(t *testing.T) {
 	}{
 		{tea.KeyPressMsg{Code: tea.KeyTab}, focusProvPill},
 		{tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}, focusSpeed},
-		{tea.KeyPressMsg{Text: "H"}, focusPlaylist},
-		{tea.KeyPressMsg{Code: 'h', ShiftedCode: 'H', Mod: tea.ModShift}, focusPlaylist},
+		{tea.KeyPressMsg{Text: "I"}, focusPlaylist},
+		{tea.KeyPressMsg{Code: 'i', ShiftedCode: 'I', Mod: tea.ModShift}, focusPlaylist},
 	} {
 		t.Run(tt.key.String(), func(t *testing.T) {
 			m := newColumnTestModel(86, 24)

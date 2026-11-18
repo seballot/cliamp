@@ -22,7 +22,7 @@ func shortcutTestModel() Model {
 	m.provider = other
 	m.providers = []provider.Entry{{Key: "other", Name: "Other", Provider: other}}
 	for _, key := range []string{"navidrome", "spotify", "plex", "jellyfin", "emby", "audiobookshelf",
-		"yt", "soundcloud", "mixcloud", "netease", "qobuz", "tidal", "bandcamp", "local", "cliamp", "radio", "podcast"} {
+		"yt", "soundcloud", "mixcloud", "netease", "qobuz", "tidal", "bandcamp", "local", "radio", "podcast"} {
 		m.providers = append(m.providers, provider.Entry{Key: key, Name: key, Provider: commandsTestProvider{name: key}})
 	}
 	return m
@@ -41,7 +41,7 @@ func TestProviderShortcutsSwitchFromEveryFocus(t *testing.T) {
 	shortcuts := map[string]string{
 		"S": "spotify", "P": "plex", "J": "jellyfin", "E": "emby", "B": "audiobookshelf",
 		"Y": "yt", "C": "soundcloud", "X": "mixcloud", "M": "netease", "Q": "qobuz",
-		"T": "tidal", "K": "bandcamp", "L": "local", "I": "cliamp", "R": "radio", "O": "podcast",
+		"T": "tidal", "K": "bandcamp", "L": "local", "R": "radio", "O": "podcast",
 	}
 	for _, f := range focuses {
 		for key, want := range shortcuts {
@@ -110,7 +110,7 @@ func TestQuickSwitchProviderTakesEveryShortcut(t *testing.T) {
 	}{
 		{name: "configured provider", key: "S", wantOK: true, wantCmd: true, wantProvider: "spotify"},
 		{name: "N names Navidrome", key: "N", wantOK: true, wantCmd: true, wantProvider: "navidrome"},
-		{name: "switch with no command", key: "R", wantOK: true, wantProvider: "Radios"},
+		{name: "switch with no command", key: "R", wantOK: true, wantProvider: "Radio"},
 		{name: "provider not configured keeps overlays", key: "T", drop: "tidal", wantOK: true, wantProvider: "Other", wantOpen: true},
 		{name: "lowercase letter", key: "s", wantProvider: "Other", wantOpen: true},
 		{name: "other key", key: "ctrl+f", wantProvider: "Other", wantOpen: true},
@@ -601,7 +601,7 @@ func TestNewHintsUnregisteredDefaultProvider(t *testing.T) {
 		{name: "unknown name", provider: "nosuch", wantProvider: "cliamp radio", want: []string{"not configured", "cliamp setup"}},
 		{name: "headless unconfigured", provider: "qobuz", headless: true, wantProvider: "cliamp radio", want: []string{"cliamp setup"}},
 		{name: "configured provider", provider: "spotify", wantProvider: "Spotify"},
-		{name: "no default"},
+		{name: "no default", wantProvider: "cliamp radio"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -611,19 +611,12 @@ func TestNewHintsUnregisteredDefaultProvider(t *testing.T) {
 				m.SetHeadless(true)
 			}
 
-			gotName := ""
-			if m.provider != nil {
-				gotName = m.provider.Name()
-			}
-			if gotName != tt.wantProvider {
-				t.Fatalf("provider = %q, want %q", gotName, tt.wantProvider)
+			if got := m.provider.Name(); got != tt.wantProvider {
+				t.Fatalf("provider = %q, want %q", got, tt.wantProvider)
 			}
 			if len(tt.want) == 0 {
 				if m.status.text != "" {
 					t.Fatalf("status = %q, want none", m.status.text)
-				}
-				if tt.provider == "" && m.focus == focusProvider {
-					t.Fatalf("focus = focusProvider, want queue when no default provider is set")
 				}
 				return
 			}
