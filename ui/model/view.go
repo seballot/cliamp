@@ -963,7 +963,7 @@ func (m Model) renderPlaybackHeader() string {
 	}
 
 	if qLen := m.playlist.QueueLen(); qLen > 0 {
-		badges = append(badges, activeToggle.Render(fmt.Sprintf("[Queue: %d]", qLen)))
+		badges = append(badges, activeToggle.Render(fmt.Sprintf("[Next: %d]", qLen)))
 	}
 	// Render from the cached favSet: the render path must not hit disk.
 	if count := len(m.favSet); count > 0 {
@@ -1295,7 +1295,7 @@ func (m Model) renderPlaylist() string {
 		if cols.queue {
 			mark := " "
 			if queuePosition > 0 {
-				mark = "Q"
+				mark = "N"
 			}
 			markers += mark
 			styledMarkers += activeToggle.Render(mark)
@@ -1327,7 +1327,7 @@ func (m Model) renderPlaylist() string {
 		name := trackViewName(t)
 		queueSuffix := ""
 		if queuePosition > 0 && m.layout.panelWidth >= 64 {
-			queueSuffix = fmt.Sprintf(" [Q%d]", queuePosition)
+			queueSuffix = fmt.Sprintf(" [N%d]", queuePosition)
 		}
 		queueLen := lipgloss.Width(queueSuffix)
 		duration := formatTrackTime(t.DurationSecs)
