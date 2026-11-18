@@ -29,8 +29,8 @@ func armedModel() (Model, *playbackFakeEngine) {
 	p.SetIndex(0)
 	m := Model{
 		player:      player,
-		playlist:    p,
-		focus:       focusPlaylist,
+		queue:       p,
+		focus:       focusQueue,
 		configSaver: &recordingSaver{},
 		preloadFor:  "b.mp3",
 	}
@@ -42,7 +42,7 @@ func armedModel() (Model, *playbackFakeEngine) {
 func TestUpdateDropsStalePreload(t *testing.T) {
 	// queueC puts c.mp3 in the play-next list, so c.mp3 is next and armed.
 	queueC := func(m *Model, _ *playbackFakeEngine) {
-		m.playlist.AddPlayNext(2)
+		m.queue.AddPlayNext(2)
 		m.preloadFor = "c.mp3"
 	}
 	for _, tc := range []struct {
@@ -56,7 +56,7 @@ func TestUpdateDropsStalePreload(t *testing.T) {
 		{name: "IPC playnext.clear", setup: queueC, msg: v2Request(t, "playnext.clear", ipc.Request{}), wantNext: "b.mp3"},
 		{name: "IPC playnext.move", setup: func(m *Model, player *playbackFakeEngine) {
 			queueC(m, player)
-			m.playlist.AddPlayNext(1)
+			m.queue.AddPlayNext(1)
 		}, msg: v2Request(t, "playnext.move", ipc.Request{Index: 0, To: 1}), wantNext: "b.mp3"},
 		{name: "IPC playnext.remove while paused", setup: func(m *Model, player *playbackFakeEngine) {
 			queueC(m, player)
@@ -75,7 +75,7 @@ func TestUpdateDropsStalePreload(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m, player := armedModel()
-			m.plCursor = tc.cursor
+			m.queueCursor = tc.cursor
 			if tc.setup != nil {
 				tc.setup(&m, player)
 			}
@@ -108,7 +108,7 @@ func TestRearmWaitsWhileBuffering(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m, player := armedModel()
-			m.plCursor = 2
+			m.queueCursor = 2
 			player.hasPreload, m.preloadFor = false, ""
 			m.buffering = true
 
@@ -135,8 +135,8 @@ func TestPreloadNextKeepsAnInFlightPreload(t *testing.T) {
 // track next instead of the first one.
 func TestUpdateDropsStalePreloadOnRepeatAllAppend(t *testing.T) {
 	m, player := armedModel()
-	m.playlist.SetIndex(2)
-	m.playlist.SetRepeat(playlist.RepeatAll)
+	m.queue.SetIndex(2)
+	m.queue.SetRepeat(playlist.RepeatAll)
 	m.preloadFor = "a.mp3"
 
 	if response := runV2(t, &m, "queue", ipc.Request{Path: "d.mp3"}); !response.OK {
@@ -184,7 +184,7 @@ func TestUpdateKeepsValidPreload(t *testing.T) {
 			}
 			next, _ := m.Update(tc.msg)
 			m = next.(Model)
-			if got, want := m.playlist.Len(), cmp.Or(tc.wantLen, 3); got != want {
+			if got, want := m.queue.Len(), cmp.Or(tc.wantLen, 3); got != want {
 				t.Fatalf("queue length = %d, want %d", got, want)
 			}
 			if player.clearPreloadCalls != 0 || !player.hasPreload || m.preloadFor != "b.mp3" {
@@ -247,7 +247,7 @@ func TestV2ModeChangeRearmsPreloadAndReportsSaveError(t *testing.T) {
 				t.Fatalf("response = %+v", response)
 			}
 			// Shuffle can keep b.mp3 next, and then its preload stays.
-			next, ok := m.playlist.PeekNext()
+			next, ok := m.queue.PeekNext()
 			if !ok || m.preloadFor != next.Path || !m.preloading && !player.hasPreload {
 				t.Fatalf("preloading %v for %q after ClearPreload %d, want %q armed at once", m.preloading, m.preloadFor, player.clearPreloadCalls, next.Path)
 			}
@@ -320,7 +320,7 @@ func TestVerbEntryPointsReachTheSameState(t *testing.T) {
 			"playback message": playback.PrevMsg{}, "V2": v2("prev", ipc.Request{}),
 		}, done: func(s verbState) bool { return s.index == 0 && s.scrobbled == "a.mp3" }},
 		{name: "playIndex", skips: true, notifies: true, entries: map[string]tea.Msg{
-			"key":        withSetup{func(m *Model) { m.plCursor = 2 }, tea.KeyPressMsg{Code: tea.KeyEnter}},
+			"key":        withSetup{func(m *Model) { m.queueCursor = 2 }, tea.KeyPressMsg{Code: tea.KeyEnter}},
 			"search key": withSetup{func(m *Model) { m.search = searchState{active: true, results: []int{2}} }, tea.KeyPressMsg{Code: tea.KeyEnter}},
 			"plugin":     PluginQueueMsg{Op: "jump", Index: 2},
 			"V2":         v2("queue.play", ipc.Request{Index: 2}),
@@ -384,12 +384,12 @@ func runVerbEntry(t *testing.T, msg tea.Msg, skips, notifies bool) verbState {
 	notifier := &fakeNotifier{}
 	saver := &recordingSaver{}
 	m := newColumnTestModel(100, 30)
-	m.playlist.Replace([]playlist.Track{
+	m.queue.Replace([]playlist.Track{
 		{Title: "A", Path: "a.mp3", DurationSecs: 180},
 		{Title: "B", Path: "b.mp3", DurationSecs: 180},
 		{Title: "C", Path: "c.mp3", DurationSecs: 180},
 	})
-	m.playlist.SetIndex(0)
+	m.queue.SetIndex(0)
 	m.player, m.notifier, m.configSaver, m.luaMgr = engine, notifier, saver, mgr
 	m.providers = []provider.Entry{{Key: "p", Name: "P", Provider: reporter}}
 	m.playingTrack, m.playingTrackActive, m.playingTrackStarted = playlist.Track{Title: "A", Path: "a.mp3", DurationSecs: 180}, true, true
@@ -412,11 +412,11 @@ func runVerbEntry(t *testing.T, msg tea.Msg, skips, notifies bool) verbState {
 	}
 
 	state := verbState{
-		index:    m.playlist.Index(),
-		cursor:   m.plCursor,
+		index:    m.queue.Index(),
+		cursor:   m.queueCursor,
 		volume:   engine.volume,
-		shuffle:  m.playlist.Shuffled(),
-		repeat:   m.playlist.Repeat(),
+		shuffle:  m.queue.Shuffled(),
+		repeat:   m.queue.Repeat(),
 		vis:      m.vis.ModeName(),
 		saved:    fmt.Sprint(saver.saved),
 		notified: len(notifier.updates) > 0,

@@ -46,7 +46,7 @@ func TestStopRefusesPendingStreamStart(t *testing.T) {
 			pl := playlist.New()
 			pl.Add(track)
 			pl.SetIndex(0)
-			m := Model{player: engine, playlist: pl}
+			m := Model{player: engine, queue: pl}
 
 			m.playTrack(track)
 			pending := m.requests.stream
@@ -79,7 +79,7 @@ func TestStopRefusesPendingStreamStart(t *testing.T) {
 			}
 
 			// Paths that keep the track in the playlist must be able to restart it.
-			if m.playlist.Len() > 0 && m.togglePlayPause() == nil {
+			if m.queue.Len() > 0 && m.togglePlayPause() == nil {
 				t.Fatal("play/pause refused to restart playback after the stop")
 			}
 		})

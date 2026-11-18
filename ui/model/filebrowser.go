@@ -46,7 +46,7 @@ func (m *Model) fbEntry(idx int) fbEntry {
 // fbVisible returns the file-browser list height. The browser renders inline in
 // the playlist region, so it shares the playlist's row budget.
 func (m *Model) fbVisible() int {
-	visible := m.effectivePlaylistVisible()
+	visible := m.effectiveQueueVisible()
 	if m.fileBrowser.err != "" {
 		return max(1, visible-1)
 	}
@@ -339,7 +339,7 @@ func (m *Model) handleFileBrowserKey(msg tea.KeyPressMsg) tea.Cmd {
 			m.status.Warning("Select files first (Space).", statusTTLDefault)
 			return nil
 		}
-		if m.playlist != nil && m.playlist.Len() > 0 {
+		if m.queue != nil && m.queue.Len() > 0 {
 			m.fileBrowser.confirmReplace = true
 			return nil
 		}

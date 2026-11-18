@@ -152,7 +152,7 @@ func TestHelpBarFollowsFocusOnEveryTier(t *testing.T) {
 		provSearch bool
 		want       commandMode
 	}{
-		{"playlist", focusPlaylist, false, commandModeMain},
+		{"playlist", focusQueue, false, commandModeMain},
 		{"provider", focusProvider, false, commandModeProvider},
 		{"provider filter", focusProvider, true, commandModeProviderSearch},
 	}

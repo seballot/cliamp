@@ -105,9 +105,9 @@ func (m *Model) preloadTarget() (playlist.Track, bool) {
 	var next playlist.Track
 	var ok bool
 	if m.playbackDetached {
-		next, ok = m.playlist.PeekSelected()
+		next, ok = m.queue.PeekSelected()
 	} else {
-		next, ok = m.playlist.PeekNext()
+		next, ok = m.queue.PeekNext()
 	}
 	if !ok || (playlist.IsYTDL(next.Path) && currentIdx >= 0 && next.Path == current.Path) {
 		return playlist.Track{}, false
@@ -120,7 +120,7 @@ func (m *Model) preloadTarget() (playlist.Track, bool) {
 // one. Update runs it after every message; the tick loop then arms the new
 // next track.
 func (m *Model) dropStalePreload() {
-	if m.player == nil || m.playlist == nil || (!m.preloading && !m.player.HasPreload()) {
+	if m.player == nil || m.queue == nil || (!m.preloading && !m.player.HasPreload()) {
 		return
 	}
 	if next, ok := m.preloadTarget(); ok && next.Path == m.preloadFor {

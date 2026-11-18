@@ -109,7 +109,7 @@ func TestTwoColumnGutterStaysBlank(t *testing.T) {
 // rows, which is what keeps the rule unbroken as the playlist grows.
 func TestTwoColumnBodyRowsMatch(t *testing.T) {
 	m := newColumnTestModel(100, 30)
-	rows := m.effectivePlaylistVisible()
+	rows := m.effectiveQueueVisible()
 	if got := len(strings.Split(m.renderBodyRegion(), "\n")); got != rows {
 		t.Fatalf("body rows = %d, want %d", got, rows)
 	}
@@ -146,7 +146,7 @@ func TestSettingsPaneRows(t *testing.T) {
 			m.providers = tt.providers
 			m.recomputeLayout()
 
-			pane := ansi.Strip(m.renderSettingsPane(m.effectivePlaylistVisible()))
+			pane := ansi.Strip(m.renderSettingsPane(m.effectiveQueueVisible()))
 			for _, want := range tt.want {
 				if !strings.Contains(pane, want) {
 					t.Fatalf("settings pane missing %q:\n%s", want, pane)
@@ -213,7 +213,7 @@ func TestTwoColumnPlaylistUsesReclaimedRows(t *testing.T) {
 	if !m.layout.twoColumn {
 		t.Fatal("expected the two-column layout at 100x60")
 	}
-	if got, want := m.plVisible, maxPlVisible+twoColumnChromeRows; got != want {
+	if got, want := m.queueVisible, maxQueueVisible+twoColumnChromeRows; got != want {
 		t.Fatalf("playlist rows = %d, want %d", got, want)
 	}
 }
@@ -249,15 +249,15 @@ func TestMarkerColumnsReserveOnlyWhatIsUsed(t *testing.T) {
 		{name: "plain playlist", setup: func(*Model) {}, want: markerColumns{favorite: true}},
 		{
 			name:  "queued track",
-			setup: func(m *Model) { m.playlist.AddPlayNext(1) },
+			setup: func(m *Model) { m.queue.AddPlayNext(1) },
 			want:  markerColumns{playNext: true, favorite: true},
 		},
 		{
 			name: "legacy bookmark reserves nothing",
 			setup: func(m *Model) {
-				track, _ := m.playlist.Track(1)
+				track, _ := m.queue.Track(1)
 				track.Bookmark = true
-				m.playlist.SetTrack(1, track)
+				m.queue.SetTrack(1, track)
 			},
 			want: markerColumns{favorite: true},
 		},
@@ -269,7 +269,7 @@ func TestMarkerColumnsReserveOnlyWhatIsUsed(t *testing.T) {
 		{
 			name: "queue and favorite",
 			setup: func(m *Model) {
-				m.playlist.AddPlayNext(1)
+				m.queue.AddPlayNext(1)
 				m.favSet = map[string]struct{}{"/tmp/track-3.mp3": {}}
 			},
 			want: markerColumns{playNext: true, favorite: true},
@@ -296,7 +296,7 @@ func TestPlaylistTitleColumnTightensWhenUnused(t *testing.T) {
 	// column is the title column. Every row must share it.
 	const fixtureTitle = "A very long"
 	titleColumn := func(m Model) int {
-		rows := strings.Split(ansi.Strip(m.renderPlaylist()), "\n")
+		rows := strings.Split(ansi.Strip(m.renderQueue()), "\n")
 		col := -1
 		for i, row := range rows {
 			byteAt := strings.Index(row, fixtureTitle)
@@ -322,7 +322,7 @@ func TestPlaylistTitleColumnTightensWhenUnused(t *testing.T) {
 	plain := titleColumn(newLayoutTestModel(100, 30))
 
 	full := newLayoutTestModel(100, 30)
-	full.playlist.AddPlayNext(1)
+	full.queue.AddPlayNext(1)
 	full.favSet = map[string]struct{}{"/tmp/track-3.mp3": {}}
 	used := titleColumn(full)
 
@@ -340,7 +340,7 @@ func TestPlaylistTitleColumnTightensWhenUnused(t *testing.T) {
 func TestFavoriteToggleKeepsTitleColumnStable(t *testing.T) {
 	const fixtureTitle = "A very long"
 	titleColumn := func(m Model) int {
-		rows := strings.Split(ansi.Strip(m.renderPlaylist()), "\n")
+		rows := strings.Split(ansi.Strip(m.renderQueue()), "\n")
 		for _, row := range rows {
 			if byteAt := strings.Index(row, fixtureTitle); byteAt >= 0 {
 				return lipgloss.Width(row[:byteAt])
@@ -371,13 +371,13 @@ func TestPlaylistHeaderDropsBadgesThatDoNotFit(t *testing.T) {
 	}
 	withBadges := func(width, height int) Model {
 		m := newColumnTestModel(width, height)
-		m.playlist.AddPlayNext(1)
+		m.queue.AddPlayNext(1)
 		m.favSet = favSet
 		return m
 	}
 	headerAt := func(m Model, width int) string {
 		m.layout.panelWidth = width
-		return ansi.Strip(m.renderPlaylistHeader())
+		return ansi.Strip(m.renderQueueHeader())
 	}
 
 	m := withBadges(80, 24)
@@ -588,7 +588,7 @@ func TestClosedSettingsLayoutDropsHiddenFocusStops(t *testing.T) {
 	// Focus restored from the open layout is cleared rather than left stranded.
 	m.focus = focusEQ
 	m.normalizeMainFocus()
-	if m.focus != focusPlaylist {
+	if m.focus != focusQueue {
 		t.Fatalf("focus = %v, want it reset to the playlist", m.focus.label())
 	}
 }

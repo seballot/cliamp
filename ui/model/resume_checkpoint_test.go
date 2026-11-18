@@ -26,7 +26,7 @@ func TestResumeCheckpointWaitsForConfirmedPlayback(t *testing.T) {
 			pl := playlist.New()
 			pl.Add(track)
 			m := Model{
-				player: engine, playlist: pl, playingTrack: track, playingTrackActive: true,
+				player: engine, queue: pl, playingTrack: track, playingTrackActive: true,
 				buffering: tt.buffering, seek: tt.seek, cachedPos: 600 * time.Second,
 			}
 			var positions []int
@@ -52,7 +52,7 @@ func TestResumeCheckpointAfterFailedSeek(t *testing.T) {
 	pl := playlist.New()
 	pl.Add(track)
 	m := Model{
-		player: &playbackFakeEngine{playing: true, position: 90 * time.Second}, playlist: pl,
+		player: &playbackFakeEngine{playing: true, position: 90 * time.Second}, queue: pl,
 		playingTrack: track, playingTrackActive: true, cachedPos: 600 * time.Second,
 		seek: seekState{active: true, inFlight: true, targetPos: 600 * time.Second},
 	}
@@ -71,8 +71,8 @@ func TestResumeCheckpointReconcilesGaplessTrackFirst(t *testing.T) {
 	pl := playlist.New()
 	pl.Add(jellyfinTrack, playlist.Track{Path: "local.mp3"})
 	m := Model{
-		player:   &playbackFakeEngine{playing: true, gaplessAdvanced: true, position: time.Second},
-		playlist: pl, playingTrack: jellyfinTrack, playingTrackActive: true, vis: ui.NewVisualizer(44100),
+		player: &playbackFakeEngine{playing: true, gaplessAdvanced: true, position: time.Second},
+		queue:  pl, playingTrack: jellyfinTrack, playingTrackActive: true, vis: ui.NewVisualizer(44100),
 	}
 	m.SetVisualizer("none")
 	var savedPositions []int

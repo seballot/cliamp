@@ -26,7 +26,7 @@ func TestSearchOverlayResultVisibleWithOneBodyRow(t *testing.T) {
 		results: []playlist.Track{albumResult("Selected Album")},
 	}
 	m.recomputeLayout()
-	if got := m.effectivePlaylistVisible(); got != 1 {
+	if got := m.effectiveQueueVisible(); got != 1 {
 		t.Fatalf("body rows = %d, want 1", got)
 	}
 
@@ -50,7 +50,7 @@ func TestSearchOverlayErrorFitsBodyBudget(t *testing.T) {
 	if !strings.Contains(body, m.searchOverlay.err) {
 		t.Fatalf("body = %q, want visible error", body)
 	}
-	if got, want := len(strings.Split(body, "\n")), m.effectivePlaylistVisible(); got != want {
+	if got, want := len(strings.Split(body, "\n")), m.effectiveQueueVisible(); got != want {
 		t.Fatalf("body rows = %d, want %d", got, want)
 	}
 }
@@ -60,7 +60,7 @@ func TestSearchOverlayErrorKeepsCursorVisible(t *testing.T) {
 	m.searchOverlay.visible = true
 	m.searchOverlay.screen = searchOverlayResults
 	m.recomputeLayout()
-	visible := m.effectivePlaylistVisible()
+	visible := m.effectiveQueueVisible()
 	if visible < 3 {
 		t.Fatalf("body rows = %d, want at least 3", visible)
 	}
@@ -205,7 +205,7 @@ func TestSearchOverlayPickerShowsAddError(t *testing.T) {
 	if !strings.Contains(body, m.searchOverlay.err) {
 		t.Fatalf("body = %q, want visible add error", body)
 	}
-	if got, want := len(strings.Split(body, "\n")), m.effectivePlaylistVisible(); got > want {
+	if got, want := len(strings.Split(body, "\n")), m.effectiveQueueVisible(); got > want {
 		t.Fatalf("body rows = %d, want at most %d", got, want)
 	}
 }

@@ -147,7 +147,7 @@ func TestPlaybackReportsKeepOrder(t *testing.T) {
 	engine := &playbackFakeEngine{playing: true, position: 20 * time.Second, duration: time.Minute}
 	m := Model{
 		player:             engine,
-		playlist:           playlist.New(),
+		queue:              playlist.New(),
 		providers:          []provider.Entry{{Key: "p", Name: "P", Provider: reporter}},
 		playingTrack:       a,
 		playingTrackActive: true,

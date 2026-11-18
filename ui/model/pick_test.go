@@ -54,7 +54,7 @@ func TestChatPickerMarksAndApplies(t *testing.T) {
 	}
 	m := &Model{
 		provider: p,
-		playlist: playlist.New(),
+		queue:    playlist.New(),
 		provPane: providerPane{lists: []playlist.PlaylistInfo{{ID: "u:2:2", Name: "B"}}},
 	}
 
@@ -91,7 +91,7 @@ func TestChatPickerMarksAndApplies(t *testing.T) {
 func TestChatPickerCancelRestoresRows(t *testing.T) {
 	p := &chatFilterProvider{dialogs: []playlist.PlaylistInfo{{ID: "u:1:1", Name: "A"}}}
 	rows := []playlist.PlaylistInfo{{ID: "u:1:1", Name: "A"}}
-	m := &Model{provider: p, playlist: playlist.New(), provPane: providerPane{lists: rows, cursor: 0}}
+	m := &Model{provider: p, queue: playlist.New(), provPane: providerPane{lists: rows, cursor: 0}}
 
 	cmd := m.startChatPicker()
 	m.handleChatPickerLoaded(cmd().(providerPickLoadedMsg))
@@ -112,7 +112,7 @@ func TestChatPickerAllMeansNoFilter(t *testing.T) {
 	p := &chatFilterProvider{
 		dialogs: []playlist.PlaylistInfo{{ID: "u:1:1", Name: "A"}, {ID: "u:2:2", Name: "B"}},
 	}
-	m := &Model{provider: p, playlist: playlist.New(), provPane: providerPane{}}
+	m := &Model{provider: p, queue: playlist.New(), provPane: providerPane{}}
 
 	cmd := m.startChatPicker()
 	m.handleChatPickerLoaded(cmd().(providerPickLoadedMsg))
@@ -147,7 +147,7 @@ func (p *codeAuthStub) Authenticate(code string) error {
 
 func TestAuthCodeInputSendsTheCode(t *testing.T) {
 	p := &codeAuthStub{prompt: "The code was sent to your app"}
-	m := &Model{provider: p, playlist: playlist.New()}
+	m := &Model{provider: p, queue: playlist.New()}
 
 	m.provPane.signIn = true
 	m.handleProviderPaneKey(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -184,7 +184,7 @@ func TestAuthCodeInputSendsTheCode(t *testing.T) {
 
 func TestAuthCodeInputEscCancels(t *testing.T) {
 	p := &codeAuthStub{}
-	m := &Model{provider: p, playlist: playlist.New()}
+	m := &Model{provider: p, queue: playlist.New()}
 	m.provPane.signIn = true
 	m.handleProviderPaneKey(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m.handleAuthCodeKey(tea.KeyPressMsg{Text: "9"})

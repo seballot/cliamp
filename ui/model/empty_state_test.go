@@ -20,7 +20,7 @@ func TestEmptyStatesNameTheNextStep(t *testing.T) {
 	}{
 		{
 			name: "no tracks loaded",
-			body: (*Model).renderPlaylist,
+			body: (*Model).renderQueue,
 			want: []string{"No tracks loaded.", "Esc", "Back to Local", "Open file browser", "Playlists", "Load URL", "Ctrl+f"},
 		},
 		{
@@ -73,7 +73,7 @@ func TestEmptyStatesNameTheNextStep(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := keybindingTestModel()
 			m.layout.panelWidth = 80
-			m.plVisible = 10
+			m.queueVisible = 10
 			if tt.setup != nil {
 				tt.setup(&m)
 			}

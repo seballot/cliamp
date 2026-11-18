@@ -67,7 +67,7 @@ func TestQueueReplaceEndsTheRadioBatch(t *testing.T) {
 			*m = next.(Model)
 		}},
 		{name: "manager load", want: "a b c", replace: func(_ *testing.T, m *Model) {
-			m.plManager = plManagerState{selPlaylist: "Mix", tracks: m.playlist.Tracks()}
+			m.plManager = plManagerState{selPlaylist: "Mix", tracks: m.queue.Tracks()}
 			m.plMgrLoadAndPlay(0)
 		}},
 	} {
@@ -82,7 +82,7 @@ func TestQueueReplaceEndsTheRadioBatch(t *testing.T) {
 			}
 			next, cmd := m.Update(ytdlBatchMsg{gen: 7, tracks: batch})
 			m = next.(Model)
-			if got := queueOpPaths(m.playlist.Tracks()); got != tc.want {
+			if got := queueOpPaths(m.queue.Tracks()); got != tc.want {
 				t.Fatalf("queue = %q, want %q", got, tc.want)
 			}
 			if m.loadedPlaylist != loaded || cmd != nil {

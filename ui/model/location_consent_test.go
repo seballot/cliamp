@@ -65,7 +65,7 @@ var (
 )
 
 func newLocationModel(p *locationProvider) Model {
-	m := Model{provider: p, playlist: playlist.New(), plVisible: 10, focus: focusProvider}
+	m := Model{provider: p, queue: playlist.New(), queueVisible: 10, focus: focusProvider}
 	lists, _ := p.Playlists()
 	m.provPane.lists = providerListsWithBrowse(p, lists)
 	return m
@@ -179,7 +179,7 @@ func TestLocationPromptKeys(t *testing.T) {
 
 // A provider that never offers the row is untouched by any of this.
 func TestProviderWithoutLocationConsentIsUnaffected(t *testing.T) {
-	m := Model{provider: &commandsTestProvider{}, playlist: playlist.New(), focus: focusProvider}
+	m := Model{provider: &commandsTestProvider{}, queue: playlist.New(), focus: focusProvider}
 	if cmd := m.answerLocationPrompt(true); cmd != nil {
 		t.Error("answering should be inert for a provider that never asked")
 	}

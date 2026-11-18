@@ -74,7 +74,7 @@ func (m *Model) reportConfigSave(err error) error {
 type focusArea int
 
 const (
-	focusPlaylist focusArea = iota
+	focusQueue focusArea = iota
 	focusProvPill
 	focusVolume
 	focusEQ
@@ -88,7 +88,7 @@ const (
 
 func (f focusArea) label() string {
 	switch f {
-	case focusPlaylist:
+	case focusQueue:
 		return "Queue"
 	case focusVolume:
 		return "Volume"
@@ -117,14 +117,14 @@ func (f focusArea) label() string {
 // Secondary screens own their input independently, so this applies to the
 // main playback screen and the provider playlist pane.
 func (m Model) mainFocusAreas() []focusArea {
-	areas := []focusArea{focusPlaylist}
+	areas := []focusArea{focusQueue}
 	if m.simplified || m.layout.tier == layoutMinimal || m.layout.tier == layoutTooSmall {
 		return areas
 	}
 	if m.layout.twoColumn {
-		rows := m.effectivePlaylistVisible()
+		rows := m.effectiveQueueVisible()
 		for _, row := range m.settingsPaneRows(rows - m.metadataPaneRows(rows)) {
-			if row.focus != focusPlaylist {
+			if row.focus != focusQueue {
 				areas = append(areas, row.focus)
 			}
 		}
@@ -139,7 +139,7 @@ func (m Model) mainFocusAreas() []focusArea {
 	if !m.layout.closedSettings {
 		areas = append(areas, focusEQ)
 	}
-	if m.playlist != nil {
+	if m.queue != nil {
 		// Probe each focused badge: its extra label must fit too, independent
 		// of the current focus or an overlay temporarily replacing the header.
 		for _, area := range []focusArea{focusShuffle, focusRepeat} {
@@ -191,7 +191,7 @@ func (m *Model) normalizeMainFocus() {
 		switch *focus {
 		case focusProvPill, focusVolume, focusEQ, focusShuffle, focusRepeat, focusSpeed:
 			if !m.mainFocusAllowed(*focus) {
-				*focus = focusPlaylist
+				*focus = focusQueue
 			}
 		}
 	}
@@ -267,11 +267,11 @@ func (s topLevelScreen) label() string {
 	}
 }
 
-// maxPlVisible caps the playlist at a readable height even on tall terminals.
-// maxPlExpandVisible is the higher cap used by content-first list screens.
+// maxQueueVisible caps the playlist at a readable height even on tall terminals.
+// maxQueueExpandVisible is the higher cap used by content-first list screens.
 const (
-	maxPlVisible       = 12
-	maxPlExpandVisible = 24
+	maxQueueVisible       = 12
+	maxQueueExpandVisible = 24
 )
 
 type plMgrScreenType int
@@ -327,7 +327,7 @@ type Model struct {
 	audioDevice string
 	// Core playback
 	player        player.Engine
-	playlist      *playlist.Playlist
+	queue         *playlist.Playlist
 	configSaver   ConfigSaver
 	vis           *ui.Visualizer
 	seekStepLarge time.Duration
@@ -349,9 +349,9 @@ type Model struct {
 	focus           focusArea
 	prevFocus       focusArea // focus to restore on cancel (search, net search)
 	eqCursor        int       // selected EQ band (0-9)
-	plCursor        int       // selected playlist item
-	plScroll        int       // scroll offset for playlist view
-	plVisible       int       // desired max visible playlist lines
+	queueCursor     int       // selected playlist item
+	queueScroll     int       // scroll offset for playlist view
+	queueVisible    int       // desired max visible playlist lines
 	titleOff        int       // scroll offset for the now-playing marquee
 	titleLastScroll time.Time // last time the title scrolled
 	err             error
@@ -360,7 +360,7 @@ type Model struct {
 	height          int
 	layout          frameLayout
 	textInput       textEditor
-	playlistUndo    playlistUndo
+	queueUndo       queueUndo
 
 	// Provider state
 	provider                playlist.Provider

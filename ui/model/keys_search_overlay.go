@@ -178,7 +178,7 @@ func (m *Model) setSearchOverlayError(message string) {
 	case searchOverlayResults:
 		m.searchOverlayResultsMaybeAdjustScroll(m.searchOverlayResultsVisible())
 	case searchOverlayPlaylist:
-		m.searchOverlayPlaylistMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchOverlayPlaylistMaybeAdjustScroll(m.effectiveQueueVisible())
 	}
 }
 
@@ -213,21 +213,21 @@ func (m *Model) handleSearchOverlayPlaylistKey(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case "ctrl+x":
 		m.toggleExpandedView()
-		m.searchOverlayPlaylistMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchOverlayPlaylistMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "up", "k":
 		if m.searchOverlay.cursor > 0 {
 			m.searchOverlay.cursor--
 		} else if count > 0 {
 			m.searchOverlay.cursor = count - 1
 		}
-		m.searchOverlayPlaylistMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchOverlayPlaylistMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "down", "j":
 		if m.searchOverlay.cursor < count-1 {
 			m.searchOverlay.cursor++
 		} else if count > 0 {
 			m.searchOverlay.cursor = 0
 		}
-		m.searchOverlayPlaylistMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchOverlayPlaylistMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "enter":
 		if m.searchOverlay.loading {
 			return nil
@@ -263,7 +263,7 @@ func (m *Model) handleSearchOverlayNewNameKey(msg tea.KeyPressMsg) tea.Cmd {
 	case tea.KeyEscape:
 		m.searchOverlay.screen = searchOverlayPlaylist
 		m.searchOverlay.cursor = len(m.searchOverlay.playlists)
-		m.searchOverlayPlaylistMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchOverlayPlaylistMaybeAdjustScroll(m.effectiveQueueVisible())
 	case tea.KeyEnter:
 		if strings.TrimSpace(m.searchOverlay.newName) == "" {
 			m.setSearchOverlayError("Playlist name is required.")

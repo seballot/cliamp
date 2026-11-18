@@ -42,7 +42,7 @@ func TestNotifyPlaybackChangeBuildsOnlyWhenNeeded(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			engine := &positionCountingEngine{}
-			m := Model{player: engine, playlist: playlist.New()}
+			m := Model{player: engine, queue: playlist.New()}
 			if tt.event != "" {
 				m.luaMgr, _, _ = newEventTestPlugin(t, tt.event)
 			}

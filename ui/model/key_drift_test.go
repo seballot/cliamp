@@ -410,7 +410,7 @@ func keyHandlerModes(t *testing.T, funcs map[string]*ast.FuncDecl) map[string]co
 		if open == nil {
 			t.Fatalf("overlayOpeners has no opener for screen %d", spec.screen)
 		}
-		m := Model{playlist: playlist.New()}
+		m := Model{queue: playlist.New()}
 		open(&m)
 		roots[name], _ = m.commandContext()
 	}

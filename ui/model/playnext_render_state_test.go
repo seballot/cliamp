@@ -17,9 +17,9 @@ func TestRenderQueueBodyPreservesVisibleQueuePositions(t *testing.T) {
 		p.AddPlayNext(i)
 	}
 	m := Model{
-		playlist:  p,
-		layout:    frameLayout{panelWidth: 74},
-		plVisible: 3,
+		queue:        p,
+		layout:       frameLayout{panelWidth: 74},
+		queueVisible: 3,
 		playNext: playNextOverlay{
 			cursor: 5,
 			scroll: 4,
@@ -52,7 +52,7 @@ func TestPlaylistManagerCachesMissingLocalStateOutsideRender(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	m := Model{layout: frameLayout{panelWidth: 74}, plVisible: 5, plManager: plManagerState{screen: plMgrScreenTracks}}
+	m := Model{layout: frameLayout{panelWidth: 74}, queueVisible: 5, plManager: plManagerState{screen: plMgrScreenTracks}}
 	m.plMgrLoadTracks([]playlist.Track{
 		{Path: existing, Title: "Existing"},
 		{Path: missing, Title: "Missing"},

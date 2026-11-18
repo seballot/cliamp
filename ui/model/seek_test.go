@@ -47,7 +47,7 @@ func TestSetSeekStepLarge(t *testing.T) {
 // streamSeekModel returns a model playing a seekable stream track, the shape
 // that routes seeks through the debounce path.
 func streamSeekModel(eng *playbackFakeEngine) Model {
-	m := Model{player: eng, playlist: playlist.New()}
+	m := Model{player: eng, queue: playlist.New()}
 	m.setPlaybackTrack(playlist.Track{Path: "https://nav/stream", Stream: true})
 	return m
 }

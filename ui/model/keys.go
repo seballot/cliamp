@@ -64,7 +64,7 @@ func (m *Model) handleSpeedKey(msg tea.KeyPressMsg) tea.Cmd {
 }
 
 func (m *Model) providerScrollStep() int {
-	return max(1, m.effectivePlaylistVisible())
+	return max(1, m.effectiveQueueVisible())
 }
 
 func (m *Model) providerMaybeAdjustScroll() {
@@ -283,7 +283,7 @@ func (m *Model) handleGlobalKey(msg tea.KeyPressMsg) (cmd tea.Cmd, ok bool) {
 	}
 	switch msg.String() {
 	case "ctrl+z":
-		m.keepPlCursorRow(func() { cmd = m.undoPlaylistMutation() })
+		m.keepQueueCursorRow(func() { cmd = m.undoQueueMutation() })
 		return cmd, true
 	case "ctrl+k", "?":
 		if !m.keymap.visible {
@@ -363,12 +363,12 @@ func (m *Model) handleProviderPaneKey(msg tea.KeyPressMsg) tea.Cmd {
 	case "tab", "shift+tab":
 		// Leave the content-first provider layout before choosing a control;
 		// the playback pane may be closed or too short to show every setting.
-		m.focus = focusPlaylist
+		m.focus = focusQueue
 		m.recomputeLayout()
 		if msg.String() == "shift+tab" {
-			m.focus = m.previousMainFocus(focusPlaylist)
+			m.focus = m.previousMainFocus(focusQueue)
 		} else {
-			m.focus = m.nextMainFocus(focusPlaylist)
+			m.focus = m.nextMainFocus(focusQueue)
 		}
 	case "esc", "backspace", "b":
 		// Clear completed results or cancel a search still in flight.
@@ -378,7 +378,7 @@ func (m *Model) handleProviderPaneKey(msg tea.KeyPressMsg) tea.Cmd {
 		// Leave even with an empty playlist. Starting with nothing to play
 		// is what opens this view (StartInProvider), so gating the way out
 		// on a loaded playlist made the launch screen inescapable.
-		m.focus = focusPlaylist
+		m.focus = focusQueue
 	case "/":
 		m.provSearch.active = true
 		m.provSearch.query = ""
@@ -455,11 +455,11 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 		m.pendingRatingActive = false
 		m.pendingRatingExpiresAt = time.Time{}
 		m.status.Clear()
-		if s := msg.String(); m.focus == focusPlaylist && len(s) == 1 && s[0] >= '0' && s[0] <= '5' {
+		if s := msg.String(); m.focus == focusQueue && len(s) == 1 && s[0] >= '0' && s[0] <= '5' {
 			return m.rateSelectedTrack(int(s[0] - '0'))
 		}
 	}
-	if msg.String() == "*" && m.focus == focusPlaylist {
+	if msg.String() == "*" && m.focus == focusQueue {
 		m.pendingSeekActive = false
 		m.pendingSeekExpiresAt = time.Time{}
 		m.pendingRatingActive = true
@@ -470,7 +470,7 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 
 	// Vim-style count prefix: a digit primes a pending percentage; the next `j`
 	// jumps there (e.g. `7j` → 70%). Any other key cancels and runs normally.
-	if s := msg.String(); m.focus == focusPlaylist && len(s) == 1 && s[0] >= '0' && s[0] <= '9' {
+	if s := msg.String(); m.focus == focusQueue && len(s) == 1 && s[0] >= '0' && s[0] <= '9' {
 		m.pendingSeekActive = true
 		m.pendingSeekPct = int(s[0] - '0')
 		m.pendingSeekExpiresAt = time.Now().Add(time.Duration(statusTTLMedium))
@@ -482,7 +482,7 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 		m.pendingSeekActive = false
 		m.pendingSeekExpiresAt = time.Time{}
 		m.status.Clear()
-		if msg.String() == "j" && m.focus == focusPlaylist {
+		if msg.String() == "j" && m.focus == focusQueue {
 			if dur := m.player.Duration(); dur > 0 {
 				return m.seekAbsolute(dur * time.Duration(pct) / 10)
 			}
@@ -528,7 +528,7 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 		// keeps its ID across Refresh.
 		return m.refreshActiveProvider(true)
 	case "esc", "backspace", "b":
-		if m.focus == focusPlaylist {
+		if m.focus == focusQueue {
 			// Keep current expanded/collapsed height mode when switching focus.
 			m.focus = focusProvider
 			// The Local source has no provider pane list; show its manager.
@@ -578,17 +578,17 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 		return m.togglePlaylistStar()
 
 	case "shift+up", "shift+down":
-		if m.focus == focusPlaylist {
-			to := m.plCursor + 1
+		if m.focus == focusQueue {
+			to := m.queueCursor + 1
 			if key == "shift+up" {
-				to = m.plCursor - 1
+				to = m.queueCursor - 1
 			}
-			cmd, _ := m.moveTrack(m.plCursor, to)
+			cmd, _ := m.moveTrack(m.queueCursor, to)
 			return cmd
 		}
 
 	case "ctrl+o":
-		if m.focus == focusPlaylist {
+		if m.focus == focusQueue {
 			cmd, _ := m.reverseTracks()
 			return cmd
 		}
@@ -598,10 +598,10 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 			bands := m.player.EQBands()
 			m.setCustomEQBand(m.eqCursor, bands[m.eqCursor]+1)
 		} else {
-			if row := m.plCursorRow(); row > 0 {
-				m.setPlCursorRow(row - 1)
-			} else if m.playlist.Len() > 0 {
-				m.setPlCursorRow(m.playlist.Len() - 1)
+			if row := m.queueCursorRow(); row > 0 {
+				m.setQueueCursorRow(row - 1)
+			} else if m.queue.Len() > 0 {
+				m.setQueueCursorRow(m.queue.Len() - 1)
 			}
 		}
 
@@ -610,42 +610,42 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 			bands := m.player.EQBands()
 			m.setCustomEQBand(m.eqCursor, bands[m.eqCursor]-1)
 		} else {
-			if row := m.plCursorRow(); row < m.playlist.Len()-1 {
-				m.setPlCursorRow(row + 1)
-			} else if m.playlist.Len() > 0 {
-				m.setPlCursorRow(0)
+			if row := m.queueCursorRow(); row < m.queue.Len()-1 {
+				m.setQueueCursorRow(row + 1)
+			} else if m.queue.Len() > 0 {
+				m.setQueueCursorRow(0)
 			}
 		}
 
 	case "pgup", "ctrl+u":
-		if row := m.plCursorRow(); m.focus == focusPlaylist && row > 0 {
-			visible := max(1, m.effectivePlaylistVisible())
-			m.setPlCursorRow(row - min(row, visible))
+		if row := m.queueCursorRow(); m.focus == focusQueue && row > 0 {
+			visible := max(1, m.effectiveQueueVisible())
+			m.setQueueCursorRow(row - min(row, visible))
 		}
 
 	case "pgdown", "ctrl+d":
-		if row := m.plCursorRow(); m.focus == focusPlaylist && row < m.playlist.Len()-1 {
-			visible := max(1, m.effectivePlaylistVisible())
-			m.setPlCursorRow(min(m.playlist.Len()-1, row+visible))
+		if row := m.queueCursorRow(); m.focus == focusQueue && row < m.queue.Len()-1 {
+			visible := max(1, m.effectiveQueueVisible())
+			m.setQueueCursorRow(min(m.queue.Len()-1, row+visible))
 		}
 
 	case "g", "home":
-		if m.focus == focusPlaylist && m.plCursorRow() != 0 {
-			m.setPlCursorRow(0)
+		if m.focus == focusQueue && m.queueCursorRow() != 0 {
+			m.setQueueCursorRow(0)
 		}
 
 	case "G", "end":
-		if m.focus == focusPlaylist && m.playlist.Len() > 0 && m.plCursorRow() != m.playlist.Len()-1 {
-			m.setPlCursorRow(m.playlist.Len() - 1)
+		if m.focus == focusQueue && m.queue.Len() > 0 && m.queueCursorRow() != m.queue.Len()-1 {
+			m.setQueueCursorRow(m.queue.Len() - 1)
 		}
 
 	case "enter":
-		if m.focus == focusPlaylist {
+		if m.focus == focusQueue {
 			// No-op only if this exact track is still buffering.
-			if m.buffering && m.plCursor == m.playlist.Index() {
+			if m.buffering && m.queueCursor == m.queue.Index() {
 				break
 			}
-			return m.playIndex(m.plCursor)
+			return m.playIndex(m.queueCursor)
 		}
 
 	case "+", "=":
@@ -656,10 +656,10 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 
 	case "r":
 		const repeatModes = playlist.RepeatOne + 1
-		return m.setRepeat((m.playlist.Repeat() + repeatStep + repeatModes) % repeatModes)
+		return m.setRepeat((m.queue.Repeat() + repeatStep + repeatModes) % repeatModes)
 
 	case "z":
-		return m.setShuffle(!m.playlist.Shuffled())
+		return m.setShuffle(!m.queue.Shuffled())
 
 	case "tab":
 		m.focus = m.nextMainFocus(m.focus)
@@ -691,23 +691,23 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 		m.scheduleEQSave()
 
 	case "a":
-		if m.focus == focusPlaylist {
-			if !m.playlist.RemovePlayNext(m.plCursor) {
-				m.playlist.AddPlayNext(m.plCursor)
+		if m.focus == focusQueue {
+			if !m.queue.RemovePlayNext(m.queueCursor) {
+				m.queue.AddPlayNext(m.queueCursor)
 			}
 			m.normalizePlayNextOverlay()
 			return m.rearmStalePreload()
 		}
 
 	case "w":
-		if m.focus == focusPlaylist && m.plCursor >= 0 && m.plCursor < m.playlist.Len() {
-			if track, ok := m.playlist.Track(m.plCursor); ok {
+		if m.focus == focusQueue && m.queueCursor >= 0 && m.queueCursor < m.queue.Len() {
+			if track, ok := m.queue.Track(m.queueCursor); ok {
 				m.openPlaylistPicker([]playlist.Track{track}, "Track: "+track.DisplayName())
 			}
 		}
 
 	case "A":
-		if m.focus == focusPlaylist {
+		if m.focus == focusQueue {
 			m.playNext.visible = true
 			m.playNext.cursor = 0
 			m.playNext.scroll = 0
@@ -770,7 +770,7 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 		}
 
 	case "ctrl+h":
-		if m.playlist.Shuffled() {
+		if m.queue.Shuffled() {
 			m.status.Warning(shuffleHeadersWarning, statusTTLShort)
 			return nil
 		}
@@ -805,14 +805,14 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 		m.recomputeLayout()
 
 	case "ctrl+x":
-		if !m.simplified && m.focus == focusPlaylist {
+		if !m.simplified && m.focus == focusQueue {
 			m.toggleExpandedView()
 		}
 
 	case "x":
-		if m.focus == focusPlaylist {
+		if m.focus == focusQueue {
 			var cmd tea.Cmd
-			m.keepPlCursorRow(func() { cmd, _ = m.removeTrack(m.plCursor, true) })
+			m.keepQueueCursorRow(func() { cmd, _ = m.removeTrack(m.queueCursor, true) })
 			return cmd
 		}
 

@@ -115,7 +115,7 @@ func newDirsScreenTestModel(t *testing.T, prov playlist.Provider) Model {
 		favs = fp.useFavorites(t)
 	}
 	m := Model{
-		playlist:      playlist.New(),
+		queue:         playlist.New(),
 		localProvider: prov,
 		provider:      prov,
 		providers:     []provider.Entry{{Key: "local", Name: "Local", Provider: prov}},
@@ -400,11 +400,11 @@ func TestPlMgrFKeyRemovesRowFromFavoritesScreen(t *testing.T) {
 func TestFKeyFromQueueRefreshesFavoritesCount(t *testing.T) {
 	prov := &dirSourceTestProvider{commandsTestProvider: commandsTestProvider{name: "Local"}}
 	m := newDirsScreenTestModel(t, prov)
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	m.loadedPlaylist = "music"
-	m.playlist = playlist.New()
-	m.playlist.Add(playlist.Track{Path: "/song.mp3", Title: "Song"})
-	m.plCursor = 0
+	m.queue = playlist.New()
+	m.queue.Add(playlist.Track{Path: "/song.mp3", Title: "Song"})
+	m.queueCursor = 0
 	m.plManager.visible = false
 	m.plManager.screen = plMgrScreenList
 	m.plManager.playlists = nil
@@ -845,7 +845,7 @@ func TestFileBrowserEscDoneCommitsSelection(t *testing.T) {
 		commandsTestProvider: commandsTestProvider{name: "Local"},
 	}
 	m := newDirsScreenTestModel(t, prov)
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	m.fileBrowser.visible = true
 	m.fileBrowser.targetPlaylist = "music"
 	m.fileBrowser.selected = make(map[string]bool)
@@ -964,11 +964,11 @@ func TestFKeyTogglesFavorite(t *testing.T) {
 		commandsTestProvider: commandsTestProvider{name: "Local"},
 	}
 	m := newDirsScreenTestModel(t, prov)
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	m.loadedPlaylist = "music"
-	m.playlist = playlist.New()
-	m.playlist.Add(playlist.Track{Path: "/song.mp3", Title: "Song"})
-	m.plCursor = 0
+	m.queue = playlist.New()
+	m.queue.Add(playlist.Track{Path: "/song.mp3", Title: "Song"})
+	m.queueCursor = 0
 	m.plManager.visible = false
 	m.favSet = nil
 
@@ -1008,11 +1008,11 @@ func TestFKeyNoopWithoutFavoritesStore(t *testing.T) {
 	m.localProvider = plain
 	m.provider = plain
 	m.favStore = nil
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	m.loadedPlaylist = "music"
-	m.playlist = playlist.New()
-	m.playlist.Add(playlist.Track{Path: "/song.mp3", Title: "Song"})
-	m.plCursor = 0
+	m.queue = playlist.New()
+	m.queue.Add(playlist.Track{Path: "/song.mp3", Title: "Song"})
+	m.queueCursor = 0
 
 	m.handleKey(tea.KeyPressMsg{Text: "f"})
 

@@ -83,7 +83,7 @@ func (m Model) navHeaderLine() string {
 // renderNavBody renders the list for the active provider-browser route.
 func (m Model) renderNavBody() string {
 	labels := m.navLabels()
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	if m.navBrowser.confirmReplace {
 		return bodyMessage("Displayed tracks will replace the current queue. Enter confirms; Esc cancels.", budget)
 	}
@@ -213,7 +213,7 @@ func (m Model) fbHeaderLine() string {
 }
 
 func (m Model) renderFileBrowserBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	if budget <= 0 {
 		return ""
 	}

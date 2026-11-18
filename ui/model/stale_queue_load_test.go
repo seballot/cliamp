@@ -15,7 +15,7 @@ import (
 
 func queuePaths(m Model) []string {
 	var paths []string
-	for _, track := range m.playlist.Tracks() {
+	for _, track := range m.queue.Tracks() {
 		paths = append(paths, track.Path)
 	}
 	return paths
@@ -78,7 +78,7 @@ func TestFeedTrackResolvedDropsStaleResult(t *testing.T) {
 			engine := &playbackFakeEngine{}
 			pl := playlist.New()
 			pl.Add(playlist.Track{Title: "Current", Path: "current.mp3"}, feed)
-			m := Model{player: engine, playlist: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
+			m := Model{player: engine, queue: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
 			m.playIndex(0)
 
 			cmd := m.playIndex(1)
@@ -141,7 +141,7 @@ func TestFBReplaceDropsStaleResult(t *testing.T) {
 			engine := &playbackFakeEngine{}
 			pl := playlist.New()
 			pl.Add(playlist.Track{Title: "One", Path: "one.mp3"}, playlist.Track{Title: "Two", Path: "two.mp3"})
-			m := Model{player: engine, playlist: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
+			m := Model{player: engine, queue: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
 			m.playIndex(0)
 			m.fileBrowser = fileBrowserState{
 				visible:  true,

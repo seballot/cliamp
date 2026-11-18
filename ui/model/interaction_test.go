@@ -165,7 +165,7 @@ func (p trackArtistBrowseProvider) ArtistAlbums(artistID string) ([]provider.Alb
 func keybindingTestModel() Model {
 	local := commandsTestProvider{name: "Local"}
 	return Model{
-		playlist: playlist.New(),
+		queue:    playlist.New(),
 		player:   &playbackFakeEngine{},
 		provider: local,
 		providers: []provider.Entry{
@@ -307,7 +307,7 @@ func TestProviderPaneShiftNDoesNotOpenAnotherProviderBrowser(t *testing.T) {
 	if m.navBrowser.visible {
 		t.Fatalf("Spotify provider pane opened %q browser", m.navBrowser.prov.Name())
 	}
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	m.handleKey(tea.KeyPressMsg{Code: 'n', ShiftedCode: 'N', Mod: tea.ModShift})
 	if m.navBrowser.visible {
 		t.Fatalf("Spotify playlist opened %q browser", m.navBrowser.prov.Name())
@@ -326,12 +326,12 @@ func TestShiftNOnProviderTrackJumpsToItsArtist(t *testing.T) {
 	m := keybindingTestModel()
 	m.provider = browse
 	m.providers = append(m.providers, provider.Entry{Key: "mixcloud", Name: "Mixcloud", Provider: browse})
-	m.focus = focusPlaylist
-	m.playlist.Add(playlist.Track{
+	m.focus = focusQueue
+	m.queue.Add(playlist.Track{
 		Title: "A Show", Artist: "Creator Name",
 		ProviderMeta: map[string]string{"test.creator": "creator"},
 	})
-	m.plCursor = 0
+	m.queueCursor = 0
 
 	cmd := m.handleKey(tea.KeyPressMsg{Code: 'n', ShiftedCode: 'N', Text: "N", Mod: tea.ModShift})
 	if cmd == nil {
@@ -357,8 +357,8 @@ func TestEscFromDirectTrackCreatorReturnsToPlaylist(t *testing.T) {
 	m := keybindingTestModel()
 	m.provider = browse
 	m.providers = append(m.providers, provider.Entry{Key: "mixcloud", Name: "Mixcloud", Provider: browse})
-	m.focus = focusPlaylist
-	m.playlist.Add(playlist.Track{
+	m.focus = focusQueue
+	m.queue.Add(playlist.Track{
 		Title: "A Show", Artist: "Creator Name",
 		ProviderMeta: map[string]string{"test.creator": "creator"},
 	})
@@ -565,8 +565,8 @@ func TestBrowsePlayableLeavesOpenInMainPlaylist(t *testing.T) {
 				gen:    m.requests.nav,
 			})
 			got := updated.(Model)
-			if got.navBrowser.visible || got.focus != focusPlaylist || got.playlist.Len() != 1 {
-				t.Fatalf("browse entry %q result = nav:%t focus:%v tracks:%d", id, got.navBrowser.visible, got.focus, got.playlist.Len())
+			if got.navBrowser.visible || got.focus != focusQueue || got.queue.Len() != 1 {
+				t.Fatalf("browse entry %q result = nav:%t focus:%v tracks:%d", id, got.navBrowser.visible, got.focus, got.queue.Len())
 			}
 			if !strings.Contains(got.status.text, "Replaced queue with 1 tracks") {
 				t.Fatalf("browse entry %q status = %+v", id, got.status)
@@ -655,7 +655,7 @@ func TestBackCancelsInFlightPlayableLeaf(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := keybindingTestModel()
-			m.playlist.Add(playlist.Track{Title: "Keep", Path: "keep.mp3"})
+			m.queue.Add(playlist.Track{Title: "Keep", Path: "keep.mp3"})
 			cmd := tt.start(&m)
 			if cmd == nil {
 				t.Fatal("leaf selection returned no load command")
@@ -668,9 +668,9 @@ func TestBackCancelsInFlightPlayableLeaf(t *testing.T) {
 
 			updated, _ := m.Update(cmd())
 			got := updated.(Model)
-			track, _ := got.playlist.Track(0)
-			if !got.navBrowser.visible || got.playlist.Len() != 1 || track.Title != "Keep" {
-				t.Fatalf("stale leaf changed state = nav:%t tracks:%d first:%+v", got.navBrowser.visible, got.playlist.Len(), track)
+			track, _ := got.queue.Track(0)
+			if !got.navBrowser.visible || got.queue.Len() != 1 || track.Title != "Keep" {
+				t.Fatalf("stale leaf changed state = nav:%t tracks:%d first:%+v", got.navBrowser.visible, got.queue.Len(), track)
 			}
 		})
 	}
@@ -679,14 +679,14 @@ func TestBackCancelsInFlightPlayableLeaf(t *testing.T) {
 func TestEmptyBrowseLeafPreservesCurrentPlaylist(t *testing.T) {
 	browse := positionedBrowseProvider{providerPaneBrowseProvider{interactionBrowseProvider{commandsTestProvider{name: "Mixcloud"}}}}
 	m := keybindingTestModel()
-	m.playlist.Add(playlist.Track{Title: "Keep", Path: "keep.mp3"})
+	m.queue.Add(playlist.Track{Title: "Keep", Path: "keep.mp3"})
 	m.openNavBrowserAt(browse, provider.BrowseGenres)
 
 	updated, _ := m.Update(navTracksLoadedMsg{gen: m.requests.nav})
 	got := updated.(Model)
-	track, _ := got.playlist.Track(0)
-	if !got.navBrowser.visible || got.playlist.Len() != 1 || track.Title != "Keep" {
-		t.Fatalf("empty leaf result = nav:%t tracks:%d first:%+v", got.navBrowser.visible, got.playlist.Len(), track)
+	track, _ := got.queue.Track(0)
+	if !got.navBrowser.visible || got.queue.Len() != 1 || track.Title != "Keep" {
+		t.Fatalf("empty leaf result = nav:%t tracks:%d first:%+v", got.navBrowser.visible, got.queue.Len(), track)
 	}
 	if got.status.kind != feedbackWarning || !strings.Contains(got.status.text, "No tracks found") {
 		t.Fatalf("empty leaf status = %+v", got.status)
@@ -712,7 +712,7 @@ func TestAlbumLeafKeepsSelectedRowHighlightedWhileLoading(t *testing.T) {
 func TestUnknownArtistItemCountIsOmitted(t *testing.T) {
 	m := keybindingTestModel()
 	m.layout.panelWidth = 80
-	m.plVisible = 5
+	m.queueVisible = 5
 	m.navBrowser = navBrowserState{
 		prov:    &labelProv{},
 		visible: true,
@@ -845,7 +845,7 @@ func TestLyricsRetryStartsNewRequest(t *testing.T) {
 	p := playlist.New()
 	p.Add(playlist.Track{Artist: "Artist", Title: "Title"})
 	m := Model{
-		playlist: p,
+		queue: p,
 		lyrics: lyricsState{
 			visible: true,
 			err:     errors.New("temporary failure"),
@@ -872,10 +872,10 @@ func TestUndoRestoresClearedQueue(t *testing.T) {
 	p.AddPlayNext(0)
 	p.AddPlayNext(1)
 	m := Model{
-		player:    &playbackFakeEngine{},
-		playlist:  p,
-		plVisible: 1,
-		playNext:  playNextOverlay{visible: true, cursor: 1, scroll: 1},
+		player:       &playbackFakeEngine{},
+		queue:        p,
+		queueVisible: 1,
+		playNext:     playNextOverlay{visible: true, cursor: 1, scroll: 1},
 	}
 
 	m.handlePlayNextKey(tea.KeyPressMsg{Text: "c"})
@@ -906,10 +906,10 @@ func TestQueueClearNeedsConfirm(t *testing.T) {
 			p.AddPlayNext(i)
 		}
 		m := &Model{
-			player:    &playbackFakeEngine{},
-			playlist:  p,
-			plVisible: 1,
-			playNext:  playNextOverlay{visible: true},
+			player:       &playbackFakeEngine{},
+			queue:        p,
+			queueVisible: 1,
+			playNext:     playNextOverlay{visible: true},
 		}
 		return p, m
 	}
@@ -990,11 +990,11 @@ func TestNextTrackNormalizesQueueAfterSkippingUnavailableEntry(t *testing.T) {
 	p.AddPlayNext(2)
 	p.AddPlayNext(3)
 	m := Model{
-		player:    &playbackFakeEngine{},
-		playlist:  p,
-		layout:    frameLayout{panelWidth: 80},
-		plVisible: 2,
-		playNext:  playNextOverlay{visible: true, cursor: 2, scroll: 2},
+		player:       &playbackFakeEngine{},
+		queue:        p,
+		layout:       frameLayout{panelWidth: 80},
+		queueVisible: 2,
+		playNext:     playNextOverlay{visible: true, cursor: 2, scroll: 2},
 	}
 
 	m.nextTrack()
@@ -1022,12 +1022,12 @@ func TestIPCQueueMutationNormalizesOverlay(t *testing.T) {
 	p.AddPlayNext(1)
 	p.AddPlayNext(2)
 	m := Model{
-		player:    &playbackFakeEngine{},
-		playlist:  p,
-		plVisible: 2,
-		plCursor:  2,
-		plScroll:  1,
-		playNext:  playNextOverlay{visible: true, cursor: 2, scroll: 2},
+		player:       &playbackFakeEngine{},
+		queue:        p,
+		queueVisible: 2,
+		queueCursor:  2,
+		queueScroll:  1,
+		playNext:     playNextOverlay{visible: true, cursor: 2, scroll: 2},
 	}
 
 	if response := runV2(t, &m, "queue.remove", ipc.Request{Index: 2}); !response.OK {
@@ -1043,8 +1043,8 @@ func TestIPCQueueMutationNormalizesOverlay(t *testing.T) {
 	if m.playNext.cursor != 0 || m.playNext.scroll != 0 {
 		t.Fatalf("queue state after IPC clear = cursor %d, scroll %d; want 0, 0", m.playNext.cursor, m.playNext.scroll)
 	}
-	if m.plCursor != 0 || m.plScroll != 0 {
-		t.Fatalf("playlist state after IPC clear = cursor %d, scroll %d; want 0, 0", m.plCursor, m.plScroll)
+	if m.queueCursor != 0 || m.queueScroll != 0 {
+		t.Fatalf("playlist state after IPC clear = cursor %d, scroll %d; want 0, 0", m.queueCursor, m.queueScroll)
 	}
 	view, ok := m.activeOverlay()
 	if !ok {

@@ -66,11 +66,11 @@ func (m *Model) handleYTDLArtist(msg ytdlArtistMsg) tea.Cmd {
 	if m.playingTrackActive && m.playingTrack.Path == msg.path && m.playingTrack.Artist == "" {
 		m.playingTrack.Artist = msg.artist
 	}
-	if m.playlist != nil {
-		idx := m.playlist.Index()
-		if t, ok := m.playlist.Track(idx); ok && t.Path == msg.path && t.Artist == "" {
+	if m.queue != nil {
+		idx := m.queue.Index()
+		if t, ok := m.queue.Track(idx); ok && t.Path == msg.path && t.Artist == "" {
 			t.Artist = msg.artist
-			m.playlist.SetTrack(idx, t)
+			m.queue.SetTrack(idx, t)
 		}
 	}
 	if !m.lyrics.visible || m.lyrics.query != "" {

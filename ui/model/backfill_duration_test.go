@@ -67,7 +67,7 @@ func TestBackfillLoadedPlaylistDuration(t *testing.T) {
 			pl.SetIndex(0)
 			m := Model{
 				player:         &playbackFakeEngine{duration: 240 * time.Second},
-				playlist:       pl,
+				queue:          pl,
 				vis:            ui.NewVisualizer(44100),
 				localProvider:  store,
 				loadedPlaylist: tc.loaded,
@@ -78,12 +78,12 @@ func TestBackfillLoadedPlaylistDuration(t *testing.T) {
 				t.Fatalf("Update changed the playlist %d times, want none", store.updates)
 			}
 			played := streamPlayedFrom(t, cmd)
-			if got, _ := m.playlist.Track(0); got.DurationSecs != 0 {
+			if got, _ := m.queue.Track(0); got.DurationSecs != 0 {
 				t.Fatalf("queue duration before the start reported back = %d, want 0", got.DurationSecs)
 			}
 			updated, cmd := m.Update(played)
 			m = updated.(Model)
-			if got, _ := m.playlist.Track(0); got.DurationSecs != tc.wantQueue {
+			if got, _ := m.queue.Track(0); got.DurationSecs != tc.wantQueue {
 				t.Fatalf("queue duration = %d, want %d", got.DurationSecs, tc.wantQueue)
 			}
 			runCmd(cmd)
@@ -132,7 +132,7 @@ func TestBackfillLoadedPlaylistDurationAfterAsyncStart(t *testing.T) {
 			engine := &playbackFakeEngine{duration: 240 * time.Second}
 			m := Model{
 				player:         sourceResolverEngine{engine, []string{"qobuz://track/"}},
-				playlist:       pl,
+				queue:          pl,
 				vis:            ui.NewVisualizer(44100),
 				localProvider:  store,
 				loadedPlaylist: "Mix",
@@ -143,13 +143,13 @@ func TestBackfillLoadedPlaylistDurationAfterAsyncStart(t *testing.T) {
 				t.Fatalf("playTrack started the track in Update: play calls %v, buffering %v", engine.playCalls, m.buffering)
 			}
 			played := streamPlayedFrom(t, cmd)
-			if got, _ := m.playlist.Track(0); got.DurationSecs != 0 {
+			if got, _ := m.queue.Track(0); got.DurationSecs != 0 {
 				t.Fatalf("queue duration before the start reported back = %d, want 0", got.DurationSecs)
 			}
 
 			updated, cmd := m.Update(played)
 			m = updated.(Model)
-			if got, _ := m.playlist.Track(0); got.DurationSecs != tc.wantQueue {
+			if got, _ := m.queue.Track(0); got.DurationSecs != tc.wantQueue {
 				t.Fatalf("queue duration = %d, want %d", got.DurationSecs, tc.wantQueue)
 			}
 			runCmd(cmd)

@@ -139,7 +139,7 @@ func TestKeymapEnterRunsSelectedCommand(t *testing.T) {
 		{
 			name: "refresh from the provider pane",
 			setup: func(m *Model) {
-				m.playlist.Add(playlist.Track{Title: "Song"})
+				m.queue.Add(playlist.Track{Title: "Song"})
 				m.focus = focusProvider
 			},
 			key: "Ctrl+r", action: "Refresh",
@@ -148,7 +148,7 @@ func TestKeymapEnterRunsSelectedCommand(t *testing.T) {
 		{
 			name: "toggle play next while filtering the playlist",
 			setup: func(m *Model) {
-				m.playlist.Add(playlist.Track{Title: "Song"})
+				m.queue.Add(playlist.Track{Title: "Song"})
 				m.search.active = true
 				m.focus = focusSearch
 			},

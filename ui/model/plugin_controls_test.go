@@ -56,7 +56,7 @@ func TestPluginPlayerMessages(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			engine := &playbackFakeEngine{}
 			notifier := &fakeNotifier{}
-			m := Model{player: engine, playlist: playlist.New(), configSaver: &recordingSaver{}, notifier: notifier}
+			m := Model{player: engine, queue: playlist.New(), configSaver: &recordingSaver{}, notifier: notifier}
 			updated, _ := m.Update(tt.msg)
 			tt.check(t, updated.(Model), engine, notifier)
 		})

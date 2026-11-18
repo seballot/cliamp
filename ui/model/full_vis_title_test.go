@@ -13,16 +13,16 @@ func fullVisModel(t *testing.T) *Model {
 	t.Helper()
 	m := &Model{
 		layout:   frameLayout{panelWidth: 80},
-		playlist: playlist.New(),
+		queue:    playlist.New(),
 		provider: &plainProv{},
 		fullVis:  true,
 	}
-	m.playlist.Replace([]playlist.Track{{
+	m.queue.Replace([]playlist.Track{{
 		Path:  "https://cdn/ep.mp3",
 		Title: "Netanyahu Knew",
 		Album: "Part Of The Problem",
 	}})
-	m.playlist.SetIndex(0)
+	m.queue.SetIndex(0)
 	return m
 }
 

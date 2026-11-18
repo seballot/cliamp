@@ -209,7 +209,7 @@ type markerColumns struct {
 // never moves the titles.
 func (m Model) markerColumns() markerColumns {
 	return markerColumns{
-		playNext: m.playlist.PlayNextLen() > 0,
+		playNext: m.queue.PlayNextLen() > 0,
 		favorite: true,
 		played:   m.hasPlaybackState(),
 	}
@@ -532,7 +532,7 @@ func (m Model) albumSeparator(album string, year int) string {
 
 // navScrollItems renders a filtered or unfiltered scrolled list for nav browsers.
 func (m Model) navScrollItems(total int, labelFn func(int) string) []string {
-	maxVisible := m.effectivePlaylistVisible()
+	maxVisible := m.effectiveQueueVisible()
 
 	useFilter := len(m.navBrowser.searchIdx) > 0 || m.navBrowser.search != ""
 	scroll := m.navBrowser.scroll

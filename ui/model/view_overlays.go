@@ -10,9 +10,9 @@ import (
 
 // renderVisPickerList renders the visualizer mode list for the playlist region
 // while the picker is open. The header and help line are supplied by the main
-// layout (renderPlaylistHeader / renderHelp).
+// layout (renderQueueHeader / renderHelp).
 func (m Model) renderVisPickerList() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	items := shownRows(&m.visPicker.filterList, m.visPicker.modes)
 	if len(items) == 0 {
 		return bodyMessage("No matches.", budget)
@@ -75,7 +75,7 @@ func (m Model) renderPlMgrBody() string {
 }
 
 func (m Model) renderPlMgrFormBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	if m.plManager.screen == plMgrScreenRename {
 		return bodyMessage("Enter a new name for the playlist above.", budget)
 	}
@@ -87,7 +87,7 @@ func (m Model) renderPlMgrFormBody() string {
 }
 
 func (m Model) renderPlMgrListBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 
 	visibleN := len(m.plManager.playlists)
 	if m.plManager.filter != "" {
@@ -181,7 +181,7 @@ func (m Model) renderPlMgrListBody() string {
 }
 
 func (m Model) renderPlMgrTracksBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 
 	if len(m.plManager.tracks) == 0 {
 		hint := "Press o to add files, or D to add directory sources."
@@ -235,7 +235,7 @@ func (m Model) renderPlMgrTracksBody() string {
 // playlist. Each row shows the source path and its scan mode (recursive or
 // flat). An empty list shows how to add a source.
 func (m Model) renderPlMgrDirsBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 
 	if len(m.plManager.dirs) == 0 {
 		return bodyLines([]string{
@@ -276,9 +276,9 @@ func (m Model) plMgrTrackLabel(realIdx int) string {
 
 // renderSearchList renders the playlist-search results for the playlist region
 // while search is active. The query prompt and help line are supplied by the
-// main layout (renderPlaylistHeader / renderHelp), mirroring renderVisPickerList.
+// main layout (renderQueueHeader / renderHelp), mirroring renderVisPickerList.
 func (m Model) renderSearchList() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	if budget <= 0 {
 		return ""
 	}
@@ -291,17 +291,17 @@ func (m Model) renderSearchList() string {
 		return strings.Join(fitLines([]string{dimStyle.Render("  " + msg)}, budget), "\n")
 	}
 
-	currentIdx := m.playlist.Index()
+	currentIdx := m.queue.Index()
 	isPlaying := m.player.IsPlaying()
 	scroll := m.search.scroll
 	// Pad numbers to the widest one, as the playlist does, so the names line
 	// up whatever the results are.
-	numWidth := len(fmt.Sprintf("%d", m.playlist.Len()))
+	numWidth := len(fmt.Sprintf("%d", m.queue.Len()))
 
 	lines := make([]string, 0, budget)
 	for j := scroll; j < len(m.search.results) && len(lines) < budget; j++ {
 		i := m.search.results[j]
-		track, ok := m.playlist.Track(i)
+		track, ok := m.queue.Track(i)
 		if !ok {
 			continue
 		}
@@ -314,7 +314,7 @@ func (m Model) renderSearchList() string {
 
 		name := trackViewName(track)
 		queueSuffix := ""
-		if qp := m.playlist.PlayNextPosition(i); qp > 0 {
+		if qp := m.queue.PlayNextPosition(i); qp > 0 {
 			queueSuffix = fmt.Sprintf(" [N%d]", qp)
 		}
 		// The cursor and row prefixes take two cells each, ". " two more.

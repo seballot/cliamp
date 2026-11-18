@@ -18,8 +18,8 @@ import (
 // three pieces, all the same vertical size as the normal playlist chrome so
 // opening an overlay never shifts the layout height:
 //
-//   - a header line   (used by renderPlaylistHeader)
-//   - a body          (fills effectivePlaylistVisible rows)
+//   - a header line   (used by renderQueueHeader)
+//   - a body          (fills effectiveQueueVisible rows)
 //   - a help line     (the hints of its command mode, used by renderHelp)
 //
 // overlayStack in overlays_table.go holds these pieces for each overlay, so the
@@ -162,7 +162,7 @@ type overlayView struct {
 
 // activeOverlay returns the render pieces of the top overlay. It returns
 // ok=false when no overlay is open, and for the full-screen visualizer, which
-// replaces the whole frame. renderPlaylistHeader and renderMainBody each call
+// replaces the whole frame. renderQueueHeader and renderMainBody each call
 // this and invoke the piece they need with &m.
 func (m Model) activeOverlay() (overlayView, bool) {
 	spec, ok := m.topOverlay()
@@ -178,13 +178,13 @@ func (m Model) renderMainBody() string {
 	if ov, ok := m.activeOverlay(); ok {
 		return ov.body(&m)
 	}
-	return m.renderPlaylist()
+	return m.renderQueue()
 }
 
 // — search —
 
 func (m Model) searchHeaderLine() string {
-	return m.filterHeader("Filter: Playlist", "playlist-search", m.search.query, m.formatListMatchCount(len(m.search.results), m.playlist.Len()))
+	return m.filterHeader("Filter: Queue", "queue-search", m.search.query, m.formatListMatchCount(len(m.search.results), m.queue.Len()))
 }
 
 // — theme picker —
@@ -199,7 +199,7 @@ func (m Model) themePickerHeaderLine() string {
 }
 
 func (m Model) renderThemeBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	names := make([]string, 0, m.themeCount())
 	names = append(names, theme.DefaultName)
 	for _, t := range m.themes {
@@ -222,7 +222,7 @@ func (m Model) deviceHeaderLine() string {
 }
 
 func (m Model) renderDeviceBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	if m.devicePicker.loading {
 		return bodyLines([]string{loadingLine("Loading devices…")}, budget)
 	}
@@ -250,15 +250,15 @@ func (m Model) renderDeviceBody() string {
 // The queue holds the same tracks, so reading it should not feel like reading a
 // different kind of list.
 func (m Model) renderPlayNextBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	if budget <= 0 {
 		return ""
 	}
-	total := m.playlist.PlayNextLen()
+	total := m.queue.PlayNextLen()
 	if total == 0 {
 		lines := []string{dimStyle.Render("  Play next is empty.")}
 		if command, ok := m.findCommand(commandModeMain, "a"); ok {
-			lines = append(lines, fitHelpLine(dimStyle.Render("  Press ")+helpKeyStyle.Render(" "+command.KeyLabel+" ")+dimStyle.Render(" on a playlist track to play it next."), m.layout.panelWidth))
+			lines = append(lines, fitHelpLine(dimStyle.Render("  Press ")+helpKeyStyle.Render(" "+command.KeyLabel+" ")+dimStyle.Render(" on a queue track to play it next."), m.layout.panelWidth))
 		}
 		return bodyLines(lines, budget)
 	}
@@ -275,7 +275,7 @@ func (m Model) renderPlayNextBody() string {
 	// The window only needs the tracks around the cursor, so a long queue is
 	// not cloned on every frame.
 	windowStart := max(0, scroll-1)
-	tracks := m.playlist.PlayNextWindow(windowStart, 2*budget+2)
+	tracks := m.queue.PlayNextWindow(windowStart, 2*budget+2)
 	// clampedScroll counts tracks, but album headers take rows too.
 	localScroll := m.fitHeaderScroll(tracks, scroll-windowStart, m.playNext.cursor-windowStart, budget, m.showAlbumHeaders)
 
@@ -365,7 +365,7 @@ func clampedScroll(scroll, cursor, count, budget int) int {
 // — track info —
 
 func (m Model) renderInfoBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	lines := m.infoLines()
 	start := min(m.info.scroll, max(0, len(lines)-budget))
 	end := min(start+budget, len(lines))
@@ -387,13 +387,13 @@ func (m Model) infoLines() []string {
 }
 
 func (m *Model) infoMaybeAdjustScroll() {
-	m.info.scroll = min(m.info.scroll, max(0, len(m.infoLines())-m.effectivePlaylistVisible()))
+	m.info.scroll = min(m.info.scroll, max(0, len(m.infoLines())-m.effectiveQueueVisible()))
 }
 
 // — URL input —
 
 func (m Model) renderURLBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	lines := []string{dimStyle.Render("  Paste a stream, track, or playlist URL above.")}
 	if m.urlInput.err != "" {
 		lines = append(lines, errorStyle.Render("  "+m.urlInput.err))
@@ -404,7 +404,7 @@ func (m Model) renderURLBody() string {
 // — provider sign-in code —
 
 func (m Model) renderAuthCodeBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	lines := []string{dimStyle.Render("  Type the code and press enter; esc closes.")}
 	if m.authCode.hint != "" {
 		lines = append(lines, dimStyle.Render("  "+m.authCode.hint))
@@ -418,7 +418,7 @@ func (m Model) renderAuthCodeBody() string {
 // — jump to time —
 
 func (m Model) renderJumpBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	pos := m.player.Position()
 	dur := m.player.Duration()
 	inputLine := dimStyle.Render("  " + formatJumpPlaceholder(dur))
@@ -439,7 +439,7 @@ func (m Model) renderJumpBody() string {
 // — lyrics —
 
 func (m Model) renderLyricsBody() string {
-	visible := m.effectivePlaylistVisible()
+	visible := m.effectiveQueueVisible()
 	if visible <= 0 {
 		return ""
 	}
@@ -530,7 +530,7 @@ func (m Model) netSearchHeaderLine() string {
 }
 
 func (m Model) renderNetSearchBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	if m.netSearch.screen == netSearchInput {
 		var lines []string
 		if m.netSearch.from != "" {
@@ -573,7 +573,7 @@ func (m Model) searchOverlayHeaderLine() string {
 }
 
 func (m Model) renderSearchOverlayBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	showError := m.searchOverlay.err != ""
 	bodyBudget := budget
 	if showError {

@@ -35,11 +35,11 @@ func applyThemeAll(t theme.Theme) {
 func New(p player.Engine, pl *playlist.Playlist, providers []provider.Entry, defaultProvider string, localProv playlist.Provider, favs *favorites.Store, hist *history.Store, themes []theme.Theme, luaMgr *luaplugin.Manager, cs ConfigSaver) Model {
 	m := Model{
 		player:           p,
-		playlist:         pl,
+		queue:            pl,
 		configSaver:      cs,
 		vis:              ui.NewVisualizer(float64(p.SampleRate())),
 		seekStepLarge:    30 * time.Second,
-		plVisible:        5,
+		queueVisible:     5,
 		eqPresetIdx:      -1, // custom until a preset is selected
 		eqCustomBands:    p.EQBands(),
 		themes:           themes,
@@ -157,7 +157,7 @@ func (m *Model) SetHeadless(v bool) {
 	if v {
 		m.lowPower = true
 		m.termTitle.introActive = false
-		m.focus = focusPlaylist
+		m.focus = focusQueue
 		m.recomputeLayout()
 	}
 }
@@ -279,22 +279,22 @@ func (m *Model) SetResume(path string, secs int) {
 // SetResumeSaver enables continuous playback-context persistence.
 func (m *Model) SetResumeSaver(save ResumeSaver) {
 	m.resumeSaver = save
-	if save != nil && m.playlist != nil {
+	if save != nil && m.queue != nil {
 		// Updating entries preserves selection, shuffle order, and queued playback.
-		for i, track := range playlist.WithPlaybackContext(m.playlist.Tracks()) {
-			m.playlist.SetTrack(i, track)
+		for i, track := range playlist.WithPlaybackContext(m.queue.Tracks()) {
+			m.queue.SetTrack(i, track)
 		}
 	}
 }
 
 // SetInitialTrack selects the restored track without starting playback.
 func (m *Model) SetInitialTrack(index int) {
-	if m.playlist == nil || index < 0 || index >= m.playlist.Len() {
+	if m.queue == nil || index < 0 || index >= m.queue.Len() {
 		return
 	}
-	m.playlist.SetIndex(index)
-	m.plCursor = index
-	tracks := m.playlist.Tracks()
+	m.queue.SetIndex(index)
+	m.queueCursor = index
+	tracks := m.queue.Tracks()
 	m.setPlaybackContext(tracks, index)
 	m.setHeaderStateFromTracks(tracks)
 }
@@ -348,7 +348,7 @@ func (m Model) Init() tea.Cmd {
 	if len(m.pendingURLs) > 0 {
 		cmds = append(cmds, resolveRemoteCmd(m.pendingURLs, m.autoPlay))
 	}
-	if m.autoPlay && m.playlist.Len() > 0 {
+	if m.autoPlay && m.queue.Len() > 0 {
 		cmds = append(cmds, func() tea.Msg { return autoPlayMsg{} })
 	}
 	return tea.Batch(cmds...)

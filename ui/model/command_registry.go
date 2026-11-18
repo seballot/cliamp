@@ -287,7 +287,7 @@ var commandRegistry = []commandSpec{
 		Keys:     []string{"f"},
 		KeyLabel: "f",
 		Label:    "Favorite",
-		Enabled:  func(m Model) bool { return m.selectedPlaylistStarAction() != starUnavailable },
+		Enabled:  func(m Model) bool { return m.selectedQueueStarAction() != starUnavailable },
 		Keymap:   true,
 	},
 	{
@@ -499,8 +499,8 @@ var commandRegistry = []commandSpec{
 		KeyLabel: "a",
 		Label:    "Toggle play next (selected track will be played just after current)",
 		LabelFor: func(m Model) string {
-			if m.playlist != nil && m.plCursor >= 0 && m.plCursor < m.playlist.Len() {
-				if m.playlist.PlayNextPosition(m.plCursor) > 0 {
+			if m.queue != nil && m.queueCursor >= 0 && m.queueCursor < m.queue.Len() {
+				if m.queue.PlayNextPosition(m.queueCursor) > 0 {
 					return "Unmark play next"
 				}
 			}
@@ -726,7 +726,7 @@ var commandRegistry = []commandSpec{
 		KeyLabel:    "d",
 		Label:       "Remove",
 		Destructive: true,
-		Enabled:     func(m Model) bool { return m.playlist != nil && m.playlist.PlayNextLen() > 0 },
+		Enabled:     func(m Model) bool { return m.queue != nil && m.queue.PlayNextLen() > 0 },
 	},
 	{
 		Mode:        commandModePlayNext,

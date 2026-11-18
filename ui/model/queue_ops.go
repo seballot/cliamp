@@ -30,8 +30,8 @@ var (
 // header counters include the new tracks. The caller starts playback or
 // re-arms the preload, because that depends on why the tracks came.
 func (m *Model) appendTracks(tracks ...playlist.Track) int {
-	first := m.playlist.Len()
-	m.playlist.Add(tracks...)
+	first := m.queue.Len()
+	m.queue.Add(tracks...)
 	m.clearLoadedPlaylist()
 	m.addToHeaderState(tracks)
 	return first
@@ -41,11 +41,11 @@ func (m *Model) appendTracks(tracks ...playlist.Track) int {
 // order to the loaded playlist. When the save fails, the queue keeps its
 // order. The playlist cursor stays on its track.
 func (m *Model) moveTrack(from, to int) (tea.Cmd, error) {
-	if m.playlist.Shuffled() {
+	if m.queue.Shuffled() {
 		m.status.Warning(shuffleMoveWarning, statusTTLShort)
 		return nil, errQueueShuffled
 	}
-	tracks := m.playlist.Tracks()
+	tracks := m.queue.Tracks()
 	if from < 0 || from >= len(tracks) || to < 0 || to >= len(tracks) || from == to {
 		return nil, errQueueIndex
 	}
@@ -53,12 +53,12 @@ func (m *Model) moveTrack(from, to int) (tea.Cmd, error) {
 	if err := m.persistLoadedPlaylistOrder(tracks, pathRowsOf(tracks)); err != nil {
 		return nil, err
 	}
-	m.playlist.Move(from, to)
-	switch m.plCursor {
+	m.queue.Move(from, to)
+	switch m.queueCursor {
 	case from:
-		m.plCursor = to
+		m.queueCursor = to
 	case to:
-		m.plCursor = from
+		m.queueCursor = from
 	}
 	m.recountHeaderState(tracks)
 	m.normalizePlayNextOverlay()
@@ -70,7 +70,7 @@ func (m *Model) moveTrack(from, to int) (tea.Cmd, error) {
 // When the save fails, the queue keeps its order. The playlist cursor stays
 // on its track.
 func (m *Model) reverseTracks() (tea.Cmd, error) {
-	if m.playlist.Shuffled() {
+	if m.queue.Shuffled() {
 		m.status.Warning(shuffleReverseWarning, statusTTLShort)
 		return nil, errQueueShuffled
 	}
@@ -82,7 +82,7 @@ func (m *Model) reverseTracks() (tea.Cmd, error) {
 		m.status.Warning(pagingReverseWarning, statusTTLShort)
 		return nil, errQueuePaging
 	}
-	tracks := m.playlist.Tracks()
+	tracks := m.queue.Tracks()
 	n := len(tracks)
 	if n < 2 {
 		return nil, nil
@@ -95,9 +95,9 @@ func (m *Model) reverseTracks() (tea.Cmd, error) {
 	if err := m.persistLoadedPlaylistOrder(tracks, rows); err != nil {
 		return nil, err
 	}
-	m.playlist.Reverse()
-	if m.plCursor >= 0 && m.plCursor < n {
-		m.plCursor = n - 1 - m.plCursor
+	m.queue.Reverse()
+	if m.queueCursor >= 0 && m.queueCursor < n {
+		m.queueCursor = n - 1 - m.queueCursor
 	}
 	if m.writableLoadedPlaylist() == "" {
 		m.status.Show("Reversed playlist order", statusTTLDefault)
@@ -116,7 +116,7 @@ func (m *Model) reverseTracks() (tea.Cmd, error) {
 // because the file cannot drop it. Removing the track that plays stops
 // playback. A track that plays detached from the list keeps playing.
 func (m *Model) removeTrack(idx int, recordUndo bool) (tea.Cmd, error) {
-	track, ok := m.playlist.Track(idx)
+	track, ok := m.queue.Track(idx)
 	if !ok {
 		return nil, errQueueIndex
 	}
@@ -125,7 +125,7 @@ func (m *Model) removeTrack(idx int, recordUndo bool) (tea.Cmd, error) {
 		m.status.Warningf(statusTTLDefault, "Can't remove %q: it's supplied by the playlist's directory source", track.DisplayName())
 		return nil, errQueueDirTrack
 	}
-	snapshot := m.playlist.Snapshot()
+	snapshot := m.queue.Snapshot()
 	var removed playlist.Track
 	savedIdx := -1
 	persisted := false
@@ -154,29 +154,29 @@ func (m *Model) removeTrack(idx int, recordUndo bool) (tea.Cmd, error) {
 	}
 	// A detached track plays outside the list, so the selected row of the
 	// list is not the playing track.
-	wasActive := !m.playbackDetached && idx == m.playlist.Index()
-	if !m.playlist.Remove(idx) {
+	wasActive := !m.playbackDetached && idx == m.queue.Index()
+	if !m.queue.Remove(idx) {
 		return nil, errQueueIndex
 	}
 	m.normalizePlayNextOverlay()
 	undoHint := ""
 	if recordUndo {
-		m.recordPlaylistUndo(playlistUndo{snapshot: snapshot, persisted: persisted, removed: removed, savedIdx: savedIdx})
+		m.recordQueueUndo(queueUndo{snapshot: snapshot, persisted: persisted, removed: removed, savedIdx: savedIdx})
 		undoHint = " (Ctrl+Z to undo)"
 	}
 	if wasActive {
 		m.stopPlayback()
 		m.player.ClearPreload()
 	}
-	if idx < m.plCursor {
-		m.plCursor--
+	if idx < m.queueCursor {
+		m.queueCursor--
 	}
-	if newLen := m.playlist.Len(); newLen == 0 {
-		m.plCursor = 0
-	} else if m.plCursor >= newLen {
-		m.plCursor = newLen - 1
+	if newLen := m.queue.Len(); newLen == 0 {
+		m.queueCursor = 0
+	} else if m.queueCursor >= newLen {
+		m.queueCursor = newLen - 1
 	}
-	m.recountHeaderState(m.playlist.Tracks())
+	m.recountHeaderState(m.queue.Tracks())
 	m.adjustScroll()
 	if persisted {
 		m.status.Showf(statusTTLDefault, "Removed from %q: %s%s", loaded, track.DisplayName(), undoHint)

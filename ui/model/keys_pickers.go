@@ -5,7 +5,7 @@ import tea "charm.land/bubbletea/v2"
 func (m *Model) handleThemeFilterKey(msg tea.KeyPressMsg) tea.Cmd {
 	if m.filterKey(&m.themePicker.filterList, "theme-picker-filter", msg, m.themeCount(), m.themePickerRecomputeFilter) {
 		m.themePickerApply()
-		m.themePickerMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.themePickerMaybeAdjustScroll(m.effectiveQueueVisible())
 	}
 	return nil
 }
@@ -16,7 +16,7 @@ func (m *Model) handleThemeKey(msg tea.KeyPressMsg) tea.Cmd {
 		return m.handleThemeFilterKey(msg)
 	}
 
-	visible := m.effectivePlaylistVisible()
+	visible := m.effectiveQueueVisible()
 	if stepListCursor(msg.String(), &m.themePicker.cursor, m.themePickerViewCount(), visible) {
 		m.themePickerApply()
 		m.themePickerMaybeAdjustScroll(visible)
@@ -25,7 +25,7 @@ func (m *Model) handleThemeKey(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case "ctrl+x":
 		m.toggleExpandedView()
-		m.themePickerMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.themePickerMaybeAdjustScroll(m.effectiveQueueVisible())
 
 	case "enter":
 		m.themePickerSelect()
@@ -44,7 +44,7 @@ func (m *Model) handleThemeKey(msg tea.KeyPressMsg) tea.Cmd {
 func (m *Model) handleVisPickerFilterKey(msg tea.KeyPressMsg) tea.Cmd {
 	if m.filterKey(&m.visPicker.filterList, "visualizer-picker-filter", msg, len(m.visPicker.modes), m.visPickerRecomputeFilter) {
 		m.visPickerApply()
-		m.visPickerMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.visPickerMaybeAdjustScroll(m.effectiveQueueVisible())
 	}
 	return nil
 }
@@ -56,15 +56,15 @@ func (m *Model) handleVisPickerKey(msg tea.KeyPressMsg) tea.Cmd {
 	}
 
 	// The apply can cross VisNone and resize the rows, so fit the scroll after it.
-	if stepListCursor(msg.String(), &m.visPicker.cursor, m.visPickerViewCount(), m.effectivePlaylistVisible()) {
+	if stepListCursor(msg.String(), &m.visPicker.cursor, m.visPickerViewCount(), m.effectiveQueueVisible()) {
 		m.visPickerApply()
-		m.visPickerMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.visPickerMaybeAdjustScroll(m.effectiveQueueVisible())
 		return nil
 	}
 	switch msg.String() {
 	case "ctrl+x":
 		m.toggleExpandedView()
-		m.visPickerMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.visPickerMaybeAdjustScroll(m.effectiveQueueVisible())
 
 	case "enter":
 		m.visPickerSelect()
@@ -89,21 +89,21 @@ func (m *Model) handleDeviceKey(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case "ctrl+x":
 		m.toggleExpandedView()
-		m.deviceMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.deviceMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "up", "k":
 		if m.devicePicker.cursor > 0 {
 			m.devicePicker.cursor--
 		} else if len(m.devicePicker.devices) > 0 {
 			m.devicePicker.cursor = len(m.devicePicker.devices) - 1
 		}
-		m.deviceMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.deviceMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "down", "j":
 		if m.devicePicker.cursor < len(m.devicePicker.devices)-1 {
 			m.devicePicker.cursor++
 		} else if len(m.devicePicker.devices) > 0 {
 			m.devicePicker.cursor = 0
 		}
-		m.deviceMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.deviceMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "enter":
 		if len(m.devicePicker.devices) > 0 && m.devicePicker.cursor < len(m.devicePicker.devices) {
 			dev := m.devicePicker.devices[m.devicePicker.cursor]

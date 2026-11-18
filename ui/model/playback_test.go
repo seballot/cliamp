@@ -163,7 +163,7 @@ func TestApplyResumeRestartsMixcloudAtSavedPosition(t *testing.T) {
 		position: 5 * time.Second,
 		duration: time.Hour,
 	}
-	m := Model{player: player, playlist: playlist.New(), playingTrack: track, playingTrackActive: true}
+	m := Model{player: player, queue: playlist.New(), playingTrack: track, playingTrackActive: true}
 	m.SetResume(track.Path, 90)
 
 	cmd := m.applyResume()
@@ -195,7 +195,7 @@ func TestStreamPlayedNotifiesOnceWithoutResume(t *testing.T) {
 	notifier := &fakeNotifier{}
 	m := Model{
 		player:    &playbackFakeEngine{playing: true},
-		playlist:  pl,
+		queue:     pl,
 		notifier:  notifier,
 		buffering: true,
 	}
@@ -251,7 +251,7 @@ func TestStreamPlayedResumeKeepsNextTrackPreload(t *testing.T) {
 	pl.Add(current, next)
 	player := &playbackFakeEngine{playing: true, ytdlSeek: true, seekable: true, duration: time.Hour}
 	notifier := &fakeNotifier{}
-	m := Model{player: player, playlist: pl, notifier: notifier, buffering: true}
+	m := Model{player: player, queue: pl, notifier: notifier, buffering: true}
 	m.SetResume(current.Path, 90)
 	m.requests.stream = 1
 
@@ -286,7 +286,7 @@ func TestApplyResumeFailureKeepsMixcloudPlayable(t *testing.T) {
 		duration:    time.Hour,
 		seekYTDLErr: errors.New("seek not permitted"),
 	}
-	m := Model{player: player, playlist: playlist.New(), playingTrack: track, playingTrackActive: true}
+	m := Model{player: player, queue: playlist.New(), playingTrack: track, playingTrackActive: true}
 	m.SetResume(track.Path, 90)
 
 	msg := m.applyResume()().(seekTickMsg)
@@ -362,7 +362,7 @@ func TestQuitMsgCapturesResumePosition(t *testing.T) {
 	pl := playlist.New()
 	pl.Add(track)
 	player := &playbackFakeEngine{playing: true, position: 42 * time.Second}
-	m := Model{player: player, playlist: pl}
+	m := Model{player: player, queue: pl}
 
 	updated, cmd := m.Update(playback.QuitMsg{})
 	m = updated.(Model)
@@ -386,9 +386,9 @@ func TestNavTrackPlaybackKeepsCompleteAlbumContext(t *testing.T) {
 		{Title: "Three", Path: "https://example.com/three", Stream: true},
 	}
 	m := Model{
-		player:   player,
-		playlist: p,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
+		player: player,
+		queue:  p,
+		vis:    ui.NewVisualizer(float64(player.SampleRate())),
 		navBrowser: navBrowserState{
 			tracks: album,
 			cursor: 1,
@@ -414,7 +414,7 @@ func TestBeginPlaybackPersistsActualTrackAndCompleteContextImmediately(t *testin
 	for i := range album {
 		album[i] = playlist.Track{Title: fmt.Sprintf("Track %d", i+1), Path: fmt.Sprintf("https://example.com/%d", i+1), Stream: true}
 	}
-	m := Model{player: player, playlist: pl}
+	m := Model{player: player, queue: pl}
 	var savedTrack playlist.Track
 	var savedContext []playlist.Track
 	var savedIndex, savedPosition int
@@ -442,7 +442,7 @@ func TestTickResumeSavePersistsPositionAndThrottlesWrites(t *testing.T) {
 	player := &playbackFakeEngine{playing: true}
 	pl := playlist.New()
 	pl.Add(track)
-	m := Model{player: player, playlist: pl, playingTrack: track, playingTrackActive: true, playbackContext: []playlist.Track{track}}
+	m := Model{player: player, queue: pl, playingTrack: track, playingTrackActive: true, playbackContext: []playlist.Track{track}}
 	var positions []int
 	m.SetResumeSaver(func(_ playlist.Track, positionSec int, _ []playlist.Track, _ int) {
 		positions = append(positions, positionSec)
@@ -471,9 +471,9 @@ func TestNavTrackListQueueStartsQueuedTrackWhenStopped(t *testing.T) {
 	p.SetIndex(0)
 
 	m := Model{
-		player:   player,
-		playlist: p,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
+		player: player,
+		queue:  p,
+		vis:    ui.NewVisualizer(float64(player.SampleRate())),
 		navBrowser: navBrowserState{
 			tracks: []playlist.Track{
 				{Title: "Queued", Path: "https://example.com/queued", Stream: true},
@@ -485,11 +485,11 @@ func TestNavTrackListQueueStartsQueuedTrackWhenStopped(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("handleNavTrackListKey(q) = nil, want command")
 	}
-	if current, idx := m.playlist.Current(); current.Title != "Queued" || idx != 2 {
+	if current, idx := m.queue.Current(); current.Title != "Queued" || idx != 2 {
 		t.Fatalf("current = (%q,%d), want (\"Queued\",2)", current.Title, idx)
 	}
-	if m.plCursor != 2 {
-		t.Fatalf("plCursor = %d, want 2", m.plCursor)
+	if m.queueCursor != 2 {
+		t.Fatalf("queueCursor = %d, want 2", m.queueCursor)
 	}
 	if p.PlayNextLen() != 0 {
 		t.Fatalf("PlayNextLen() = %d, want 0 after starting queued track", p.PlayNextLen())
@@ -514,9 +514,9 @@ func TestTogglePlayPauseRestartsQueuedCurrentTrack(t *testing.T) {
 	}
 
 	m := Model{
-		player:   player,
-		playlist: p,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
+		player: player,
+		queue:  p,
+		vis:    ui.NewVisualizer(float64(player.SampleRate())),
 	}
 
 	if cmd := m.togglePlayPause(); cmd != nil {
@@ -526,7 +526,7 @@ func TestTogglePlayPauseRestartsQueuedCurrentTrack(t *testing.T) {
 	if len(player.playCalls) != 1 || player.playCalls[0] != "queued.mp3" {
 		t.Fatalf("playCalls = %v, want [queued.mp3]", player.playCalls)
 	}
-	if current, idx := m.playlist.Current(); current.Title != "Queued" || idx != 2 {
+	if current, idx := m.queue.Current(); current.Title != "Queued" || idx != 2 {
 		t.Fatalf("current = (%q,%d), want (\"Queued\",2)", current.Title, idx)
 	}
 }
@@ -549,7 +549,7 @@ func TestTogglePlayPauseReconnectsLongPausedYTDLAtCurrentPosition(t *testing.T) 
 
 	m := Model{
 		player:   player,
-		playlist: p,
+		queue:    p,
 		vis:      ui.NewVisualizer(float64(player.SampleRate())),
 		pausedAt: time.Now().Add(-ytdlReconnectPauseThreshold),
 	}
@@ -628,7 +628,7 @@ func TestYTDLUnpauseReconnectFollowsThePlayback(t *testing.T) {
 			p.SetIndex(0)
 			m := Model{
 				player:   player,
-				playlist: p,
+				queue:    p,
 				vis:      ui.NewVisualizer(float64(player.SampleRate())),
 				pausedAt: time.Now().Add(-ytdlReconnectPauseThreshold),
 			}
@@ -684,7 +684,7 @@ func TestPlayCurrentTrackUnplayableUsesSelectionOrder(t *testing.T) {
 
 	m := Model{
 		player:   player,
-		playlist: p,
+		queue:    p,
 		provider: commandsTestProvider{name: "Test"},
 		vis:      ui.NewVisualizer(float64(player.SampleRate())),
 	}
@@ -694,11 +694,11 @@ func TestPlayCurrentTrackUnplayableUsesSelectionOrder(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("playCurrentTrack() = nil, want command")
 	}
-	if idx := m.playlist.Index(); idx != 2 {
+	if idx := m.queue.Index(); idx != 2 {
 		t.Fatalf("playlist.Index() = %d, want 2", idx)
 	}
-	if m.plCursor != 2 {
-		t.Fatalf("plCursor = %d, want 2", m.plCursor)
+	if m.queueCursor != 2 {
+		t.Fatalf("queueCursor = %d, want 2", m.queueCursor)
 	}
 	if m.status.text != "Track unavailable, skipping..." {
 		t.Fatalf("status.text = %q, want %q", m.status.text, "Track unavailable, skipping...")
@@ -721,9 +721,9 @@ func TestPlayCurrentTrackUnplayableStopsWhenNoReplacementExists(t *testing.T) {
 	p.SetIndex(1)
 
 	m := Model{
-		player:   player,
-		playlist: p,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
+		player: player,
+		queue:  p,
+		vis:    ui.NewVisualizer(float64(player.SampleRate())),
 	}
 
 	if cmd := m.playCurrentTrack(); cmd != nil {
@@ -735,7 +735,7 @@ func TestPlayCurrentTrackUnplayableStopsWhenNoReplacementExists(t *testing.T) {
 	if player.IsPlaying() {
 		t.Fatal("player.IsPlaying() = true, want false")
 	}
-	if _, idx := m.playlist.Current(); idx != 1 {
+	if _, idx := m.queue.Current(); idx != 1 {
 		t.Fatalf("current index = %d, want 1", idx)
 	}
 	if m.status.text != "No available tracks" {
@@ -758,7 +758,7 @@ func modelAfterProviderPlaylistLoadWhilePlaying(t *testing.T) (Model, *playbackF
 
 	m := Model{
 		player:   player,
-		playlist: p,
+		queue:    p,
 		provider: commandsTestProvider{name: "Test"},
 		vis:      ui.NewVisualizer(float64(player.SampleRate())),
 	}
@@ -790,7 +790,7 @@ func TestProviderPlaylistLoadWhilePlayingKeepsNowPlayingTrack(t *testing.T) {
 	if player.clearPreloadCalls != 1 {
 		t.Fatalf("ClearPreload calls = %d, want 1", player.clearPreloadCalls)
 	}
-	tracks := m.playlist.Tracks()
+	tracks := m.queue.Tracks()
 	if len(tracks) != 2 || tracks[0].Title != "New 1" || tracks[1].Title != "New 2" {
 		t.Fatalf("playlist tracks = %#v, want new provider playlist only", tracks)
 	}
@@ -841,7 +841,7 @@ func TestPreloadNextSkipsCurrentYTDLTrackInRepeatOne(t *testing.T) {
 	p.SetIndex(0)
 	p.SetRepeat(playlist.RepeatOne)
 
-	m := Model{player: player, playlist: p}
+	m := Model{player: player, queue: p}
 	if cmd := m.preloadNext(); cmd != nil {
 		t.Fatal("preloadNext() returned a command for the current repeat-one yt-dlp track")
 	}
@@ -862,7 +862,7 @@ func TestPreloadNextKeepsDistinctYTDLTrack(t *testing.T) {
 	})
 	p.SetIndex(0)
 
-	m := Model{player: player, playlist: p}
+	m := Model{player: player, queue: p}
 	cmd := m.preloadNext()
 	if cmd == nil {
 		t.Fatal("preloadNext() = nil, want distinct yt-dlp preload command")
@@ -882,7 +882,7 @@ func TestPreloadNextSkipsLiveStream(t *testing.T) {
 	})
 	p.SetIndex(0)
 
-	m := Model{player: player, playlist: p}
+	m := Model{player: player, queue: p}
 	if cmd := m.preloadNext(); cmd != nil {
 		t.Fatal("preloadNext() returned a command for a live stream, want nil")
 	}
@@ -900,7 +900,7 @@ func TestPreloadNextSkipsRuntimeDetectedLiveStream(t *testing.T) {
 	})
 	p.SetIndex(0)
 
-	m := Model{player: player, playlist: p}
+	m := Model{player: player, queue: p}
 	if cmd := m.preloadNext(); cmd != nil {
 		t.Fatal("preloadNext() returned a command for a runtime-detected live stream")
 	}
@@ -915,7 +915,7 @@ func TestPreloadNextSkipsUnknownDurationStream(t *testing.T) {
 	})
 	p.SetIndex(0)
 
-	m := Model{player: player, playlist: p}
+	m := Model{player: player, queue: p}
 	if cmd := m.preloadNext(); cmd != nil {
 		t.Fatal("preloadNext() returned a command without a known stream boundary")
 	}
@@ -931,9 +931,9 @@ func TestDrainedLiveStreamReconnectsCurrentStation(t *testing.T) {
 	p.SetIndex(0)
 
 	m := Model{
-		player:   player,
-		playlist: p,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
+		player: player,
+		queue:  p,
+		vis:    ui.NewVisualizer(float64(player.SampleRate())),
 	}
 	m.SetVisualizer("none")
 
@@ -941,7 +941,7 @@ func TestDrainedLiveStreamReconnectsCurrentStation(t *testing.T) {
 	updated, _ := m.Update(tickMsg(now))
 	m = updated.(Model)
 
-	if got := m.playlist.Index(); got != 0 {
+	if got := m.queue.Index(); got != 0 {
 		t.Fatalf("playlist index = %d, want 0 after live stream drained", got)
 	}
 	if m.reconnect.at.IsZero() || !m.reconnect.at.After(now) {
@@ -957,9 +957,9 @@ func newYTDLLiveDrainModel(player *playbackFakeEngine) Model {
 	})
 	p.SetIndex(0)
 	m := Model{
-		player:   player,
-		playlist: p,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
+		player: player,
+		queue:  p,
+		vis:    ui.NewVisualizer(float64(player.SampleRate())),
 	}
 	m.SetVisualizer("none")
 	return m
@@ -972,7 +972,7 @@ func TestDrainedYTDLLiveStreamReconnectsInPlace(t *testing.T) {
 	updated, _ := m.Update(tickMsg(now))
 	m = updated.(Model)
 
-	if got := m.playlist.Index(); got != 0 {
+	if got := m.queue.Index(); got != 0 {
 		t.Fatalf("playlist index = %d, want 0 after live stream drained", got)
 	}
 	if m.reconnect.at.IsZero() || !m.reconnect.at.After(now) {
@@ -989,7 +989,7 @@ func TestDrainedYTDLRecordingWithStaleLiveFlagAdvances(t *testing.T) {
 	updated, _ := m.Update(tickMsg(time.Now()))
 	m = updated.(Model)
 
-	if got := m.playlist.Index(); got != 1 {
+	if got := m.queue.Index(); got != 1 {
 		t.Fatalf("playlist index = %d, want 1 after the recording finished", got)
 	}
 	if !m.reconnect.at.IsZero() {
@@ -1014,7 +1014,7 @@ func failYTDLLiveRestart(t *testing.T, m Model, path string) Model {
 func TestYTDLLiveStreamThatCannotRestartRetriesThenAdvances(t *testing.T) {
 	player := &playbackFakeEngine{playing: true, drained: true}
 	m := newYTDLLiveDrainModel(player)
-	livePath := m.playlist.Tracks()[0].Path
+	livePath := m.queue.Tracks()[0].Path
 
 	now := time.Now()
 	updated, _ := m.Update(tickMsg(now))
@@ -1023,7 +1023,7 @@ func TestYTDLLiveStreamThatCannotRestartRetriesThenAdvances(t *testing.T) {
 
 	var delays []time.Duration
 	for i := 0; i < ytdlLiveDrainRestarts; i++ {
-		if got := m.playlist.Index(); got != 0 {
+		if got := m.queue.Index(); got != 0 {
 			t.Fatalf("playlist index = %d before restart %d, want 0", got, i+1)
 		}
 		before := time.Now()
@@ -1037,7 +1037,7 @@ func TestYTDLLiveStreamThatCannotRestartRetriesThenAdvances(t *testing.T) {
 	if want := []time.Duration{time.Second, 2 * time.Second, 4 * time.Second}; !slices.Equal(delays, want) {
 		t.Fatalf("restart delays = %v, want %v", delays, want)
 	}
-	if got := m.playlist.Index(); got != 1 {
+	if got := m.queue.Index(); got != 1 {
 		t.Fatalf("playlist index = %d, want 1 after %d failed restarts", got, ytdlLiveDrainRestarts)
 	}
 	if m.reconnect.ytdlLiveDrain || m.reconnect.attempts != 0 {
@@ -1048,7 +1048,7 @@ func TestYTDLLiveStreamThatCannotRestartRetriesThenAdvances(t *testing.T) {
 func TestYTDLLiveStreamRestartThatSucceedsStaysOnStream(t *testing.T) {
 	player := &playbackFakeEngine{playing: true, drained: true}
 	m := newYTDLLiveDrainModel(player)
-	livePath := m.playlist.Tracks()[0].Path
+	livePath := m.queue.Tracks()[0].Path
 
 	updated, _ := m.Update(tickMsg(time.Now()))
 	m = updated.(Model)
@@ -1059,7 +1059,7 @@ func TestYTDLLiveStreamRestartThatSucceedsStaysOnStream(t *testing.T) {
 	updated, _ = m.Update(streamPlayedMsg{path: livePath, gen: m.requests.stream})
 	m = updated.(Model)
 
-	if got := m.playlist.Index(); got != 0 {
+	if got := m.queue.Index(); got != 0 {
 		t.Fatalf("playlist index = %d, want 0 after the stream came back", got)
 	}
 	if m.reconnect.ytdlLiveDrain || m.reconnect.attempts != 0 || !m.reconnect.at.IsZero() {
@@ -1072,11 +1072,11 @@ func TestYTDLLiveStreamRestartThatSucceedsStaysOnStream(t *testing.T) {
 func TestYTDLLiveStreamThatEndsTheQueueNotifiesStopped(t *testing.T) {
 	player := &playbackFakeEngine{playing: true, drained: true}
 	m := newYTDLLiveDrainModel(player)
-	m.playlist.Replace(m.playlist.Tracks()[:1])
-	m.playlist.SetIndex(0)
+	m.queue.Replace(m.queue.Tracks()[:1])
+	m.queue.SetIndex(0)
 	notifier := &fakeNotifier{}
 	m.notifier = notifier
-	livePath := m.playlist.Tracks()[0].Path
+	livePath := m.queue.Tracks()[0].Path
 
 	updated, _ := m.Update(tickMsg(time.Now()))
 	m = updated.(Model)
@@ -1101,13 +1101,13 @@ func TestYTDLLiveStreamThatEndsTheQueueNotifiesStopped(t *testing.T) {
 func TestYTDLLiveStreamFailedFirstStartDoesNotAdvance(t *testing.T) {
 	player := &playbackFakeEngine{}
 	m := newYTDLLiveDrainModel(player)
-	track, _ := m.playlist.Current()
+	track, _ := m.queue.Current()
 
 	m.playTrack(track)
 	updated, _ := m.Update(streamPlayedMsg{path: track.Path, gen: m.requests.stream, err: errors.New("unavailable")})
 	m = updated.(Model)
 
-	if got := m.playlist.Index(); got != 0 {
+	if got := m.queue.Index(); got != 0 {
 		t.Fatalf("playlist index = %d, want 0 after a failed first start", got)
 	}
 }
@@ -1120,9 +1120,9 @@ func TestUnavailableYTDLTrackSkipsToNext(t *testing.T) {
 		{Title: "Next", Path: "https://www.youtube.com/watch?v=next", Stream: true},
 	})
 	p.SetIndex(0)
-	m := Model{player: player, playlist: p, vis: ui.NewVisualizer(44100)}
+	m := Model{player: player, queue: p, vis: ui.NewVisualizer(44100)}
 	m.SetVisualizer("none")
-	track, _ := m.playlist.Current()
+	track, _ := m.queue.Current()
 	m.playTrack(track)
 
 	updated, cmd := m.Update(streamPlayedMsg{path: track.Path, gen: m.requests.stream, err: errors.New("yt-dlp: exit status 1: ERROR: [youtube] YMwftR69o9w: Video unavailable")})
@@ -1144,20 +1144,20 @@ func TestUnavailableYTDLTrackSkipsToNext(t *testing.T) {
 func TestPlayDuringYTDLLiveRestartWaitDoesNotInheritRetries(t *testing.T) {
 	player := &playbackFakeEngine{playing: true, drained: true}
 	m := newYTDLLiveDrainModel(player)
-	livePath := m.playlist.Tracks()[0].Path
+	livePath := m.queue.Tracks()[0].Path
 
 	updated, _ := m.Update(tickMsg(time.Now()))
 	m = updated.(Model)
 	player.drained = false
 	m = failYTDLLiveRestart(t, m, livePath)
 
-	m.playlist.SetIndex(1)
-	next, _ := m.playlist.Current()
+	m.queue.SetIndex(1)
+	next, _ := m.queue.Current()
 	m.playTrack(next)
 	updated, _ = m.Update(streamPlayedMsg{path: next.Path, gen: m.requests.stream, err: errors.New("unavailable")})
 	m = updated.(Model)
 
-	if got := m.playlist.Index(); got != 1 {
+	if got := m.queue.Index(); got != 1 {
 		t.Fatalf("playlist index = %d, want 1 after the chosen track failed to start", got)
 	}
 	if m.reconnect.ytdlLiveDrain || !m.reconnect.at.IsZero() {
@@ -1179,15 +1179,15 @@ func TestGaplessAdvanceDoesNotAlsoDrainNextTrack(t *testing.T) {
 	p.SetIndex(0)
 
 	m := Model{
-		player:   player,
-		playlist: p,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
+		player: player,
+		queue:  p,
+		vis:    ui.NewVisualizer(float64(player.SampleRate())),
 	}
 	m.SetVisualizer("none")
 
 	updated, _ := m.Update(tickMsg(time.Now()))
 	m = updated.(Model)
-	if got := m.playlist.Index(); got != 1 {
+	if got := m.queue.Index(); got != 1 {
 		t.Fatalf("playlist index = %d, want one gapless advance to index 1", got)
 	}
 }
@@ -1218,7 +1218,7 @@ func TestBeginPlaybackTrackFetchesEmbeddedLyricsWithoutNetworkMetadata(t *testin
 
 func TestBeginPlaybackTrackCancelsPendingYTDLSeek(t *testing.T) {
 	player := &playbackFakeEngine{}
-	m := Model{player: player, playlist: playlist.New()}
+	m := Model{player: player, queue: playlist.New()}
 	m.beginPlaybackTrack(playlist.Track{Path: "https://example.com/track", Stream: true})
 	if player.cancelSeekYTDLCalls != 1 {
 		t.Fatalf("CancelSeekYTDL calls = %d, want 1", player.cancelSeekYTDLCalls)
@@ -1235,9 +1235,9 @@ func TestGaplessAdvanceRefreshesLyricsAndArtwork(t *testing.T) {
 	p.SetIndex(0)
 
 	m := Model{
-		player:   player,
-		playlist: p,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
+		player: player,
+		queue:  p,
+		vis:    ui.NewVisualizer(float64(player.SampleRate())),
 		lyrics: lyricsState{
 			visible: true,
 			query:   "Artist\nOld",
@@ -1279,7 +1279,7 @@ func TestDrainedTrackDoesNotReRecordHistory(t *testing.T) {
 	store := history.NewAt(filepath.Join(t.TempDir(), "history.toml"))
 	m := Model{
 		player:       player,
-		playlist:     p,
+		queue:        p,
 		historyStore: store,
 		vis:          ui.NewVisualizer(float64(player.SampleRate())),
 	}
@@ -1313,7 +1313,7 @@ func TestGaplessAdvanceRecordsNewTrackAtStart(t *testing.T) {
 	store := history.NewAt(filepath.Join(t.TempDir(), "history.toml"))
 	m := Model{
 		player:       player,
-		playlist:     p,
+		queue:        p,
 		historyStore: store,
 		vis:          ui.NewVisualizer(float64(player.SampleRate())),
 	}
@@ -1328,8 +1328,8 @@ func TestGaplessAdvanceRecordsNewTrackAtStart(t *testing.T) {
 	if len(entries) != 1 || entries[0].Track.Path != "/tmp/new.mp3" {
 		t.Fatalf("history = %+v, want the starting track recorded on gapless advance", entries)
 	}
-	if m.playlist.Index() != 1 {
-		t.Fatalf("playlist index = %d, want 1 after gapless advance", m.playlist.Index())
+	if m.queue.Index() != 1 {
+		t.Fatalf("playlist index = %d, want 1 after gapless advance", m.queue.Index())
 	}
 }
 
@@ -1345,7 +1345,7 @@ func TestGaplessAdvanceRecordsNewTrackEvenWithoutDuration(t *testing.T) {
 	store := history.NewAt(filepath.Join(t.TempDir(), "history.toml"))
 	m := Model{
 		player:       player,
-		playlist:     p,
+		queue:        p,
 		historyStore: store,
 		vis:          ui.NewVisualizer(float64(player.SampleRate())),
 	}
@@ -1360,8 +1360,8 @@ func TestGaplessAdvanceRecordsNewTrackEvenWithoutDuration(t *testing.T) {
 	if len(entries) != 1 || entries[0].Track.Path != "/tmp/new.mp3" {
 		t.Fatalf("history = %+v, want the starting track recorded even with unknown duration", entries)
 	}
-	if m.playlist.Index() != 1 {
-		t.Fatalf("playlist index = %d, want 1 after gapless advance", m.playlist.Index())
+	if m.queue.Index() != 1 {
+		t.Fatalf("playlist index = %d, want 1 after gapless advance", m.queue.Index())
 	}
 }
 
@@ -1374,10 +1374,10 @@ func TestQueueToggleRearmsGaplessPreload(t *testing.T) {
 		{Title: "Queued", Path: "c.mp3", DurationSecs: 180},
 	})
 	m := Model{
-		player:     player,
-		playlist:   p,
-		plCursor:   2,
-		preloadFor: "b.mp3",
+		player:      player,
+		queue:       p,
+		queueCursor: 2,
+		preloadFor:  "b.mp3",
 	}
 
 	cmd := m.handleKey(tea.KeyPressMsg{Text: "a"})
@@ -1409,7 +1409,7 @@ func TestFailedPreloadIsNotRetriedEveryTick(t *testing.T) {
 			{Title: "C", Path: "c.mp3", DurationSecs: 180},
 		})
 		p.SetIndex(0)
-		m := Model{player: player, playlist: p, vis: ui.NewVisualizer(float64(player.SampleRate()))}
+		m := Model{player: player, queue: p, vis: ui.NewVisualizer(float64(player.SampleRate()))}
 		m.SetVisualizer("none")
 		m.setPlaybackTrack(p.Tracks()[0])
 
@@ -1465,9 +1465,9 @@ func TestStopCancelsScheduledReconnect(t *testing.T) {
 	p.SetIndex(0)
 
 	m := Model{
-		player:   player,
-		playlist: p,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
+		player: player,
+		queue:  p,
+		vis:    ui.NewVisualizer(float64(player.SampleRate())),
 	}
 	m.SetVisualizer("none")
 
@@ -1495,7 +1495,7 @@ func TestStopCancelsScheduledReconnect(t *testing.T) {
 func TestStopCancelsYTDLLiveRestartRetries(t *testing.T) {
 	player := &playbackFakeEngine{playing: true, drained: true}
 	m := newYTDLLiveDrainModel(player)
-	livePath := m.playlist.Tracks()[0].Path
+	livePath := m.queue.Tracks()[0].Path
 
 	updated, _ := m.Update(tickMsg(time.Now()))
 	m = updated.(Model)
@@ -1508,7 +1508,7 @@ func TestStopCancelsYTDLLiveRestartRetries(t *testing.T) {
 	updated, _ = m.Update(tickMsg(retryAt.Add(time.Millisecond)))
 	m = updated.(Model)
 
-	if got := m.playlist.Index(); got != 0 {
+	if got := m.queue.Index(); got != 0 {
 		t.Fatalf("playlist index = %d after stop, want 0", got)
 	}
 	if len(player.playCalls) != playsBeforeStop || m.buffering {
@@ -1529,9 +1529,9 @@ func TestStopKeepsErrorShownDuringReconnect(t *testing.T) {
 	p.SetIndex(0)
 
 	m := Model{
-		player:   player,
-		playlist: p,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
+		player: player,
+		queue:  p,
+		vis:    ui.NewVisualizer(float64(player.SampleRate())),
 	}
 	m.SetVisualizer("none")
 
@@ -1629,7 +1629,7 @@ func TestNextKeyPlaysQueuedTrackOnce(t *testing.T) {
 			p := playlist.New()
 			p.Replace(tt.tracks)
 			engine := &playbackFakeEngine{}
-			m := Model{player: engine, playlist: p, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
+			m := Model{player: engine, queue: p, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
 			m.SetVisualizer("none")
 			settlePlay(t, &m, m.playIndex(tt.start))
 			tt.queue(&m)
@@ -1677,7 +1677,7 @@ func TestNextTrackRulesAgree(t *testing.T) {
 		setup := func(engine *playbackFakeEngine) Model {
 			p := playlist.New()
 			p.Replace(tt.tracks)
-			m := Model{player: engine, playlist: p, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
+			m := Model{player: engine, queue: p, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
 			m.SetVisualizer("none")
 			startedPlaybackTrack(&m, playing)
 			if tt.detachTo != nil {

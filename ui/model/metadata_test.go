@@ -66,7 +66,7 @@ func TestMetadataFields(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			m := keybindingTestModel()
-			m.playlist.Add(tt.track)
+			m.queue.Add(tt.track)
 			if got := m.metadataFields(); !slices.Equal(got, tt.want) {
 				t.Fatalf("metadata fields = %#v, want %#v", got, tt.want)
 			}
@@ -96,19 +96,19 @@ func TestMetadataFollowsSelectionWithoutFetching(t *testing.T) {
 	playing := playlist.Track{Path: "/playing.mp3", Title: "Playing track"}
 	m.player.(*playbackFakeEngine).playing = true
 	m.setPlaybackTrack(playing)
-	m.playlist.SetTrack(0, playing)
+	m.queue.SetTrack(0, playing)
 	for i, title := range []string{"First selection", "Next selection"} {
-		m.playlist.SetTrack(i+1, playlist.Track{Path: fmt.Sprintf("https://example.invalid/%d.mp3", i), Title: title, Stream: true})
+		m.queue.SetTrack(i+1, playlist.Track{Path: fmt.Sprintf("https://example.invalid/%d.mp3", i), Title: title, Stream: true})
 	}
-	m.plCursor = 1
+	m.queueCursor = 1
 	m.SetShowMetadata(true)
 	saver := &recordingSaver{}
 	m.configSaver = saver
-	tracks := m.playlist.Tracks()
+	tracks := m.queue.Tracks()
 
 	for _, title := range []string{"First selection", "Next selection"} {
 		for range 2 {
-			pane := ansi.Strip(m.renderSettingsPane(m.effectivePlaylistVisible()))
+			pane := ansi.Strip(m.renderSettingsPane(m.effectiveQueueVisible()))
 			if !strings.Contains(pane, title) || strings.Contains(pane, playing.Title) {
 				t.Fatalf("sidebar does not follow %q:\n%s", title, pane)
 			}
@@ -122,7 +122,7 @@ func TestMetadataFollowsSelectionWithoutFetching(t *testing.T) {
 		}
 		m.handleKey(tea.KeyPressMsg{Code: tea.KeyDown})
 	}
-	if !reflect.DeepEqual(m.playlist.Tracks(), tracks) || len(m.player.(*playbackFakeEngine).playCalls) != 0 {
+	if !reflect.DeepEqual(m.queue.Tracks(), tracks) || len(m.player.(*playbackFakeEngine).playCalls) != 0 {
 		t.Fatal("inspection mutated tracks or started playback")
 	}
 }
@@ -143,11 +143,11 @@ func TestMetadataRadioNowPlaying(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := keybindingTestModel()
 			station := playlist.Track{Path: "https://example.invalid/live", Title: "Station", Stream: true, Realtime: true}
-			m.playlist.Add(station, playlist.Track{Path: "https://example.invalid/other", Title: "Other", Stream: true, Realtime: true})
-			m.playlist.SetIndex(0)
+			m.queue.Add(station, playlist.Track{Path: "https://example.invalid/other", Title: "Other", Stream: true, Realtime: true})
+			m.queue.SetIndex(0)
 			m.setPlaybackTrack(station)
 			m.player.(*playbackFakeEngine).playing = true
-			m.plCursor, m.streamTitle = tt.cursor, tt.title
+			m.queueCursor, m.streamTitle = tt.cursor, tt.title
 			if !tt.playing {
 				m.handleKey(tea.KeyPressMsg{Text: "s"})
 			}
@@ -170,9 +170,9 @@ func TestMetadataMissingSelectionAndPathPrivacy(t *testing.T) {
 		setup func(*Model)
 		path  string
 	}{
-		{"nil playlist", func(m *Model) { m.playlist = nil }, ""},
-		{"empty playlist", func(m *Model) { m.playlist = playlist.New() }, ""},
-		{"invalid cursor", func(m *Model) { m.plCursor = m.playlist.Len() }, ""},
+		{"nil playlist", func(m *Model) { m.queue = nil }, ""},
+		{"empty playlist", func(m *Model) { m.queue = playlist.New() }, ""},
+		{"invalid cursor", func(m *Model) { m.queueCursor = m.queue.Len() }, ""},
 		{"local path only", nil, "/private/music/file.mp3"},
 		{"URL only", nil, "https://example.invalid/stream?token=private"},
 	} {
@@ -181,7 +181,7 @@ func TestMetadataMissingSelectionAndPathPrivacy(t *testing.T) {
 			if tt.setup != nil {
 				tt.setup(&m)
 			} else {
-				m.playlist.SetTrack(0, playlist.Track{Path: tt.path})
+				m.queue.SetTrack(0, playlist.Track{Path: tt.path})
 			}
 			if fields := m.metadataFields(); len(fields) != 0 {
 				t.Fatalf("missing metadata produced fields: %#v", fields)
@@ -239,8 +239,8 @@ func TestMetadataShortcutLeavesTabNavigationIntact(t *testing.T) {
 	}{
 		{tea.KeyPressMsg{Code: tea.KeyTab}, focusProvPill},
 		{tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}, focusSpeed},
-		{tea.KeyPressMsg{Text: "I"}, focusPlaylist},
-		{tea.KeyPressMsg{Code: 'i', ShiftedCode: 'I', Mod: tea.ModShift}, focusPlaylist},
+		{tea.KeyPressMsg{Text: "I"}, focusQueue},
+		{tea.KeyPressMsg{Code: 'i', ShiftedCode: 'I', Mod: tea.ModShift}, focusQueue},
 	} {
 		t.Run(tt.key.String(), func(t *testing.T) {
 			m := newColumnTestModel(80, 24)
@@ -265,9 +265,9 @@ func TestMetadataLayoutAndFocusBudget(t *testing.T) {
 		t.Run(fmt.Sprintf("%dx%d/vis=%d", tt.width, tt.height, tt.visRows), func(t *testing.T) {
 			m := newColumnTestModel(tt.width, tt.height)
 			m.SetVisRows(tt.visRows)
-			m.playlist.SetTrack(0, playlist.Track{Title: strings.Repeat("\u754ce\u0301", 40), Artist: "Artist", Album: "Album",
+			m.queue.SetTrack(0, playlist.Track{Title: strings.Repeat("\u754ce\u0301", 40), Artist: "Artist", Album: "Album",
 				Genre: "Genre", Year: 2026, TrackNumber: 7, DurationSecs: 245})
-			before, visible := m.layout, m.plVisible
+			before, visible := m.layout, m.queueVisible
 			saver := &recordingSaver{}
 			m.configSaver = saver
 			m.SetShowMetadata(true)
@@ -280,7 +280,7 @@ func TestMetadataLayoutAndFocusBudget(t *testing.T) {
 			if m.layout.bodyRows-before.bodyRows != before.visualizerRows-m.layout.visualizerRows {
 				t.Fatal("borrowed visualizer rows did not reach the body")
 			}
-			rows := m.effectivePlaylistVisible()
+			rows := m.effectiveQueueVisible()
 			pane := m.renderSettingsPane(rows)
 			if !strings.Contains(ansi.Strip(pane), "Metadata [Ctrl+I]") {
 				t.Fatalf("metadata absent from sidebar:\n%s", ansi.Strip(pane))
@@ -288,7 +288,7 @@ func TestMetadataLayoutAndFocusBudget(t *testing.T) {
 			assertViewFits(t, pane, m.layout.settingsWidth, rows)
 			assertViewFits(t, m.renderBodyRegion(), m.layout.panelWidth, rows)
 			assertViewFits(t, m.View().Content, tt.width, tt.height)
-			want := []focusArea{focusPlaylist, focusProvPill, focusVolume, focusEQ, focusShuffle, focusRepeat, focusSpeed}
+			want := []focusArea{focusQueue, focusProvPill, focusVolume, focusEQ, focusShuffle, focusRepeat, focusSpeed}
 			if got := m.mainFocusAreas(); !slices.Equal(got, want) {
 				t.Fatalf("metadata changed Tab stops: %v, want %v", got, want)
 			}
@@ -310,7 +310,7 @@ func TestMetadataLayoutAndFocusBudget(t *testing.T) {
 				}
 			}
 			m.SetShowMetadata(false)
-			if m.layout != before || m.plVisible != visible || m.vis.Rows != before.visualizerRows || m.visRows != tt.visRows || len(saver.saved) != 0 {
+			if m.layout != before || m.queueVisible != visible || m.vis.Rows != before.visualizerRows || m.visRows != tt.visRows || len(saver.saved) != 0 {
 				t.Fatal("SetShowMetadata did not restore configured layout without saving")
 			}
 		})
@@ -326,7 +326,7 @@ func TestMetadataTinyRowBudgets(t *testing.T) {
 			m := newColumnTestModel(100, 30)
 			m.providers = m.providers[:tt.providers]
 			m.SetShowMetadata(true)
-			m.plVisible = tt.rows
+			m.queueVisible = tt.rows
 			if got := m.metadataPaneRows(tt.rows); got != tt.metadata {
 				t.Fatalf("metadata rows = %d, want %d", got, tt.metadata)
 			}
@@ -398,24 +398,24 @@ func TestMetadataFallbackAndPreference(t *testing.T) {
 }
 
 func TestMetadataMoreDetailsFromSettingsFocus(t *testing.T) {
-	for _, focus := range []focusArea{focusPlaylist, focusProvPill, focusVolume, focusEQ, focusShuffle, focusRepeat, focusSpeed} {
+	for _, focus := range []focusArea{focusQueue, focusProvPill, focusVolume, focusEQ, focusShuffle, focusRepeat, focusSpeed} {
 		t.Run(focus.label(), func(t *testing.T) {
 			m := newColumnTestModel(80, 24)
-			m.focus, m.plCursor = focus, 1
-			m.playlist.SetTrack(1, playlist.Track{Path: "/selected.mp3", Title: "Selected", Artist: "Artist", Album: "Album",
+			m.focus, m.queueCursor = focus, 1
+			m.queue.SetTrack(1, playlist.Track{Path: "/selected.mp3", Title: "Selected", Artist: "Artist", Album: "Album",
 				Genre: "Genre", Year: 2026, TrackNumber: 2, DurationSecs: 123})
 			m.handleKey(tea.KeyPressMsg{Code: 'i', Mod: tea.ModCtrl})
 			if !m.showMetadata || m.info.visible || m.focus != focus {
 				t.Fatal("Ctrl+I failed to open metadata without changing setting focus")
 			}
-			if pane := ansi.Strip(m.renderSettingsPane(m.effectivePlaylistVisible())); !strings.Contains(pane, "i: more details") {
+			if pane := ansi.Strip(m.renderSettingsPane(m.effectiveQueueVisible())); !strings.Contains(pane, "i: more details") {
 				t.Fatalf("truncated sidebar omitted the full-info hint:\n%s", pane)
 			}
 			m.info.scroll = 99
 			updated, _ := m.Update(tea.KeyPressMsg{Text: "i"})
 			m = updated.(Model)
-			if !m.info.visible || !m.showMetadata || m.info.scroll != 0 || m.plCursor != 1 {
-				t.Fatalf("i from %s: info=%v metadata=%v scroll=%d cursor=%d", focus.label(), m.info.visible, m.showMetadata, m.info.scroll, m.plCursor)
+			if !m.info.visible || !m.showMetadata || m.info.scroll != 0 || m.queueCursor != 1 {
+				t.Fatalf("i from %s: info=%v metadata=%v scroll=%d cursor=%d", focus.label(), m.info.visible, m.showMetadata, m.info.scroll, m.queueCursor)
 			}
 			if info := ansi.Strip(m.renderInfoBody()); !strings.Contains(info, "Title: Selected") {
 				t.Fatalf("full info does not describe the highlighted track:\n%s", info)
@@ -444,7 +444,7 @@ func TestMetadataKeepsEQEditingVisible(t *testing.T) {
 		for _, key := range []tea.KeyPressMsg{{Code: tea.KeyRight}, {Code: tea.KeyUp}} {
 			m.handleKey(key)
 			want := fmt.Sprintf("%s %+.0fdB", eqBandLabels[m.eqCursor], m.player.EQBands()[m.eqCursor])
-			pane := ansi.Strip(m.renderSettingsPane(m.effectivePlaylistVisible()))
+			pane := ansi.Strip(m.renderSettingsPane(m.effectiveQueueVisible()))
 			if !strings.Contains(pane, want) {
 				t.Fatalf("%dx%d: focused EQ lost selected band/gain %q:\n%s", size[0], size[1], want, pane)
 			}

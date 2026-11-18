@@ -60,7 +60,7 @@ func TestResolveFailureClearsOnlyItsOwnLoadingFlag(t *testing.T) {
 			engine := &playbackFakeEngine{}
 			m := Model{
 				player:      engine,
-				playlist:    playlist.New(),
+				queue:       playlist.New(),
 				vis:         ui.NewVisualizer(float64(engine.SampleRate())),
 				provPane:    providerPane{loading: true},
 				feedLoading: true,

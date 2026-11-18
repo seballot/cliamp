@@ -95,7 +95,7 @@ func TestV2ProviderLoadKeepsWriteBacksLocal(t *testing.T) {
 			navidrome := remoteListProvider{commandsTestProvider{name: "Navidrome"}, remote}
 			m := Model{
 				player:        &playbackFakeEngine{},
-				playlist:      playlist.New(),
+				queue:         playlist.New(),
 				vis:           ui.NewVisualizer(44100),
 				provider:      lp,
 				localProvider: lp,
@@ -112,11 +112,11 @@ func TestV2ProviderLoadKeepsWriteBacksLocal(t *testing.T) {
 				t.Fatalf("loadedPlaylist = %q, want %q", m.loadedPlaylist, tc.wantLoaded)
 			}
 
-			m.focus = focusPlaylist
-			m.plCursor = 0
+			m.focus = focusQueue
+			m.queueCursor = 0
 			m.handleKey(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
-			if m.plCursor != 1 {
-				t.Fatalf("plCursor = %d, want 1 after the move", m.plCursor)
+			if m.queueCursor != 1 {
+				t.Fatalf("queueCursor = %d, want 1 after the move", m.queueCursor)
 			}
 			if m.status.kind == feedbackError {
 				t.Fatalf("unexpected error: %s", m.status.text)
@@ -160,7 +160,7 @@ func TestQueueRemoveUpdatesTheLoadedPlaylistFile(t *testing.T) {
 			}
 			m := Model{
 				player:        &playbackFakeEngine{},
-				playlist:      playlist.New(),
+				queue:         playlist.New(),
 				vis:           ui.NewVisualizer(44100),
 				provider:      lp,
 				localProvider: lp,
@@ -175,8 +175,8 @@ func TestQueueRemoveUpdatesTheLoadedPlaylistFile(t *testing.T) {
 				}
 			}
 
-			m.focus = focusPlaylist
-			m.plCursor = 1
+			m.focus = focusQueue
+			m.queueCursor = 1
 			m.handleKey(tea.KeyPressMsg{Text: "x"})
 			if m.status.kind == feedbackError {
 				t.Fatalf("unexpected error: %s", m.status.text)
@@ -243,9 +243,9 @@ func TestQueueMoveKeepsOtherWriters(t *testing.T) {
 		{
 			name: "the queue knows a duration",
 			queue: func(m *Model) {
-				track, _ := m.playlist.Track(0)
+				track, _ := m.queue.Track(0)
 				track.DurationSecs = 200
-				m.playlist.SetTrack(0, track)
+				m.queue.SetTrack(0, track)
 			},
 			wantMix:  []string{b.Path, a.Path},
 			wantSecs: 200,
@@ -259,7 +259,7 @@ func TestQueueMoveKeepsOtherWriters(t *testing.T) {
 			}
 			m := Model{
 				player:        &playbackFakeEngine{},
-				playlist:      playlist.New(),
+				queue:         playlist.New(),
 				vis:           ui.NewVisualizer(44100),
 				provider:      lp,
 				localProvider: lp,
@@ -275,8 +275,8 @@ func TestQueueMoveKeepsOtherWriters(t *testing.T) {
 				tc.queue(&m)
 			}
 
-			m.focus = focusPlaylist
-			m.plCursor = 0
+			m.focus = focusQueue
+			m.queueCursor = 0
 			m.handleKey(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
 			if m.status.kind == feedbackError {
 				t.Fatalf("unexpected error: %s", m.status.text)
@@ -334,7 +334,7 @@ func TestQueueReverseSavesTheLoadedPlaylist(t *testing.T) {
 			}
 			m := Model{
 				player:        &playbackFakeEngine{},
-				playlist:      playlist.New(),
+				queue:         playlist.New(),
 				vis:           ui.NewVisualizer(44100),
 				provider:      lp,
 				localProvider: lp,
@@ -347,8 +347,8 @@ func TestQueueReverseSavesTheLoadedPlaylist(t *testing.T) {
 				tc.other(t, local.New(nil, nil))
 			}
 
-			m.focus = focusPlaylist
-			m.plCursor = 0
+			m.focus = focusQueue
+			m.queueCursor = 0
 			m.handleKey(tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
 			if m.status.kind == feedbackError {
 				t.Fatalf("unexpected error: %s", m.status.text)
@@ -360,11 +360,11 @@ func TestQueueReverseSavesTheLoadedPlaylist(t *testing.T) {
 			if got := trackTitles(mix); !reflect.DeepEqual(got, tc.wantFile) {
 				t.Fatalf("Mix after the reverse = %v, want %v", got, tc.wantFile)
 			}
-			if got := trackTitles(m.playlist.Tracks()); !reflect.DeepEqual(got, tc.wantQueue) {
+			if got := trackTitles(m.queue.Tracks()); !reflect.DeepEqual(got, tc.wantQueue) {
 				t.Fatalf("queue after the reverse = %v, want %v", got, tc.wantQueue)
 			}
-			if m.plCursor != 2 {
-				t.Fatalf("plCursor = %d, want 2", m.plCursor)
+			if m.queueCursor != 2 {
+				t.Fatalf("queueCursor = %d, want 2", m.queueCursor)
 			}
 		})
 	}
@@ -380,7 +380,7 @@ func TestQueueReverseRefusedWhileLoading(t *testing.T) {
 		setup func(m *Model)
 		want  string
 	}{
-		{name: "shuffle", setup: func(m *Model) { m.playlist.ToggleShuffle() }, want: shuffleReverseWarning},
+		{name: "shuffle", setup: func(m *Model) { m.queue.ToggleShuffle() }, want: shuffleReverseWarning},
 		{name: "provider pages", setup: func(m *Model) { m.tracksPaging = true }, want: pagingReverseWarning},
 		{name: "yt-dlp batch", setup: func(m *Model) { m.ytdlBatch.loading = true }, want: pagingReverseWarning},
 		{name: "provider playlist", setup: func(m *Model) { m.provPane.loading = true }, want: pagingReverseWarning},
@@ -394,7 +394,7 @@ func TestQueueReverseRefusedWhileLoading(t *testing.T) {
 			}
 			m := Model{
 				player:        &playbackFakeEngine{},
-				playlist:      playlist.New(),
+				queue:         playlist.New(),
 				vis:           ui.NewVisualizer(44100),
 				provider:      lp,
 				localProvider: lp,
@@ -403,15 +403,15 @@ func TestQueueReverseRefusedWhileLoading(t *testing.T) {
 			if response := runV2(t, &m, "provider.load", ipc.Request{Provider: "local", Playlist: "Mix"}); !response.OK {
 				t.Fatalf("provider.load = %+v", response)
 			}
-			order := trackTitles(m.playlist.Tracks())
+			order := trackTitles(m.queue.Tracks())
 			tc.setup(&m)
 
-			m.focus = focusPlaylist
+			m.focus = focusQueue
 			m.handleKey(tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
 			if m.status.kind != feedbackWarning || m.status.text != tc.want {
 				t.Fatalf("status = %v %q, want warning %q", m.status.kind, m.status.text, tc.want)
 			}
-			if got := trackTitles(m.playlist.Tracks()); !reflect.DeepEqual(got, order) {
+			if got := trackTitles(m.queue.Tracks()); !reflect.DeepEqual(got, order) {
 				t.Fatalf("queue = %v, want %v", got, order)
 			}
 			mix, err := lp.Tracks("Mix")
@@ -561,7 +561,7 @@ func TestPlaylistManagerEditsKeepOtherWriters(t *testing.T) {
 			}
 			m := Model{
 				player:        &playbackFakeEngine{},
-				playlist:      playlist.New(),
+				queue:         playlist.New(),
 				vis:           ui.NewVisualizer(44100),
 				provider:      lp,
 				localProvider: lp,
@@ -623,19 +623,19 @@ func TestStationRowInFavoritesTogglesTrackFavorite(t *testing.T) {
 	m.requests.tracks = 1
 	updated, _ := m.Update(fetchTracksCmd(lp, favorites.PlaylistName, 1)())
 	m = updated.(Model)
-	row, ok := m.playlist.Track(0)
+	row, ok := m.queue.Track(0)
 	if !ok || row.Path != station.Path || !row.Realtime || row.Meta("radio.name") == "" {
 		t.Fatalf("Favorites row = %+v, want the station with its radio metadata", row)
 	}
 	if m.loadedPlaylist != favorites.PlaylistName || m.writableLoadedPlaylist() != "" {
 		t.Fatalf("loaded %q, writable %q; want Favorites as the saved list and no writable name", m.loadedPlaylist, m.writableLoadedPlaylist())
 	}
-	if !m.playlistTrackFavorited(row) {
+	if !m.queueTrackFavorited(row) {
 		t.Fatal("the station row in Favorites shows no ♥")
 	}
 
-	m.focus = focusPlaylist
-	m.plCursor = 0
+	m.focus = focusQueue
+	m.queueCursor = 0
 	m.handleKey(tea.KeyPressMsg{Text: "f"})
 	if favs.IsFavorited(station.Path) {
 		t.Fatal("f did not remove the station from Favorites")
@@ -643,7 +643,7 @@ func TestStationRowInFavoritesTogglesTrackFavorite(t *testing.T) {
 	if m.radioFavorites.Count() != 0 {
 		t.Fatal("f toggled the station favorite for a row in Favorites")
 	}
-	if m.playlistTrackFavorited(row) {
+	if m.queueTrackFavorited(row) {
 		t.Fatal("the row still shows a ♥ after f")
 	}
 }
@@ -679,7 +679,7 @@ func TestV2SnapshotNamesTheLoadedList(t *testing.T) {
 			navidrome := remoteListProvider{commandsTestProvider{name: "Navidrome"}, tracks}
 			m := Model{
 				player:        &playbackFakeEngine{},
-				playlist:      playlist.New(),
+				queue:         playlist.New(),
 				vis:           ui.NewVisualizer(44100),
 				localProvider: local,
 				providers: []provider.Entry{
@@ -738,7 +738,7 @@ func TestRenameMovesTheLoadedPlaylist(t *testing.T) {
 			if m.status.kind == feedbackError {
 				t.Fatalf("unexpected error: %s", m.status.text)
 			}
-			if got := queueOpPaths(m.playlist.Tracks()); got != "a c b" {
+			if got := queueOpPaths(m.queue.Tracks()); got != "a c b" {
 				t.Fatalf("queue = %q, want a c b", got)
 			}
 			saved, err := lp.Tracks("New")

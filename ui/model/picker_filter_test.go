@@ -125,12 +125,12 @@ func TestPickerListsWindowTheShownRows(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			list := filterList{filtering: tt.filtering, filter: tt.filter}
 
-			vis := Model{vis: ui.NewVisualizer(44_100), plVisible: 2}
+			vis := Model{vis: ui.NewVisualizer(44_100), queueVisible: 2}
 			vis.visPicker = visPickerState{modes: names, filterList: list}
 			vis.visPickerRecomputeFilter()
 			vis.visPicker.cursor, vis.visPicker.scroll = tt.cursor, tt.scroll
 
-			themes := Model{plVisible: 2, themePicker: themePickerState{filterList: list}}
+			themes := Model{queueVisible: 2, themePicker: themePickerState{filterList: list}}
 			for _, name := range names[1:] {
 				themes.themes = append(themes.themes, theme.Theme{Name: name})
 			}

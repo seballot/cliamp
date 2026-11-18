@@ -27,12 +27,12 @@ func newLayoutTestModel(width, height int) Model {
 		})
 	}
 	m := Model{
-		player:   player,
-		playlist: pl,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
-		width:    width,
-		height:   height,
-		focus:    focusPlaylist,
+		player: player,
+		queue:  pl,
+		vis:    ui.NewVisualizer(float64(player.SampleRate())),
+		width:  width,
+		height: height,
+		focus:  focusQueue,
 	}
 	m.vis.Mode = ui.VisBars
 	m.recomputeLayout()
@@ -124,21 +124,21 @@ func TestResponsiveViewsFitTerminal(t *testing.T) {
 func TestExpandedPlaylistUsesAvailableRows(t *testing.T) {
 	m := newLayoutTestModel(80, 50)
 	// The two-column body hands the playlist the rows its settings pane freed.
-	wantCollapsed := maxPlVisible
+	wantCollapsed := maxQueueVisible
 	if m.layout.twoColumn {
 		wantCollapsed += twoColumnChromeRows
 	}
-	if m.plVisible != wantCollapsed {
-		t.Fatalf("collapsed playlist rows = %d, want %d", m.plVisible, wantCollapsed)
+	if m.queueVisible != wantCollapsed {
+		t.Fatalf("collapsed playlist rows = %d, want %d", m.queueVisible, wantCollapsed)
 	}
 
 	m.heightExpanded = true
 	m.recomputeLayout()
-	if m.plVisible != m.layout.bodyRows {
-		t.Fatalf("expanded playlist rows = %d, want available body rows %d", m.plVisible, m.layout.bodyRows)
+	if m.queueVisible != m.layout.bodyRows {
+		t.Fatalf("expanded playlist rows = %d, want available body rows %d", m.queueVisible, m.layout.bodyRows)
 	}
-	if m.plVisible <= maxPlExpandVisible {
-		t.Fatalf("expanded playlist rows = %d, want more than previous cap %d", m.plVisible, maxPlExpandVisible)
+	if m.queueVisible <= maxQueueExpandVisible {
+		t.Fatalf("expanded playlist rows = %d, want more than previous cap %d", m.queueVisible, maxQueueExpandVisible)
 	}
 }
 
@@ -162,7 +162,7 @@ func TestExpandedPlaylistWithoutVisualizerFillsTerminal(t *testing.T) {
 
 			m := newLayoutTestModel(size.width, size.height)
 			for i := 16; i < 100; i++ {
-				m.playlist.Add(playlist.Track{Path: fmt.Sprintf("/tmp/track-%d.mp3", i), Title: "Track"})
+				m.queue.Add(playlist.Track{Path: fmt.Sprintf("/tmp/track-%d.mp3", i), Title: "Track"})
 			}
 			m.providers = []provider.Entry{{Name: "Local"}, {Name: "Radio"}}
 			m.vis.Mode = ui.VisNone
@@ -181,8 +181,8 @@ func TestExpandedPlaylistWithoutVisualizerFillsTerminal(t *testing.T) {
 			if m.layout.bodyRows != bodyRowsWithVis+size.extraBodyRows {
 				t.Fatalf("body rows = %d, want %d (%d more than with visualizer)", m.layout.bodyRows, bodyRowsWithVis+size.extraBodyRows, size.extraBodyRows)
 			}
-			if m.plVisible != m.layout.bodyRows {
-				t.Fatalf("expanded playlist rows = %d, want available body rows %d", m.plVisible, m.layout.bodyRows)
+			if m.queueVisible != m.layout.bodyRows {
+				t.Fatalf("expanded playlist rows = %d, want available body rows %d", m.queueVisible, m.layout.bodyRows)
 			}
 
 			// View without transient status message should not have empty top padding lines
@@ -234,8 +234,8 @@ func TestResizeClampsActiveOverlayCursor(t *testing.T) {
 	if m.themePicker.cursor >= len(m.themes)+1 {
 		t.Fatalf("theme cursor = %d, want within %d entries", m.themePicker.cursor, len(m.themes)+1)
 	}
-	if m.themePicker.cursor < m.themePicker.scroll || m.themePicker.cursor >= m.themePicker.scroll+m.effectivePlaylistVisible() {
-		t.Fatalf("theme cursor %d outside viewport [%d,%d)", m.themePicker.cursor, m.themePicker.scroll, m.themePicker.scroll+m.effectivePlaylistVisible())
+	if m.themePicker.cursor < m.themePicker.scroll || m.themePicker.cursor >= m.themePicker.scroll+m.effectiveQueueVisible() {
+		t.Fatalf("theme cursor %d outside viewport [%d,%d)", m.themePicker.cursor, m.themePicker.scroll, m.themePicker.scroll+m.effectiveQueueVisible())
 	}
 }
 
@@ -314,15 +314,15 @@ func TestMinimalLayoutRejectsHiddenMainFocus(t *testing.T) {
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 10})
 	m = updated.(Model)
-	if m.focus != focusPlaylist {
+	if m.focus != focusQueue {
 		t.Fatalf("focus = %v, want playlist at minimal size", m.focus)
 	}
-	if m.prevFocus != focusPlaylist {
+	if m.prevFocus != focusQueue {
 		t.Fatalf("previous focus = %v, want playlist at minimal size", m.prevFocus)
 	}
 
 	m.handleKey(tea.KeyPressMsg{Code: tea.KeyTab})
-	if m.focus != focusPlaylist {
+	if m.focus != focusQueue {
 		t.Fatalf("focus after Tab = %v, want playlist at minimal size", m.focus)
 	}
 	beforePreset := m.eqPresetIdx
@@ -344,14 +344,14 @@ func TestCompactEqualizerShowsActiveBand(t *testing.T) {
 
 func TestSimplifiedLayoutShowsTrackSummaryAndTimeStrip(t *testing.T) {
 	m := newLayoutTestModel(80, 40)
-	track, ok := m.playlist.Track(0)
+	track, ok := m.queue.Track(0)
 	if !ok {
 		t.Fatal("playlist has no first track")
 	}
 	track.Artist = "Artist"
 	track.Title = "Title"
 	track.DurationSecs = 222
-	m.playlist.SetTrack(0, track)
+	m.queue.SetTrack(0, track)
 	m.cachedPos = 61 * time.Second
 	m.cachedDur = 222 * time.Second
 	m.SetSimplified(true)
@@ -362,8 +362,8 @@ func TestSimplifiedLayoutShowsTrackSummaryAndTimeStrip(t *testing.T) {
 	if m.visualizerVisible() {
 		t.Fatal("visualizerVisible() = true in simplified mode, want false")
 	}
-	if m.plVisible != 0 {
-		t.Fatalf("simplified playlist rows = %d, want 0", m.plVisible)
+	if m.queueVisible != 0 {
+		t.Fatalf("simplified playlist rows = %d, want 0", m.queueVisible)
 	}
 	if m.layout.fixedRows != 3 {
 		t.Fatalf("simplified fixed rows = %d, want track, time, and seek", m.layout.fixedRows)
@@ -385,14 +385,14 @@ func TestSimplifiedLayoutDisablesHiddenPlaybackChrome(t *testing.T) {
 	m.fullVis = true
 	m.SetSimplified(true)
 
-	if m.focus != focusPlaylist {
+	if m.focus != focusQueue {
 		t.Fatalf("focus = %v, want playlist", m.focus)
 	}
 	if m.fullVis {
 		t.Fatal("SetSimplified did not close the full visualizer")
 	}
 	m.handleKey(tea.KeyPressMsg{Code: tea.KeyTab})
-	if m.focus != focusPlaylist {
+	if m.focus != focusQueue {
 		t.Fatalf("focus after Tab = %v, want playlist", m.focus)
 	}
 	beforeMode := m.vis.Mode
@@ -551,10 +551,10 @@ func TestLongUnicodeContentFitsTerminal(t *testing.T) {
 	for _, size := range []struct{ width, height int }{{40, 10}, {80, 24}, {120, 40}} {
 		t.Run(fmt.Sprintf("%dx%d", size.width, size.height), func(t *testing.T) {
 			m := newLayoutTestModel(size.width, size.height)
-			track := m.playlist.Tracks()[0]
+			track := m.queue.Tracks()[0]
 			track.Title = strings.Repeat("界e\u0301", 48)
 			track.Album = strings.Repeat("https://provider.example/playlist/", 8)
-			m.playlist.SetTrack(0, track)
+			m.queue.SetTrack(0, track)
 			m.providers = []provider.Entry{
 				{Name: strings.Repeat("Very Long Provider ", 8)},
 				{Name: "Local"},
@@ -567,9 +567,9 @@ func TestLongUnicodeContentFitsTerminal(t *testing.T) {
 
 func TestTooSmallLayoutBlocksHiddenMutations(t *testing.T) {
 	m := newLayoutTestModel(39, 9)
-	before := m.playlist.Len()
+	before := m.queue.Len()
 	m.handleKey(tea.KeyPressMsg{Text: "x"})
-	if got := m.playlist.Len(); got != before {
+	if got := m.queue.Len(); got != before {
 		t.Fatalf("playlist length = %d after hidden remove, want %d", got, before)
 	}
 }
@@ -600,13 +600,13 @@ func TestTooSmallMessageWraps(t *testing.T) {
 
 func TestTrackInfoScrollsWithinBodyBudget(t *testing.T) {
 	m := newLayoutTestModel(40, 10)
-	track := m.playlist.Tracks()[0]
+	track := m.queue.Tracks()[0]
 	track.Artist = "Artist"
 	track.Album = "Album"
 	track.Genre = "Genre"
 	track.Year = 2026
 	track.TrackNumber = 1
-	m.playlist.SetTrack(0, track)
+	m.queue.SetTrack(0, track)
 	m.info.visible = true
 
 	m.handleKey(tea.KeyPressMsg{Text: "j"})
@@ -708,7 +708,7 @@ func TestSetExpandedAppliesToSimplifiedProviderLists(t *testing.T) {
 	m.focus = focusProvider
 	m.recomputeLayout()
 
-	collapsed := m.plVisible
+	collapsed := m.queueVisible
 	if collapsed == 0 {
 		t.Fatal("provider list rows = 0 in simplified mode, want the content-first list")
 	}
@@ -717,11 +717,11 @@ func TestSetExpandedAppliesToSimplifiedProviderLists(t *testing.T) {
 	if !m.heightExpanded {
 		t.Fatal("SetExpanded did not set the expanded height in simplified mode")
 	}
-	if m.plVisible != m.layout.bodyRows {
-		t.Fatalf("expanded provider list rows = %d, want available body rows %d", m.plVisible, m.layout.bodyRows)
+	if m.queueVisible != m.layout.bodyRows {
+		t.Fatalf("expanded provider list rows = %d, want available body rows %d", m.queueVisible, m.layout.bodyRows)
 	}
-	if m.plVisible <= collapsed {
-		t.Fatalf("expanded provider list rows = %d, want more than collapsed %d", m.plVisible, collapsed)
+	if m.queueVisible <= collapsed {
+		t.Fatalf("expanded provider list rows = %d, want more than collapsed %d", m.queueVisible, collapsed)
 	}
 
 	// And it matches what the key produces from the same state.
@@ -730,8 +730,8 @@ func TestSetExpandedAppliesToSimplifiedProviderLists(t *testing.T) {
 	byKey.focus = focusProvider
 	byKey.recomputeLayout()
 	byKey.toggleExpandedView()
-	if byKey.plVisible != m.plVisible {
-		t.Fatalf("Ctrl+X rows = %d, SetExpanded rows = %d, want the same", byKey.plVisible, m.plVisible)
+	if byKey.queueVisible != m.queueVisible {
+		t.Fatalf("Ctrl+X rows = %d, SetExpanded rows = %d, want the same", byKey.queueVisible, m.queueVisible)
 	}
 }
 
@@ -741,8 +741,8 @@ func TestSetExpandedIsInertOnTheSimplifiedPlaybackScreen(t *testing.T) {
 	m := newLayoutTestModel(100, 50)
 	m.SetSimplified(true)
 	m.SetExpanded(true)
-	if m.plVisible != 0 {
-		t.Fatalf("simplified playback playlist rows = %d, want 0", m.plVisible)
+	if m.queueVisible != 0 {
+		t.Fatalf("simplified playback playlist rows = %d, want 0", m.queueVisible)
 	}
 }
 
@@ -779,8 +779,8 @@ func TestUpdateKeepsLayoutCurrent(t *testing.T) {
 		m = updated.(Model)
 		want := m
 		want.recomputeLayout()
-		if m.layout != want.layout || m.plVisible != want.plVisible {
-			t.Fatalf("after %s: layout = %+v, plVisible %d; want %+v, plVisible %d", step.name, m.layout, m.plVisible, want.layout, want.plVisible)
+		if m.layout != want.layout || m.queueVisible != want.queueVisible {
+			t.Fatalf("after %s: layout = %+v, queueVisible %d; want %+v, queueVisible %d", step.name, m.layout, m.queueVisible, want.layout, want.queueVisible)
 		}
 	}
 }

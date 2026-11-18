@@ -28,7 +28,7 @@ func (m *Model) openThemePicker() {
 	// Position cursor on the currently active theme.
 	// Picker list: 0 = Default, 1..N = themes[0..N-1]
 	m.themePicker.cursor = m.themeIdx + 1
-	m.themePickerMaybeAdjustScroll(m.effectivePlaylistVisible())
+	m.themePickerMaybeAdjustScroll(m.effectiveQueueVisible())
 }
 
 // themePickerApply applies the theme under the cursor for live preview.
@@ -114,7 +114,7 @@ func (m *Model) openVisPicker() {
 	// from the playlist), then fit the cursor into the visible window.
 	m.refreshChrome()
 	m.applyHeightMode()
-	m.visPickerMaybeAdjustScroll(m.effectivePlaylistVisible())
+	m.visPickerMaybeAdjustScroll(m.effectiveQueueVisible())
 }
 
 // visPickerApply switches to the visualizer mode under the cursor. Run on every
@@ -188,7 +188,7 @@ func (m *Model) closeSearchLayout() {
 }
 
 func (m *Model) searchOverlayResultsVisible() int {
-	visible := m.effectivePlaylistVisible()
+	visible := m.effectiveQueueVisible()
 	if m.searchOverlay.err != "" {
 		visible--
 	}
@@ -229,7 +229,7 @@ func (m *Model) openPlaylistManager() {
 	m.plManager.renameOldName = ""
 	m.plManager.renameName = ""
 	m.plManager.visible = true
-	m.plMgrListMaybeAdjustScroll(m.effectivePlaylistVisible())
+	m.plMgrListMaybeAdjustScroll(m.effectiveQueueVisible())
 }
 
 // localManagerInline reports whether the Local source shows the playlist
@@ -255,7 +255,7 @@ func (m *Model) ensureLocalManager() {
 // so closing must not reveal it.
 func (m *Model) closePlManagerListInline() {
 	m.plManager.visible = false
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 }
 
 // plMgrEnterTrackList loads the tracks for a playlist and switches to screen 1.
@@ -275,7 +275,7 @@ func (m *Model) plMgrEnterTrackList(name string) {
 	m.plManager.scroll = 0
 	m.plManager.confirmDel = false
 	m.plMgrResetFilter()
-	m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+	m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 }
 
 // plMgrReloadTracks re-reads the open track list in place so store changes
@@ -307,7 +307,7 @@ func (m *Model) plMgrReloadTracks(name string) {
 	if m.plManager.cursor < 0 {
 		m.plManager.cursor = 0
 	}
-	m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+	m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 }
 
 // plMgrLoadTracks refreshes missing-file state only at an explicit list load.
@@ -371,7 +371,7 @@ func (m *Model) plMgrOpenDirs() {
 	m.plManager.scroll = 0
 	m.plManager.confirmDel = false
 	m.plMgrResetFilter()
-	m.plMgrDirsMaybeAdjustScroll(m.effectivePlaylistVisible())
+	m.plMgrDirsMaybeAdjustScroll(m.effectiveQueueVisible())
 }
 
 // plMgrReloadDirs re-reads the [[dir]] sources for the open playlist and
@@ -393,7 +393,7 @@ func (m *Model) plMgrReloadDirs() {
 	if m.plManager.cursor < 0 {
 		m.plManager.cursor = 0
 	}
-	m.plMgrDirsMaybeAdjustScroll(m.effectivePlaylistVisible())
+	m.plMgrDirsMaybeAdjustScroll(m.effectiveQueueVisible())
 }
 
 // plMgrRefreshTracksForSel reloads the tracks of the open playlist so changes
@@ -533,9 +533,9 @@ func (m *Model) plMgrRecomputeFilter() {
 	}
 	m.plManager.scroll = 0
 	if m.plManager.screen == plMgrScreenList {
-		m.plMgrListMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrListMaybeAdjustScroll(m.effectiveQueueVisible())
 	} else if m.plManager.screen == plMgrScreenTracks {
-		m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 	}
 }
 
@@ -588,7 +588,7 @@ func (m *Model) plMgrRefreshList() {
 		if m.plManager.cursor < 0 {
 			m.plManager.cursor = 0
 		}
-		m.plMgrListMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrListMaybeAdjustScroll(m.effectiveQueueVisible())
 	}
 }
 

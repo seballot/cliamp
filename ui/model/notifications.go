@@ -36,7 +36,7 @@ func (m *Model) attachNotifier(notifier playback.Notifier) {
 // the MPRIS Position property use that as a heartbeat.
 func (m *Model) notifyPlaybackChange() {
 	hook := m.luaMgr != nil && m.luaMgr.HasHook(luaplugin.EventPlaybackState)
-	if m.player == nil || m.playlist == nil || (m.notifier == nil && !hook) {
+	if m.player == nil || m.queue == nil || (m.notifier == nil && !hook) {
 		return
 	}
 	track, state := m.playbackState()

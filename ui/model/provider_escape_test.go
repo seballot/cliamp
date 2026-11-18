@@ -27,14 +27,14 @@ func TestProviderEscapeLeavesWithEmptyPlaylist(t *testing.T) {
 			m := keybindingTestModel()
 			m.provPane.lists = []playlist.PlaylistInfo{{ID: "a", Name: "Alpha"}}
 			if !tc.empty {
-				m.playlist.Replace([]playlist.Track{{Title: "T", Path: "/tmp/t.mp3"}})
+				m.queue.Replace([]playlist.Track{{Title: "T", Path: "/tmp/t.mp3"}})
 			}
 			m.focus = focusProvider
 
 			m.handleKey(tc.key)
 
-			if m.focus != focusPlaylist {
-				t.Errorf("focus = %v, want focusPlaylist", m.focus)
+			if m.focus != focusQueue {
+				t.Errorf("focus = %v, want focusQueue", m.focus)
 			}
 		})
 	}

@@ -33,7 +33,7 @@ func ipcPodcastTestModel() (Model, *playbackFakeEngine) {
 	)
 	pl.AddPlayNext(2)
 	pl.AddPlayNext(1)
-	return Model{player: engine, playlist: pl, loadedPlaylist: "Saved"}, engine
+	return Model{player: engine, queue: pl, loadedPlaylist: "Saved"}, engine
 }
 
 func TestIPCPodcastTrackActions(t *testing.T) {
@@ -66,9 +66,9 @@ func TestIPCPodcastTrackActions(t *testing.T) {
 					ProviderMeta: map[string]string{"kind": "album", "albumID": feedURL},
 				}, 0, 0, false)
 				m, engine := ipcPodcastTestModel()
-				before, revision, engineBefore := m.playlist.Snapshot(), m.playlist.Revision(), *engine
-				original := m.playlist.Tracks()
-				queued := m.playlist.PlayNextTracks()
+				before, revision, engineBefore := m.queue.Snapshot(), m.queue.Revision(), *engine
+				original := m.queue.Tracks()
+				queued := m.queue.PlayNextTracks()
 				msg := v2Request(t, op, ipc.Request{Track: &info})
 				updated, cmd := m.Update(msg)
 				m = updated.(Model)
@@ -83,7 +83,7 @@ func TestIPCPodcastTrackActions(t *testing.T) {
 				if pending, _ := msg.Jobs.Get(msg.JobID); pending.State != ipc.JobRunning {
 					t.Fatalf("job completed before expansion: %+v", pending)
 				}
-				if !reflect.DeepEqual(m.playlist.Snapshot(), before) || m.playlist.Revision() != revision || !reflect.DeepEqual(*engine, engineBefore) {
+				if !reflect.DeepEqual(m.queue.Snapshot(), before) || m.queue.Revision() != revision || !reflect.DeepEqual(*engine, engineBefore) {
 					t.Fatal("feed command mutated playback before its result was applied")
 				}
 				updated, playbackCmd := m.Update(result)
@@ -110,7 +110,7 @@ func TestIPCPodcastTrackActions(t *testing.T) {
 					if response.OK || !strings.Contains(response.Error, tt.wantError) {
 						t.Fatalf("response = %+v, want error containing %q", response, tt.wantError)
 					}
-					if playbackCmd != nil || !reflect.DeepEqual(m.playlist.Snapshot(), before) || m.playlist.Revision() != revision || !reflect.DeepEqual(*engine, engineBefore) || m.loadedPlaylist != "Saved" {
+					if playbackCmd != nil || !reflect.DeepEqual(m.queue.Snapshot(), before) || m.queue.Revision() != revision || !reflect.DeepEqual(*engine, engineBefore) || m.loadedPlaylist != "Saved" {
 						t.Fatal("invalid feed changed the playlist, queue, or playback")
 					}
 					return
@@ -129,8 +129,8 @@ func TestIPCPodcastTrackActions(t *testing.T) {
 				} else {
 					wantIndex = len(original)
 				}
-				if !reflect.DeepEqual(m.playlist.Tracks(), wantTracks) || !reflect.DeepEqual(m.playlist.PlayNextTracks(), queued) || m.playlist.Index() != wantIndex {
-					t.Fatalf("playlist = %+v, queue = %+v, index = %d; want original tracks/queue plus feed-order episodes at index %d", m.playlist.Tracks(), m.playlist.PlayNextTracks(), m.playlist.Index(), wantIndex)
+				if !reflect.DeepEqual(m.queue.Tracks(), wantTracks) || !reflect.DeepEqual(m.queue.PlayNextTracks(), queued) || m.queue.Index() != wantIndex {
+					t.Fatalf("playlist = %+v, queue = %+v, index = %d; want original tracks/queue plus feed-order episodes at index %d", m.queue.Tracks(), m.queue.PlayNextTracks(), m.queue.Index(), wantIndex)
 				}
 				for _, track := range response.Tracks {
 					if track.Feed || track.Path == feedURL || track.ProviderMeta["kind"] == "album" {
@@ -148,7 +148,7 @@ func TestIPCPodcastTrackActions(t *testing.T) {
 				if op == "track.play" && !reflect.DeepEqual(engine.playCalls, []string{wantEpisodes[0].Path}) {
 					t.Fatalf("played = %v, want first episode", engine.playCalls)
 				}
-				if m.feedLoading || !reflect.DeepEqual(m.playlist.Tracks(), wantTracks) || !reflect.DeepEqual(m.playlist.PlayNextTracks(), queued) {
+				if m.feedLoading || !reflect.DeepEqual(m.queue.Tracks(), wantTracks) || !reflect.DeepEqual(m.queue.PlayNextTracks(), queued) {
 					t.Fatal("episode playback changed the existing playlist or queue")
 				}
 				if op == "track.queue" {
@@ -161,7 +161,7 @@ func TestIPCPodcastTrackActions(t *testing.T) {
 							t.Fatalf("played = %v, want next queued track %q", engine.playCalls, track.Path)
 						}
 					}
-					if m.feedLoading || !reflect.DeepEqual(m.playlist.Tracks(), wantTracks) || m.playlist.PlayNextLen() != 0 {
+					if m.feedLoading || !reflect.DeepEqual(m.queue.Tracks(), wantTracks) || m.queue.PlayNextLen() != 0 {
 						t.Fatal("playing queued episodes replaced the playlist or lost queue order")
 					}
 				}
@@ -193,7 +193,7 @@ func TestIPCPodcastV2FeedCommit(t *testing.T) {
 				info := ipc.TrackInfo{Path: srv.URL, Feed: true, ProviderMeta: map[string]string{"kind": "album", "albumID": srv.URL}}
 				request := ipc.Request{Track: &info}
 				if tt.checkRevision {
-					request.Revision = m.playlist.Revision()
+					request.Revision = m.queue.Revision()
 				}
 				params, err := json.Marshal(request)
 				if err != nil {
@@ -217,12 +217,12 @@ func TestIPCPodcastV2FeedCommit(t *testing.T) {
 				}
 				switch tt.change {
 				case "playlist":
-					m.playlist.Add(playlist.Track{Path: "/music/added.flac", Title: "Added while fetching"})
+					m.queue.Add(playlist.Track{Path: "/music/added.flac", Title: "Added while fetching"})
 				case "queue":
-					m.playlist.AddPlayNext(0)
+					m.queue.AddPlayNext(0)
 				}
-				before, revision, engineBefore := m.playlist.Snapshot(), m.playlist.Revision(), *engine
-				tracks := m.playlist.Tracks()
+				before, revision, engineBefore := m.queue.Snapshot(), m.queue.Revision(), *engine
+				tracks := m.queue.Tracks()
 				updated, cmd = m.Update(result)
 				m = updated.(Model)
 				completed, _ := jobs.Get(job.ID)
@@ -233,7 +233,7 @@ func TestIPCPodcastV2FeedCommit(t *testing.T) {
 					if completed.Snapshot != nil || len(completed.Result) != 0 {
 						t.Fatalf("conflicting job has a committed result: %+v", completed)
 					}
-					if cmd != nil || !reflect.DeepEqual(m.playlist.Snapshot(), before) || m.playlist.Revision() != revision || !reflect.DeepEqual(*engine, engineBefore) || m.loadedPlaylist != "Saved" {
+					if cmd != nil || !reflect.DeepEqual(m.queue.Snapshot(), before) || m.queue.Revision() != revision || !reflect.DeepEqual(*engine, engineBefore) || m.loadedPlaylist != "Saved" {
 						t.Fatal("stale feed result changed the playlist, queue, or playback")
 					}
 					return
@@ -241,7 +241,7 @@ func TestIPCPodcastV2FeedCommit(t *testing.T) {
 				if completed.State != ipc.JobSucceeded || completed.Error != nil {
 					t.Fatalf("job = %+v, want success in the feed result update", completed)
 				}
-				if !reflect.DeepEqual(m.playlist.Tracks(), append(tracks, result.tracks...)) {
+				if !reflect.DeepEqual(m.queue.Tracks(), append(tracks, result.tracks...)) {
 					t.Fatal("feed commit did not preserve the current playlist")
 				}
 				if completed.Snapshot == nil || completed.Snapshot.Revision == 0 || !reflect.DeepEqual(*completed.Snapshot, m.runtimeSnapshot()) {
@@ -254,12 +254,12 @@ func TestIPCPodcastV2FeedCommit(t *testing.T) {
 				if !reflect.DeepEqual(response, m.v2PlaylistResponse()) {
 					t.Fatalf("job result = %+v, want playlist at commit", response)
 				}
-				committed := m.playlist.Snapshot()
+				committed := m.queue.Snapshot()
 				if err := jobs.Cancel(job.ID); !errors.Is(err, ipc.ErrInvalidJobState) {
 					t.Fatalf("Cancel(committed feed) = %v, want invalid job state", err)
 				}
 				afterCancel, _ := jobs.Get(job.ID)
-				if !reflect.DeepEqual(afterCancel, completed) || !reflect.DeepEqual(m.playlist.Snapshot(), committed) {
+				if !reflect.DeepEqual(afterCancel, completed) || !reflect.DeepEqual(m.queue.Snapshot(), committed) {
 					t.Fatal("late cancellation changed the committed feed job or playlist")
 				}
 				nextJob, err := jobs.Create("queue.clear")
@@ -269,7 +269,7 @@ func TestIPCPodcastV2FeedCommit(t *testing.T) {
 				updated, _ = m.Update(V2RequestMsg{Request: ipc.V2Request{Operation: "queue.clear"}, Jobs: jobs, JobID: nextJob.ID})
 				m = updated.(Model)
 				nextCompleted, _ := jobs.Get(nextJob.ID)
-				if nextCompleted.State != ipc.JobSucceeded || m.playlist.Len() != 0 || m.runtimeSnapshot().Revision <= completed.Snapshot.Revision {
+				if nextCompleted.State != ipc.JobSucceeded || m.queue.Len() != 0 || m.runtimeSnapshot().Revision <= completed.Snapshot.Revision {
 					t.Fatal("next operation did not change the live state")
 				}
 				afterMutation, _ := jobs.Get(job.ID)
@@ -278,7 +278,7 @@ func TestIPCPodcastV2FeedCommit(t *testing.T) {
 				}
 				updated, cmd = m.Update(result)
 				m = updated.(Model)
-				if cmd != nil || m.playlist.Len() != 0 {
+				if cmd != nil || m.queue.Len() != 0 {
 					t.Fatal("a completed job's feed result was committed again")
 				}
 			})
@@ -323,7 +323,7 @@ func TestIPCPodcastCanceledJob(t *testing.T) {
 					}
 				}
 				m, engine := ipcPodcastTestModel()
-				before, revision, engineBefore := m.playlist.Snapshot(), m.playlist.Revision(), *engine
+				before, revision, engineBefore := m.queue.Snapshot(), m.queue.Revision(), *engine
 				if stage == "before dispatch" {
 					cancel()
 				}
@@ -380,7 +380,7 @@ func TestIPCPodcastCanceledJob(t *testing.T) {
 				if completed.State != ipc.JobCanceled || completed.Error == nil || completed.Error.Code != ipc.V2ErrorCodeCanceled {
 					t.Fatalf("job = %+v, want canceled", completed)
 				}
-				if !reflect.DeepEqual(m.playlist.Snapshot(), before) || m.playlist.Revision() != revision || !reflect.DeepEqual(*engine, engineBefore) || m.loadedPlaylist != "Saved" {
+				if !reflect.DeepEqual(m.queue.Snapshot(), before) || m.queue.Revision() != revision || !reflect.DeepEqual(*engine, engineBefore) || m.loadedPlaylist != "Saved" {
 					t.Fatal("canceled feed changed the playlist, queue, or playback")
 				}
 			})
@@ -406,7 +406,7 @@ func TestIPCPodcastResolutionContextErrors(t *testing.T) {
 			}
 			defer cancel()
 			m, engine := ipcPodcastTestModel()
-			before, engineBefore := m.playlist.Snapshot(), *engine
+			before, engineBefore := m.queue.Snapshot(), *engine
 			jobs := ipc.NewJobStore()
 			defer jobs.CancelAll()
 			job, err := jobs.Create("track.play")
@@ -425,7 +425,7 @@ func TestIPCPodcastResolutionContextErrors(t *testing.T) {
 			if completed, _ := jobs.Get(job.ID); completed.State != ipc.JobFailed || completed.Error == nil || !strings.Contains(completed.Error.Detail, wantErr.Error()) {
 				t.Fatalf("job = %+v, want failure with %v", completed, wantErr)
 			}
-			if cmd != nil || !reflect.DeepEqual(m.playlist.Snapshot(), before) || !reflect.DeepEqual(*engine, engineBefore) {
+			if cmd != nil || !reflect.DeepEqual(m.queue.Snapshot(), before) || !reflect.DeepEqual(*engine, engineBefore) {
 				t.Fatal("context error mutated playback")
 			}
 		})
@@ -441,7 +441,7 @@ func TestIPCTrackActionsNonFeed(t *testing.T) {
 		} {
 			t.Run(op+"/"+info.Title, func(t *testing.T) {
 				m, _ := ipcPodcastTestModel()
-				original, queued := m.playlist.Tracks(), m.playlist.PlayNextTracks()
+				original, queued := m.queue.Tracks(), m.queue.PlayNextTracks()
 				msg := v2Request(t, op, ipc.Request{Track: &info})
 				updated, _ := m.Update(msg)
 				m = updated.(Model)
@@ -454,7 +454,7 @@ func TestIPCTrackActionsNonFeed(t *testing.T) {
 					queued = append(queued, track)
 					wantIndex = 0
 				}
-				if !reflect.DeepEqual(m.playlist.Tracks(), append(original, track)) || !reflect.DeepEqual(m.playlist.PlayNextTracks(), queued) || m.playlist.Index() != wantIndex {
+				if !reflect.DeepEqual(m.queue.Tracks(), append(original, track)) || !reflect.DeepEqual(m.queue.PlayNextTracks(), queued) || m.queue.Index() != wantIndex {
 					t.Fatal("non-feed single-track behavior changed")
 				}
 			})

@@ -28,26 +28,26 @@ func (m *Model) skipPrev() tea.Cmd {
 
 // playIndex starts the track at idx. An unplayable track is skipped forward.
 func (m *Model) playIndex(idx int) tea.Cmd {
-	m.playlist.SetIndex(idx)
+	m.queue.SetIndex(idx)
 	return m.playCurrentTrack()
 }
 
 // setShuffle turns shuffle on or off, saves the mode and re-arms the preload
 // for the new next track.
 func (m *Model) setShuffle(on bool) tea.Cmd {
-	if m.playlist.Shuffled() != on {
-		m.playlist.ToggleShuffle()
+	if m.queue.Shuffled() != on {
+		m.queue.ToggleShuffle()
 	}
 	m.adjustScroll()
-	_ = m.saveConfigBool("shuffle", m.playlist.Shuffled())
+	_ = m.saveConfigBool("shuffle", m.queue.Shuffled())
 	return m.rearmStalePreload()
 }
 
 // setRepeat sets the repeat mode, saves it and re-arms the preload for the
 // new next track.
 func (m *Model) setRepeat(mode playlist.RepeatMode) tea.Cmd {
-	m.playlist.SetRepeat(mode)
-	_ = m.saveConfigString("repeat", m.playlist.Repeat().String())
+	m.queue.SetRepeat(mode)
+	_ = m.saveConfigString("repeat", m.queue.Repeat().String())
 	return m.rearmStalePreload()
 }
 

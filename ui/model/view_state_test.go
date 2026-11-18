@@ -23,11 +23,11 @@ func TestMainViewShrinksPlaylistForFooterMessages(t *testing.T) {
 	}
 
 	m := Model{
-		player:    &playbackFakeEngine{},
-		playlist:  pl,
-		vis:       ui.NewVisualizer(44100),
-		width:     80,
-		plVisible: 3,
+		player:       &playbackFakeEngine{},
+		queue:        pl,
+		vis:          ui.NewVisualizer(44100),
+		width:        80,
+		queueVisible: 3,
 	}
 	m.vis.Mode = ui.VisNone
 	m.save.startDownload()
@@ -36,8 +36,8 @@ func TestMainViewShrinksPlaylistForFooterMessages(t *testing.T) {
 	m.height = m.mainFrameFixedLines(true) + 1
 	m.recomputeLayout()
 
-	if got := m.effectivePlaylistVisible(); got != m.layout.bodyRows {
-		t.Fatalf("effectivePlaylistVisible() = %d, want body budget %d", got, m.layout.bodyRows)
+	if got := m.effectiveQueueVisible(); got != m.layout.bodyRows {
+		t.Fatalf("effectiveQueueVisible() = %d, want body budget %d", got, m.layout.bodyRows)
 	}
 	if got := lipgloss.Height(m.View().Content); got > m.height {
 		t.Fatalf("View() height = %d, want <= %d after footer lines shrink playlist", got, m.height)
@@ -95,14 +95,14 @@ func TestRenderPlaylistKeepsCursorVisibleWhenFooterShrinksBudget(t *testing.T) {
 	}
 
 	m := Model{
-		player:    &playbackFakeEngine{},
-		playlist:  pl,
-		vis:       ui.NewVisualizer(44100),
-		width:     80,
-		focus:     focusPlaylist,
-		plVisible: 3,
-		plScroll:  7,
-		plCursor:  9,
+		player:       &playbackFakeEngine{},
+		queue:        pl,
+		vis:          ui.NewVisualizer(44100),
+		width:        80,
+		focus:        focusQueue,
+		queueVisible: 3,
+		queueScroll:  7,
+		queueCursor:  9,
 	}
 	m.vis.Mode = ui.VisNone
 	m.save.startDownload()
@@ -111,23 +111,23 @@ func TestRenderPlaylistKeepsCursorVisibleWhenFooterShrinksBudget(t *testing.T) {
 	m.height = m.mainFrameFixedLines(true) + 2
 	m.recomputeLayout()
 
-	if got := m.effectivePlaylistVisible(); got != m.layout.bodyRows {
-		t.Fatalf("effectivePlaylistVisible() = %d, want body budget %d", got, m.layout.bodyRows)
+	if got := m.effectiveQueueVisible(); got != m.layout.bodyRows {
+		t.Fatalf("effectiveQueueVisible() = %d, want body budget %d", got, m.layout.bodyRows)
 	}
 
-	out := m.renderPlaylist()
+	out := m.renderQueue()
 	if !strings.Contains(out, "Track 10") {
-		t.Fatalf("renderPlaylist() = %q, want selected row to remain visible", out)
+		t.Fatalf("renderQueue() = %q, want selected row to remain visible", out)
 	}
 }
 
 func TestViewConsumesInitialVisualizerRefresh(t *testing.T) {
 	m := Model{
-		player:   &playbackFakeEngine{},
-		playlist: playlist.New(),
-		vis:      ui.NewVisualizer(44100),
-		width:    80,
-		height:   24,
+		player: &playbackFakeEngine{},
+		queue:  playlist.New(),
+		vis:    ui.NewVisualizer(44100),
+		width:  80,
+		height: 24,
 	}
 	m.recomputeLayout()
 
@@ -149,12 +149,12 @@ func TestOverlayViewIncludesFooterMessages(t *testing.T) {
 	// Footer/transient messages are now rendered by the inline overlay layout
 	// (mainSectionsOverlay) rather than by each overlay renderer.
 	m := Model{
-		player:    &playbackFakeEngine{},
-		playlist:  playlist.New(),
-		vis:       ui.NewVisualizer(44100),
-		width:     80,
-		height:    24,
-		plVisible: 5,
+		player:       &playbackFakeEngine{},
+		queue:        playlist.New(),
+		vis:          ui.NewVisualizer(44100),
+		width:        80,
+		height:       24,
+		queueVisible: 5,
 	}
 	m.vis.Mode = ui.VisNone
 	m.refreshChrome()
@@ -169,12 +169,12 @@ func TestOverlayViewIncludesFooterMessages(t *testing.T) {
 
 func TestKeymapRendersInline(t *testing.T) {
 	m := Model{
-		player:    &playbackFakeEngine{},
-		playlist:  playlist.New(),
-		vis:       ui.NewVisualizer(44100),
-		width:     80,
-		height:    24,
-		plVisible: 5,
+		player:       &playbackFakeEngine{},
+		queue:        playlist.New(),
+		vis:          ui.NewVisualizer(44100),
+		width:        80,
+		height:       24,
+		queueVisible: 5,
 		keymap: keymapOverlay{
 			visible: true,
 			entries: []keymapEntry{{key: "Space", action: "Play/Pause"}},
@@ -196,12 +196,12 @@ func TestKeymapRendersInline(t *testing.T) {
 
 func TestFullVisualizerViewFitsTerminalWidth(t *testing.T) {
 	m := Model{
-		player:   &playbackFakeEngine{},
-		playlist: playlist.New(),
-		vis:      ui.NewVisualizer(44100),
-		width:    80,
-		height:   24,
-		fullVis:  true,
+		player:  &playbackFakeEngine{},
+		queue:   playlist.New(),
+		vis:     ui.NewVisualizer(44100),
+		width:   80,
+		height:  24,
+		fullVis: true,
 	}
 	m.vis.Mode = ui.VisNone
 	m.recomputeLayout()
@@ -228,7 +228,7 @@ func TestRenderPlaylistAddsPaddingToTrackNumber(t *testing.T) {
 
 	m := Model{
 		player:         &playbackFakeEngine{},
-		playlist:       pl,
+		queue:          pl,
 		vis:            ui.NewVisualizer(44100),
 		width:          80,
 		heightExpanded: true,
@@ -238,11 +238,11 @@ func TestRenderPlaylistAddsPaddingToTrackNumber(t *testing.T) {
 	m.height = m.mainFrameFixedLines(true) + 120
 	m.recomputeLayout()
 
-	out := m.renderPlaylist()
+	out := m.renderQueue()
 	lines := strings.Split(out, "\n")
 
 	if len(lines) < 120 {
-		t.Fatalf("renderPlaylist() returned %d lines, want 120", len(lines))
+		t.Fatalf("renderQueue() returned %d lines, want 120", len(lines))
 	}
 
 	line9 := stripAnsi(lines[8])

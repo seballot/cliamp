@@ -20,7 +20,7 @@ import (
 const (
 	ipcRuntimeEventState    = "runtime.state"
 	ipcRuntimeEventPlayback = "runtime.playback"
-	ipcRuntimeEventPlaylist = "runtime.playlist"
+	ipcRuntimeEventPlaylist = "runtime.queue"
 	ipcRuntimeEventSettings = "runtime.settings"
 )
 
@@ -126,7 +126,7 @@ func (m *Model) handleV2Request(msg V2RequestMsg) tea.Cmd {
 		m.failV2Job(msg.Jobs, msg.JobID, protocolErr)
 		return nil
 	}
-	if request.Revision != 0 && m.playlist != nil && request.Revision != m.playlist.Revision() && v2MutatesLivePlaylist(request.Cmd) {
+	if request.Revision != 0 && m.queue != nil && request.Revision != m.queue.Revision() && v2MutatesLivePlaylist(request.Cmd) {
 		m.failV2Job(msg.Jobs, msg.JobID, v2ConflictError())
 		return nil
 	}
@@ -257,7 +257,7 @@ func (m *Model) handleV2QueueRequest(ctx context.Context, jobs *ipc.JobStore, jo
 
 	switch request.Cmd {
 	case "queue.play":
-		if request.Index < 0 || request.Index >= m.playlist.Len() {
+		if request.Index < 0 || request.Index >= m.queue.Len() {
 			m.failV2Job(jobs, jobID, v2InvalidParamsError())
 			return nil
 		}
@@ -265,11 +265,11 @@ func (m *Model) handleV2QueueRequest(ctx context.Context, jobs *ipc.JobStore, jo
 		m.completeV2Job(jobs, jobID, m.v2PlaylistResponse())
 		return cmd
 	case "queue.enqueue":
-		if request.Index < 0 || request.Index >= m.playlist.Len() {
+		if request.Index < 0 || request.Index >= m.queue.Len() {
 			m.failV2Job(jobs, jobID, v2InvalidParamsError())
 			return nil
 		}
-		m.playlist.AddPlayNext(request.Index)
+		m.queue.AddPlayNext(request.Index)
 		m.normalizePlayNextOverlay()
 		m.completeV2Job(jobs, jobID, m.v2PlaylistResponse())
 		return m.rearmStalePreload()
@@ -293,7 +293,7 @@ func (m *Model) handleV2QueueRequest(ctx context.Context, jobs *ipc.JobStore, jo
 		m.replacePlaylist(nil)
 		m.clearLoadedPlaylist()
 		m.setHeaderStateFromTracks(nil)
-		m.plCursor, m.plScroll = 0, 0
+		m.queueCursor, m.queueScroll = 0, 0
 	}
 	m.completeV2Job(jobs, jobID, m.v2PlaylistResponse())
 	return nil
@@ -305,18 +305,18 @@ func (m *Model) handleV2PlayNext(jobs *ipc.JobStore, jobID string, request ipc.R
 		m.completeV2Job(jobs, jobID, m.v2PlayNextResponsePage(request.Offset, request.Limit))
 		return nil
 	case "playnext.remove":
-		if request.Index < 0 || request.Index >= m.playlist.PlayNextLen() {
+		if request.Index < 0 || request.Index >= m.queue.PlayNextLen() {
 			m.failV2Job(jobs, jobID, v2InvalidParamsError())
 			return nil
 		}
-		m.playlist.RemovePlayNextAt(request.Index)
+		m.queue.RemovePlayNextAt(request.Index)
 	case "playnext.move":
-		if !m.playlist.MovePlayNext(request.Index, request.To) {
+		if !m.queue.MovePlayNext(request.Index, request.To) {
 			m.failV2Job(jobs, jobID, v2InvalidParamsError())
 			return nil
 		}
 	case "playnext.clear":
-		m.playlist.ClearPlayNext()
+		m.queue.ClearPlayNext()
 	}
 	m.normalizePlayNextOverlay()
 	m.completeV2Job(jobs, jobID, m.v2PlayNextResponse())
@@ -480,20 +480,20 @@ func (m *Model) handleV2Mode(jobs *ipc.JobStore, jobID string, request ipc.Reque
 	name := strings.ToLower(request.Name)
 	switch request.Cmd {
 	case "shuffle":
-		on, ok := switchValue(name, m.playlist.Shuffled())
+		on, ok := switchValue(name, m.queue.Shuffled())
 		if !ok {
 			m.failV2Job(jobs, jobID, v2InvalidParamsError())
 			return nil
 		}
 		cmd := m.setShuffle(on)
-		value := m.playlist.Shuffled()
+		value := m.queue.Shuffled()
 		m.completeV2Job(jobs, jobID, ipc.Response{OK: true, Shuffle: &value})
 		return cmd
 	case "repeat":
 		var mode playlist.RepeatMode
 		switch name {
 		case "", "cycle":
-			mode = (m.playlist.Repeat() + 1) % (playlist.RepeatOne + 1)
+			mode = (m.queue.Repeat() + 1) % (playlist.RepeatOne + 1)
 		case "off":
 			mode = playlist.RepeatOff
 		case "all":
@@ -505,7 +505,7 @@ func (m *Model) handleV2Mode(jobs *ipc.JobStore, jobID string, request ipc.Reque
 			return nil
 		}
 		cmd := m.setRepeat(mode)
-		m.completeV2Job(jobs, jobID, ipc.Response{OK: true, Repeat: m.playlist.Repeat().String()})
+		m.completeV2Job(jobs, jobID, ipc.Response{OK: true, Repeat: m.queue.Repeat().String()})
 		return cmd
 	case "mono":
 		on, ok := switchValue(name, m.player.Mono())
@@ -627,16 +627,16 @@ func (m *Model) runtimeSnapshot() ipc.RuntimeSnapshot {
 	if m.ipcRuntime != nil {
 		snapshot.Revision = m.ipcRuntime.revision
 	}
-	if m.playlist != nil {
-		snapshot.PlaylistRevision = m.playlist.Revision()
-		snapshot.Index = m.playlist.Index()
-		snapshot.Total = m.playlist.Len()
-		snapshot.PlayNextTotal = m.playlist.PlayNextLen()
-		shuffled := m.playlist.Shuffled()
+	if m.queue != nil {
+		snapshot.PlaylistRevision = m.queue.Revision()
+		snapshot.Index = m.queue.Index()
+		snapshot.Total = m.queue.Len()
+		snapshot.PlayNextTotal = m.queue.PlayNextLen()
+		shuffled := m.queue.Shuffled()
 		snapshot.Shuffle = &shuffled
-		snapshot.Repeat = m.playlist.Repeat().String()
-		if track, index := m.playlist.Current(); index >= 0 {
-			info := ipcTrackInfo(track, index, m.playlist.PlayNextPosition(index), m.playlistTrackFavorited(track))
+		snapshot.Repeat = m.queue.Repeat().String()
+		if track, index := m.queue.Current(); index >= 0 {
+			info := ipcTrackInfo(track, index, m.queue.PlayNextPosition(index), m.queueTrackFavorited(track))
 			snapshot.LogicalTrack = &info
 		}
 	}
@@ -654,10 +654,10 @@ func (m *Model) runtimeSnapshot() ipc.RuntimeSnapshot {
 	if track, _ := m.currentPlaybackTrack(); track.Path != "" {
 		index := snapshot.Index
 		queuePosition := 0
-		if m.playlist != nil && index >= 0 {
-			queuePosition = m.playlist.PlayNextPosition(index)
+		if m.queue != nil && index >= 0 {
+			queuePosition = m.queue.PlayNextPosition(index)
 		}
-		info := ipcTrackInfo(track, index, queuePosition, m.playlistTrackFavorited(track))
+		info := ipcTrackInfo(track, index, queuePosition, m.queueTrackFavorited(track))
 		artist, title := m.resolveTrackDisplay(track)
 		if title != "" {
 			if track.Stream && title != track.Title {
@@ -698,7 +698,7 @@ func (m *Model) runtimeSnapshot() ipc.RuntimeSnapshot {
 }
 
 func (m *Model) publishIPCRuntimeState() {
-	if m.ipcRuntime == nil || m.ipcRuntime.broker == nil || m.player == nil || m.playlist == nil {
+	if m.ipcRuntime == nil || m.ipcRuntime.broker == nil || m.player == nil || m.queue == nil {
 		return
 	}
 	fingerprint := m.runtimeFingerprint()
@@ -720,12 +720,12 @@ func (m *Model) publishIPCRuntimeState() {
 
 func (m *Model) runtimeFingerprint() ipcRuntimeFingerprint {
 	fingerprint := ipcRuntimeFingerprint{playlist: m.runtimePlaylist(), device: m.audioDevice}
-	fingerprint.playlistRevision = m.playlist.Revision()
-	fingerprint.index = m.playlist.Index()
-	fingerprint.total = m.playlist.Len()
-	fingerprint.playNextTotal = m.playlist.PlayNextLen()
-	fingerprint.shuffle = m.playlist.Shuffled()
-	fingerprint.repeat = m.playlist.Repeat().String()
+	fingerprint.playlistRevision = m.queue.Revision()
+	fingerprint.index = m.queue.Index()
+	fingerprint.total = m.queue.Len()
+	fingerprint.playNextTotal = m.queue.PlayNextLen()
+	fingerprint.shuffle = m.queue.Shuffled()
+	fingerprint.repeat = m.queue.Repeat().String()
 	fingerprint.volume = m.player.Volume()
 	fingerprint.mono = m.player.Mono()
 	fingerprint.speed = m.player.Speed()
@@ -746,9 +746,9 @@ func (m *Model) runtimeFingerprint() ipcRuntimeFingerprint {
 	}
 	if track, _ := m.currentPlaybackTrack(); track.Path != "" {
 		fingerprint.trackPath = track.Path
-		fingerprint.favorite = m.playlistTrackFavorited(track)
+		fingerprint.favorite = m.queueTrackFavorited(track)
 	}
-	if track, _ := m.playlist.Current(); track.Path != "" {
+	if track, _ := m.queue.Current(); track.Path != "" {
 		fingerprint.logicalPath = track.Path
 	}
 	if m.vis != nil {
@@ -780,10 +780,10 @@ func (m *Model) v2PlaylistResponse() ipc.Response {
 }
 
 func (m *Model) v2PlaylistResponsePage(offset, limit int) ipc.Response {
-	tracks := m.playlist.Tracks()
+	tracks := m.queue.Tracks()
 	total := len(tracks)
 	if offset < 0 || offset >= total {
-		return ipc.Response{OK: true, Index: m.playlist.Index(), Total: total}
+		return ipc.Response{OK: true, Index: m.queue.Index(), Total: total}
 	}
 	if limit <= 0 || limit > 200 {
 		limit = 200
@@ -792,9 +792,9 @@ func (m *Model) v2PlaylistResponsePage(offset, limit int) ipc.Response {
 	items := make([]ipc.TrackInfo, end-offset)
 	for i, track := range tracks[offset:end] {
 		index := offset + i
-		items[i] = ipcTrackInfo(track, index, m.playlist.PlayNextPosition(index), m.playlistTrackFavorited(track))
+		items[i] = ipcTrackInfo(track, index, m.queue.PlayNextPosition(index), m.queueTrackFavorited(track))
 	}
-	return ipc.Response{OK: true, Tracks: items, Index: m.playlist.Index(), Total: total}
+	return ipc.Response{OK: true, Tracks: items, Index: m.queue.Index(), Total: total}
 }
 
 func (m *Model) v2PlayNextResponse() ipc.Response {
@@ -802,7 +802,7 @@ func (m *Model) v2PlayNextResponse() ipc.Response {
 }
 
 func (m *Model) v2PlayNextResponsePage(offset, limit int) ipc.Response {
-	entries := m.playlist.PlayNextEntries()
+	entries := m.queue.PlayNextEntries()
 	total := len(entries)
 	if offset < 0 || offset >= total {
 		return ipc.Response{OK: true, Total: total}
@@ -813,7 +813,7 @@ func (m *Model) v2PlayNextResponsePage(offset, limit int) ipc.Response {
 	end := min(total, offset+limit)
 	items := make([]ipc.TrackInfo, end-offset)
 	for i, entry := range entries[offset:end] {
-		items[i] = ipcTrackInfo(entry.Track, entry.TrackIndex, offset+i+1, m.playlistTrackFavorited(entry.Track))
+		items[i] = ipcTrackInfo(entry.Track, entry.TrackIndex, offset+i+1, m.queueTrackFavorited(entry.Track))
 	}
 	return ipc.Response{OK: true, Tracks: items, Total: total}
 }

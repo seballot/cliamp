@@ -177,7 +177,7 @@ func TestOpeningAnInputClearsItsLastState(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := keybindingTestModel()
-			m.focus = focusPlaylist
+			m.focus = focusQueue
 			tt.stale(&m)
 			m.handleKey(tt.key)
 			tt.check(t, m)

@@ -38,7 +38,7 @@ func TestHandlePasteRoutesToActiveInput(t *testing.T) {
 		},
 		{
 			name:    "search appends and filters",
-			model:   Model{search: searchState{active: true, query: "ja"}, playlist: playlist.New()},
+			model:   Model{search: searchState{active: true, query: "ja"}, queue: playlist.New()},
 			content: "zz",
 			check: func(t *testing.T, m *Model) {
 				if m.search.query != "jazz" {
@@ -242,7 +242,7 @@ func TestHandlePasteEmptyContentIsNoop(t *testing.T) {
 }
 
 func TestHandlePasteNoInputActiveIsNoop(t *testing.T) {
-	m := Model{focus: focusPlaylist}
+	m := Model{focus: focusQueue}
 
 	if cmd := m.handlePaste("ignored text"); cmd != nil {
 		t.Fatalf("handlePaste returned non-nil cmd when no input active")
@@ -309,21 +309,21 @@ func TestProviderFilterTakesInputOnlyWithFocus(t *testing.T) {
 			m.provSearch.active = true
 
 			tt.load(&m)
-			if m.focus != focusPlaylist {
+			if m.focus != focusQueue {
 				t.Fatalf("focus = %v after the load, want the playlist", m.focus)
 			}
-			if _, screen := m.commandContext(); screen != "Playlist" {
-				t.Fatalf("help context = %q, want Playlist", screen)
+			if _, screen := m.commandContext(); screen != "Queue" {
+				t.Fatalf("help context = %q, want Queue", screen)
 			}
-			m.plCursor = 0
+			m.queueCursor = 0
 			m.handleKey(tea.KeyPressMsg{Code: 'j', Text: "j"})
 			m.handlePaste("abc")
 
 			if m.provSearch.query != "" {
 				t.Fatalf("hidden filter query = %q, want no input", m.provSearch.query)
 			}
-			if m.plCursor != 1 {
-				t.Fatalf("playlist cursor = %d, want j to move it to 1", m.plCursor)
+			if m.queueCursor != 1 {
+				t.Fatalf("playlist cursor = %d, want j to move it to 1", m.queueCursor)
 			}
 		})
 	}
@@ -353,12 +353,12 @@ func TestResizeClampsTheVisibleListOverTheProviderFilter(t *testing.T) {
 		{
 			name: "playlist after a load",
 			setup: func(m *Model) {
-				m.focus = focusPlaylist
-				m.plScroll = 50
+				m.focus = focusQueue
+				m.queueScroll = 50
 			},
 			check: func(t *testing.T, m *Model) {
-				if m.plScroll != 0 {
-					t.Fatalf("plScroll = %d, want 0 for a two-track playlist", m.plScroll)
+				if m.queueScroll != 0 {
+					t.Fatalf("queueScroll = %d, want 0 for a two-track playlist", m.queueScroll)
 				}
 			},
 		},
@@ -366,7 +366,7 @@ func TestResizeClampsTheVisibleListOverTheProviderFilter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := keybindingTestModel()
-			m.playlist.Add(playlist.Track{Title: "A", Path: "a.mp3"}, playlist.Track{Title: "B", Path: "b.mp3"})
+			m.queue.Add(playlist.Track{Title: "A", Path: "a.mp3"}, playlist.Track{Title: "B", Path: "b.mp3"})
 			m.provSearch.active = true
 			tt.setup(&m)
 

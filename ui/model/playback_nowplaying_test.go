@@ -96,7 +96,7 @@ func TestPlayTrackEmitsPluginTrackChange(t *testing.T) {
 					if outcome == "failed" {
 						engine.playErr = errors.New("playback startup failed")
 					}
-					m := Model{player: engine, playlist: pl, luaMgr: mgr}
+					m := Model{player: engine, queue: pl, luaMgr: mgr}
 					if reporter {
 						prov := &nowPlayingProv{reports: make(chan playlist.Track, 1)}
 						m.providers = []provider.Entry{{Key: "p", Name: "P", Provider: prov}}
@@ -171,7 +171,7 @@ func TestPlayTrackFiresNowPlayingForEverySource(t *testing.T) {
 			pl.Add(track)
 			m := Model{
 				player:    &playbackFakeEngine{},
-				playlist:  pl,
+				queue:     pl,
 				providers: []provider.Entry{{Key: "p", Name: "P", Provider: prov}},
 			}
 			cmd := m.playTrack(track)

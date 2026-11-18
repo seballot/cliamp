@@ -47,7 +47,7 @@ func TestPlaybackContextOverlappingReplacement(t *testing.T) {
 			pl := playlist.New()
 			pl.Add(old...)
 			engine := &playbackFakeEngine{position: 19 * time.Second}
-			m := Model{player: engine, playlist: pl, provider: commandsTestProvider{name: "Test"}, vis: ui.NewVisualizer(44100)}
+			m := Model{player: engine, queue: pl, provider: commandsTestProvider{name: "Test"}, vis: ui.NewVisualizer(44100)}
 			m.SetVisualizer("none")
 			var saved savedPlaybackContext
 			m.SetResumeSaver(saved.save)
@@ -86,7 +86,7 @@ func TestBrowserPlaybackContextSurvivesQueuedAlbum(t *testing.T) {
 			otherAlbum := []playlist.Track{{Path: "w.mp3"}, {Path: "x.mp3"}, {Path: "y.mp3"}}
 			engine := &playbackFakeEngine{}
 			m := Model{
-				player: engine, playlist: playlist.New(), vis: ui.NewVisualizer(44100),
+				player: engine, queue: playlist.New(), vis: ui.NewVisualizer(44100),
 				navBrowser: navBrowserState{
 					prov: commandsTestProvider{name: "Test"}, visible: true,
 					mode: navBrowseModeByAlbum, screen: navBrowseScreenTracks, tracks: album, cursor: 1,
@@ -98,13 +98,13 @@ func TestBrowserPlaybackContextSurvivesQueuedAlbum(t *testing.T) {
 			cmd := m.handleNavBrowserKey(tea.KeyPressMsg{Code: tea.KeyEnter})
 			settlePlay(t, &m, cmd)
 			saved.check(t, album, 1)
-			if tracks := m.playlist.Tracks(); len(tracks) != 2 || tracks[0].Path != "b.mp3" || tracks[1].Path != "c.mp3" {
+			if tracks := m.queue.Tracks(); len(tracks) != 2 || tracks[0].Path != "b.mp3" || tracks[1].Path != "c.mp3" {
 				t.Fatalf("live list = %+v, want [B C]", tracks)
 			}
 
 			m.navBrowser.tracks = otherAlbum
 			m.handleNavBrowserKey(tea.KeyPressMsg{Text: "q"})
-			if m.playlist.PlayNextLen() != 1 {
+			if m.queue.PlayNextLen() != 1 {
 				t.Fatal("browser q did not queue the interlude")
 			}
 			saved.check(t, album, 1)
@@ -133,7 +133,7 @@ func TestNavPlaybackContextUsesDisplayedList(t *testing.T) {
 		t.Run(tc.key, func(t *testing.T) {
 			tracks := []playlist.Track{{Path: "a.mp3"}, {Path: "b.mp3"}, {Path: "a.mp3"}, {Path: "c.mp3"}}
 			m := Model{
-				player: &playbackFakeEngine{}, playlist: playlist.New(), vis: ui.NewVisualizer(44100),
+				player: &playbackFakeEngine{}, queue: playlist.New(), vis: ui.NewVisualizer(44100),
 				navBrowser: navBrowserState{tracks: tracks, search: "filtered", searchIdx: []int{1, 2, 3}, cursor: 1},
 			}
 			var saved savedPlaybackContext
@@ -144,7 +144,7 @@ func TestNavPlaybackContextUsesDisplayedList(t *testing.T) {
 			}
 			m.handleNavTrackListKey(key)
 			saved.check(t, tracks[1:], tc.index)
-			if got := m.playlist.Len(); got != tc.count {
+			if got := m.queue.Len(); got != tc.count {
 				t.Fatalf("live list length = %d, want %d", got, tc.count)
 			}
 		})
@@ -157,14 +157,14 @@ func TestNavPlaybackContextPrecedesEnqueueLimit(t *testing.T) {
 		tracks[i].Path = fmt.Sprintf("track-%d.mp3", i)
 	}
 	m := Model{
-		player: &playbackFakeEngine{}, playlist: playlist.New(), vis: ui.NewVisualizer(44100),
+		player: &playbackFakeEngine{}, queue: playlist.New(), vis: ui.NewVisualizer(44100),
 		navBrowser: navBrowserState{tracks: tracks, cursor: 1},
 	}
 	var saved savedPlaybackContext
 	m.SetResumeSaver(saved.save)
 	m.handleNavTrackListKey(tea.KeyPressMsg{Code: tea.KeyEnter})
 	saved.check(t, tracks, 1)
-	if got := m.playlist.Len(); got != 500 {
+	if got := m.queue.Len(); got != 500 {
 		t.Fatalf("live list length = %d, want 500", got)
 	}
 }
@@ -175,7 +175,7 @@ func TestDuplicatePlaybackContextPersistenceAndRestore(t *testing.T) {
 			tracks := []playlist.Track{{Path: "a.mp3"}, {Path: "b.mp3"}, {Path: "a.mp3"}, {Path: "c.mp3"}}
 			pl := playlist.New()
 			engine := &playbackFakeEngine{}
-			m := Model{player: engine, playlist: pl, vis: ui.NewVisualizer(44100)}
+			m := Model{player: engine, queue: pl, vis: ui.NewVisualizer(44100)}
 			var saved savedPlaybackContext
 			if attached {
 				pl.Add(tracks...)
@@ -214,7 +214,7 @@ func TestDuplicatePlaybackContextPersistenceAndRestore(t *testing.T) {
 			pl = playlist.New()
 			pl.Add(restored...)
 			engine = &playbackFakeEngine{}
-			m = Model{player: engine, playlist: pl, vis: ui.NewVisualizer(44100)}
+			m = Model{player: engine, queue: pl, vis: ui.NewVisualizer(44100)}
 			m.SetResumeSaver(saved.save)
 			m.SetInitialTrack(index)
 			m.SetResume(tracks[index].Path, 17)
@@ -246,7 +246,7 @@ func TestSetResumeSaverPreservesPlaylistState(t *testing.T) {
 	pl.Next()
 	want := playlist.New()
 	want.Restore(pl.Snapshot())
-	m := Model{playlist: pl}
+	m := Model{queue: pl}
 	m.SetResumeSaver(func(playlist.Track, int, []playlist.Track, int) {})
 	if pl.Index() != want.Index() || !pl.CurrentIsPlayNext() || !pl.Shuffled() || pl.Repeat() != playlist.RepeatAll || pl.PlayNextLen() != 1 {
 		t.Fatal("enabling context tracking changed playback state")
@@ -267,7 +267,7 @@ func TestPlaybackContextSelectionWithoutSaver(t *testing.T) {
 	tracks := []playlist.Track{{Path: "a.mp3"}, {Path: "b.mp3"}, {Path: "a.mp3"}}
 	pl := playlist.New()
 	pl.Add(tracks...)
-	m := Model{player: &playbackFakeEngine{position: time.Second}, playlist: pl}
+	m := Model{player: &playbackFakeEngine{position: time.Second}, queue: pl}
 	m.SetInitialTrack(2)
 	pl.SetIndex(0)
 	settlePlay(t, &m, m.playCurrentTrack())

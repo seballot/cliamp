@@ -78,7 +78,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case autoPlayMsg:
-		if m.playlist.Len() > 0 && !m.player.IsPlaying() {
+		if m.queue.Len() > 0 && !m.player.IsPlaying() {
 			cmd := m.playCurrentTrack()
 			return m, cmd
 		}

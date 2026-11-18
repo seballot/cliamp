@@ -20,16 +20,16 @@ func TestPlaylistStateMarkersStayVisibleWithoutColor(t *testing.T) {
 	p.AddPlayNext(0)
 	fake := &playbackFakeEngine{playing: true}
 	m := Model{
-		layout:    frameLayout{panelWidth: 80},
-		player:    fake,
-		playlist:  p,
-		focus:     focusPlaylist,
-		plCursor:  0,
-		plVisible: 2,
-		favSet:    map[string]struct{}{"/playing.mp3": {}},
+		layout:       frameLayout{panelWidth: 80},
+		player:       fake,
+		queue:        p,
+		focus:        focusQueue,
+		queueCursor:  0,
+		queueVisible: 2,
+		favSet:       map[string]struct{}{"/playing.mp3": {}},
 	}
 
-	plain := ansi.Strip(m.renderPlaylist())
+	plain := ansi.Strip(m.renderQueue())
 	if !strings.Contains(plain, ">▶N"+favHeart) {
 		t.Fatalf("playlist markers = %q, want cursor, playback, play next, and favorite columns", plain)
 	}
@@ -38,7 +38,7 @@ func TestPlaylistStateMarkersStayVisibleWithoutColor(t *testing.T) {
 	}
 
 	m.playbackDetached = true
-	plain = ansi.Strip(m.renderPlaylist())
+	plain = ansi.Strip(m.renderQueue())
 	if strings.Contains(plain, "▶") {
 		t.Fatalf("detached playlist markers = %q, must not show playback marker", plain)
 	}
@@ -48,14 +48,14 @@ func TestPlaylistShowsKnownTrackDuration(t *testing.T) {
 	p := playlist.New()
 	p.Add(playlist.Track{Title: "Timed", DurationSecs: 222})
 	m := Model{
-		layout:    frameLayout{panelWidth: 80},
-		player:    &playbackFakeEngine{},
-		playlist:  p,
-		focus:     focusPlaylist,
-		plVisible: 1,
+		layout:       frameLayout{panelWidth: 80},
+		player:       &playbackFakeEngine{},
+		queue:        p,
+		focus:        focusQueue,
+		queueVisible: 1,
 	}
 
-	plain := ansi.Strip(m.renderPlaylist())
+	plain := ansi.Strip(m.renderQueue())
 	if !strings.Contains(plain, "3:42") {
 		t.Fatalf("playlist row = %q, want right-aligned duration", plain)
 	}
@@ -67,7 +67,7 @@ func TestNonSeekableStreamUsesLiveTime(t *testing.T) {
 	p.Add(playlist.Track{Title: "Station", Stream: true})
 	m := Model{
 		player:    fake,
-		playlist:  p,
+		queue:     p,
 		cachedPos: 65 * time.Second,
 	}
 

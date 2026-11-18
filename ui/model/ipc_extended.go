@@ -137,8 +137,8 @@ func (m *Model) handleIPCURLResult(result ipcURLLoadResult) tea.Cmd {
 	if result.request.Play {
 		m.stopPlayback()
 		m.player.ClearPreload()
-		m.playlist.SetIndex(start)
-		m.plCursor = start
+		m.queue.SetIndex(start)
+		m.queueCursor = start
 		m.adjustScroll()
 		return m.playCurrentTrack()
 	}
@@ -195,11 +195,11 @@ func (m *Model) handleIPCFeedLoad(result ipcFeedLoadResult) tea.Cmd {
 		m.failV2Job(result.jobs, result.jobID, err)
 		return nil
 	}
-	if result.revision != 0 && result.revision != m.playlist.Revision() {
+	if result.revision != 0 && result.revision != m.queue.Revision() {
 		m.failV2Job(result.jobs, result.jobID, v2ConflictError())
 		return nil
 	}
-	// Expand before touching the playlist: playing a feed placeholder would
+	// Expand before touching the queue: playing a feed placeholder would
 	// invoke the legacy feed resolver, which replaces the entire playlist.
 	var cmd tea.Cmd
 	if result.op == "track.play" {
@@ -615,7 +615,7 @@ func (m *Model) handleIPCProviderLoad(result ipcProviderLoadResult) tea.Cmd {
 		m.playlistSource = result.source
 	}
 	m.setHeaderStateFromTracks(result.tracks)
-	m.plCursor = result.start
+	m.queueCursor = result.start
 	result.request.Reply <- ipc.Response{OK: true, Tracks: ipcTrackInfos(result.tracks, m.trackFavoriteLookup(true)), Playlist: result.request.Playlist, Total: len(result.tracks)}
 	return m.playCurrentTrack()
 }

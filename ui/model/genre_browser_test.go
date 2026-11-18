@@ -98,9 +98,9 @@ func TestGenreBrowserFiltersFavoritesAndRefreshesProviderLists(t *testing.T) {
 		styles: []string{"house"},
 	}
 	m := Model{
-		provider:  p,
-		playlist:  playlist.New(),
-		plVisible: 10,
+		provider:     p,
+		queue:        playlist.New(),
+		queueVisible: 10,
 		navBrowser: navBrowserState{
 			prov:    p,
 			visible: true,
@@ -137,8 +137,8 @@ func TestGenreBrowserDrillsIntoLatestAndPopular(t *testing.T) {
 		tracks: []playlist.Track{{Title: "A Show", Path: "https://example.com/show"}},
 	}
 	m := Model{
-		player:   &playbackFakeEngine{},
-		playlist: playlist.New(),
+		player: &playbackFakeEngine{},
+		queue:  playlist.New(),
 		navBrowser: navBrowserState{
 			prov:           p,
 			visible:        true,
@@ -172,8 +172,8 @@ func TestGenreBrowserDrillsIntoLatestAndPopular(t *testing.T) {
 	if got.navBrowser.visible || got.navBrowser.selGenreSort.ID != "popular" {
 		t.Fatalf("genre browser remained open after loading a playable leaf: %+v", got.navBrowser)
 	}
-	if got.focus != focusPlaylist || got.playlist.Len() != 1 || got.plCursor != 0 {
-		t.Fatalf("main playlist state = focus:%v len:%d cursor:%d", got.focus, got.playlist.Len(), got.plCursor)
+	if got.focus != focusQueue || got.queue.Len() != 1 || got.queueCursor != 0 {
+		t.Fatalf("main playlist state = focus:%v len:%d cursor:%d", got.focus, got.queue.Len(), got.queueCursor)
 	}
 }
 
@@ -288,7 +288,7 @@ func (p duplicateGenreEntriesProvider) BrowseEntries() []provider.BrowseEntry {
 func TestReadOnlyGenreBrowserDoesNotAdvertiseFavorite(t *testing.T) {
 	p := &readOnlyGenreProvider{genres: []provider.GenreInfo{{ID: "house", Name: "House"}}}
 	m := Model{
-		playlist: playlist.New(),
+		queue: playlist.New(),
 		navBrowser: navBrowserState{
 			prov:    p,
 			visible: true,
@@ -311,7 +311,7 @@ func TestReadOnlyGenreBrowserDoesNotAdvertiseFavorite(t *testing.T) {
 func TestGenreFilterEnterSearchesFullProviderCatalogue(t *testing.T) {
 	p := &genreBrowserProvider{search: []provider.GenreInfo{{ID: "acid-techno", Name: "Acid Techno", Group: "Tag"}}}
 	m := Model{
-		playlist: playlist.New(),
+		queue: playlist.New(),
 		navBrowser: navBrowserState{
 			prov:      p,
 			visible:   true,

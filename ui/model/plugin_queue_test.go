@@ -7,8 +7,8 @@ import (
 )
 
 func TestPluginQueueAddTrackAppendsAsGiven(t *testing.T) {
-	m := Model{player: &playbackFakeEngine{}, playlist: playlist.New(), loadedPlaylist: "saved"}
-	m.playlist.Add(playlist.Track{Path: "/a.mp3", Title: "A"})
+	m := Model{player: &playbackFakeEngine{}, queue: playlist.New(), loadedPlaylist: "saved"}
+	m.queue.Add(playlist.Track{Path: "/a.mp3", Title: "A"})
 
 	spotify := playlist.Track{Path: "spotify:track:69kOkLUCkxIZYexIgSG8rq", Title: "Get Lucky", Artist: "Daft Punk", DurationSecs: 369}
 	next, _ := m.Update(PluginQueueMsg{Op: "add_track", Track: spotify})
@@ -16,7 +16,7 @@ func TestPluginQueueAddTrackAppendsAsGiven(t *testing.T) {
 	next, _ = m.Update(PluginQueueMsg{Op: "add_track", Track: playlist.Track{Path: "https://example.com/live"}})
 	m = next.(Model)
 
-	tracks := m.playlist.Tracks()
+	tracks := m.queue.Tracks()
 	if len(tracks) != 3 {
 		t.Fatalf("playlist has %d tracks, want 3", len(tracks))
 	}
@@ -48,7 +48,7 @@ func TestPluginQueueAddRearmsGaplessPreload(t *testing.T) {
 			})
 			p.SetRepeat(playlist.RepeatAll)
 			p.SetIndex(1)
-			m := Model{player: player, playlist: p}
+			m := Model{player: player, queue: p}
 
 			_, cmd := m.Update(msg)
 			if player.clearPreloadCalls != 1 {
@@ -85,11 +85,11 @@ func TestAppendsCountAlbumHeaders(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			m := Model{player: &playbackFakeEngine{}, playlist: playlist.New(), loadedPlaylist: "Saved"}
+			m := Model{player: &playbackFakeEngine{}, queue: playlist.New(), loadedPlaylist: "Saved"}
 			add(&m)
-			if m.playlist.Len() != 3 || !m.showAlbumHeaders || m.headerTracks != 3 || m.loadedPlaylist != "" {
+			if m.queue.Len() != 3 || !m.showAlbumHeaders || m.headerTracks != 3 || m.loadedPlaylist != "" {
 				t.Fatalf("len %d, headers %v over %d tracks, loaded %q; want 3 tracks under album headers and no loaded list",
-					m.playlist.Len(), m.showAlbumHeaders, m.headerTracks, m.loadedPlaylist)
+					m.queue.Len(), m.showAlbumHeaders, m.headerTracks, m.loadedPlaylist)
 			}
 		})
 	}

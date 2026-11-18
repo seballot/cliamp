@@ -151,7 +151,7 @@ func TestQueueEndEvent(t *testing.T) {
 			if len(tt.tracks) > 0 {
 				pl.SetIndex(len(tt.tracks) - 1)
 			}
-			m := Model{player: tt.player, playlist: pl, luaMgr: mgr}
+			m := Model{player: tt.player, queue: pl, luaMgr: mgr}
 			if tt.load != nil {
 				tt.load(t, &m)
 			}
@@ -191,7 +191,7 @@ func TestQueueEndStaleStreamAfterEndDoesNotReport(t *testing.T) {
 	track := playlist.Track{Path: "https://example.com/pending.mp3", Stream: true, Title: "Pending"}
 	pl := playlist.New()
 	pl.Add(track)
-	m := Model{player: &playbackFakeEngine{}, playlist: pl, luaMgr: mgr}
+	m := Model{player: &playbackFakeEngine{}, queue: pl, luaMgr: mgr}
 	cmd := m.playTrack(track)
 	if cmd == nil {
 		t.Fatal("stream playback did not return a command")
@@ -223,7 +223,7 @@ func TestQueueEndNotReportedAfterManualStop(t *testing.T) {
 	track := playlist.Track{Path: "/music/only.flac", Title: "Only"}
 	pl := playlist.New()
 	pl.Add(track)
-	m := Model{player: &playbackFakeEngine{playing: true}, playlist: pl, luaMgr: mgr}
+	m := Model{player: &playbackFakeEngine{playing: true}, queue: pl, luaMgr: mgr}
 	startedPlaybackTrack(&m, track)
 	updated, _ := m.Update(playback.StopMsg{})
 	m = updated.(Model)

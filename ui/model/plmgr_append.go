@@ -14,7 +14,7 @@ func (m *Model) addTracksToCurrentPlaylist(tracks []playlist.Track, what string)
 		m.status.Warning("Nothing to add", statusTTLShort)
 		return false, false
 	}
-	wasEmpty = m.playlist.Len() == 0
+	wasEmpty = m.queue.Len() == 0
 	m.appendTracks(tracks...)
 	m.status.Showf(statusTTLDefault, "Added %d track(s) from %s", len(tracks), what)
 	return wasEmpty, true
@@ -29,8 +29,8 @@ func (m *Model) appendTracksToPlaylist(tracks []playlist.Track, what string) tea
 	}
 	if wasEmpty {
 		// An empty playlist has nothing playing to protect, so start there.
-		m.plCursor = 0
-		m.playlist.SetIndex(0)
+		m.queueCursor = 0
+		m.queue.SetIndex(0)
 		m.adjustScroll()
 		return m.playCurrentTrack()
 	}
@@ -59,7 +59,7 @@ func (m *Model) plMgrAppendPlaylist() tea.Cmd {
 	cmd := m.appendTracksToPlaylist(tracks, name)
 	m.plManager.visible = false
 	m.plMgrResetFilter()
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	return cmd
 }
 

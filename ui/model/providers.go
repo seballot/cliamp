@@ -247,7 +247,7 @@ func (m *Model) applyTracksResume(msg tracksLoadedMsg) {
 		}
 		return
 	}
-	m.plCursor = msg.resumeIdx
+	m.queueCursor = msg.resumeIdx
 	m.resume.path = msg.tracks[msg.resumeIdx].Path
 	m.resume.secs = int(msg.resumeOffset.Seconds())
 }
@@ -277,9 +277,9 @@ func (m *Model) replacePlayerPlaylist(tracks []playlist.Track) {
 	m.replacePlaylist(tracks)
 	m.setHeaderStateFromTracks(tracks)
 	m.clearLoadedPlaylist()
-	m.plCursor = 0
-	m.plScroll = 0
-	m.focus = focusPlaylist
+	m.queueCursor = 0
+	m.queueScroll = 0
+	m.focus = focusQueue
 	m.applyHeightMode()
 	m.adjustScroll()
 }
@@ -652,7 +652,7 @@ func (m *Model) openProviderList(index int) tea.Cmd {
 		// Jump to the playlist immediately and render the feed loading
 		// state there, instead of waiting on the channel list for the
 		// song list to arrive.
-		m.focus = focusPlaylist
+		m.focus = focusQueue
 		m.applyHeightMode()
 		m.adjustScroll()
 		m.recomputeLayout()
@@ -681,8 +681,8 @@ func (m *Model) renameLoadedPlaylist(oldName, newName string) {
 		return
 	}
 	m.loadedPlaylist = newName
-	if m.playlistUndo.loaded == oldName {
-		m.playlistUndo.loaded = newName
+	if m.queueUndo.loaded == oldName {
+		m.queueUndo.loaded = newName
 	}
 }
 
@@ -691,7 +691,7 @@ func (m *Model) renameLoadedPlaylist(oldName, newName string) {
 func (m *Model) clearLoadedPlaylist() {
 	m.loadedPlaylist = ""
 	m.playlistSource = ""
-	m.playlistUndo = playlistUndo{}
+	m.queueUndo = queueUndo{}
 }
 
 // setLoadedLocalPlaylist records the list that a provider load put in the
@@ -892,10 +892,10 @@ type selectedTrackArtistTarget struct {
 }
 
 func (m Model) selectedTrackArtistBrowserTarget() (selectedTrackArtistTarget, bool) {
-	if m.focus != focusPlaylist || m.playlist == nil {
+	if m.focus != focusQueue || m.queue == nil {
 		return selectedTrackArtistTarget{}, false
 	}
-	track, ok := m.playlist.Track(m.plCursor)
+	track, ok := m.queue.Track(m.queueCursor)
 	if !ok {
 		return selectedTrackArtistTarget{}, false
 	}

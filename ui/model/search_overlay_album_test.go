@@ -33,7 +33,7 @@ func TestCanceledSearchOverlayAlbumResponseIsIgnored(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			canceled := make(chan struct{})
 			m := Model{
-				playlist: playlist.New(),
+				queue: playlist.New(),
 				searchOverlay: searchOverlayState{
 					visible:      true,
 					screen:       searchOverlayResults,
@@ -64,8 +64,8 @@ func TestCanceledSearchOverlayAlbumResponseIsIgnored(t *testing.T) {
 			if cmd != nil {
 				t.Fatal("stale album response returned a command")
 			}
-			if m.playlist.Len() != 0 {
-				t.Fatalf("playlist length = %d after stale response, want 0", m.playlist.Len())
+			if m.queue.Len() != 0 {
+				t.Fatalf("playlist length = %d after stale response, want 0", m.queue.Len())
 			}
 		})
 	}

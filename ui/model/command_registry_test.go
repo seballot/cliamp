@@ -103,14 +103,14 @@ func TestPlayPauseContextHelpLabel(t *testing.T) {
 
 func TestPlayNextToggleContextHelpLabel(t *testing.T) {
 	m := keybindingTestModel()
-	m.playlist.Add(playlist.Track{Title: "One"})
-	m.playlist.Add(playlist.Track{Title: "Two"})
-	m.plCursor = 1
+	m.queue.Add(playlist.Track{Title: "One"})
+	m.queue.Add(playlist.Track{Title: "Two"})
+	m.queueCursor = 1
 	wantBase := "Toggle play next (selected track will be played just after current)"
 	if got := registryContextLabel(t, commandModeMain, "a", wantBase, m); got != "Mark play next" {
 		t.Fatalf("unmarked = %q", got)
 	}
-	m.playlist.AddPlayNext(1)
+	m.queue.AddPlayNext(1)
 	if got := registryContextLabel(t, commandModeMain, "a", wantBase, m); got != "Unmark play next" {
 		t.Fatalf("marked = %q", got)
 	}
@@ -142,7 +142,7 @@ func TestBackToProviderContextHelpLabel(t *testing.T) {
 func TestContextHelpMoveAfterPrimaryOnce(t *testing.T) {
 	m := keybindingTestModel()
 	m.layout.panelWidth = 120
-	m.playlist.Add(playlist.Track{Title: "One"})
+	m.queue.Add(playlist.Track{Title: "One"})
 	help := m.helpBar(commandModeMain)
 	if strings.Count(help, "Shift+↑↓") != 1 {
 		t.Fatalf("main help should list Move once, got %q", help)
@@ -152,8 +152,8 @@ func TestContextHelpMoveAfterPrimaryOnce(t *testing.T) {
 func TestMainPaneSaveToPlaylistHintAfterFavorite(t *testing.T) {
 	m := keybindingTestModel()
 	m.layout.panelWidth = 120
-	m.focus = focusPlaylist
-	m.playlist.Add(playlist.Track{Title: "One", Path: "/a.mp3"})
+	m.focus = focusQueue
+	m.queue.Add(playlist.Track{Title: "One", Path: "/a.mp3"})
 	local := &dirSourceTestProvider{commandsTestProvider: commandsTestProvider{name: "Local"}}
 	hearts := local.useFavorites(t)
 	m.localProvider, m.favStore = local, hearts
@@ -202,7 +202,7 @@ func TestPodcastProviderPaneHelpBar(t *testing.T) {
 func TestContextHelpShowsTabCycleControlsUntilMainPane(t *testing.T) {
 	m := keybindingTestModel()
 	m.layout.panelWidth = 120
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	if help := m.helpBar(commandModeMain); !strings.Contains(help, "Tab") || !strings.Contains(help, "Cycle settings") {
 		t.Fatalf("main help should advertise Tab Cycle settings: %q", help)
 	}
@@ -280,7 +280,7 @@ func TestFileBrowserPlaylistTargetEnterHint(t *testing.T) {
 	m.fileBrowser.selected = map[string]bool{"/music/song.mp3": true}
 	help := m.helpBar(commandModeFileBrowser)
 	if strings.Contains(help, "Add to queue") {
-		t.Fatalf("playlist-targeted browser should not say Add to queue: %q", help)
+		t.Fatalf("playlist-targeted browser should not say Add to playlist: %q", help)
 	}
 	if !strings.Contains(help, "Add to playlist") {
 		t.Fatalf("playlist-targeted browser should say Add to playlist: %q", help)
@@ -362,11 +362,11 @@ func TestContextHelpAdvertisesProviderBrowsing(t *testing.T) {
 	m.layout.panelWidth = 100
 	m.provider = browse
 	m.providers = append(m.providers, provider.Entry{Key: "mixcloud", Name: "Mixcloud", Provider: browse})
-	m.playlist.Add(playlist.Track{
+	m.queue.Add(playlist.Track{
 		Title: "A Show", Artist: "Creator",
 		ProviderMeta: map[string]string{"test.creator": "creator"},
 	})
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	if help := m.helpBar(commandModeMain); strings.Contains(help, "Browse creator") || strings.Contains(help, " N ") {
 		t.Fatalf("playlist help bar should not advertise N browse: %q", help)
 	}

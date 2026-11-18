@@ -33,11 +33,11 @@ func (m *Model) replacePlaylist(tracks []playlist.Track) {
 func (m *Model) replacePlaylistAt(tracks []playlist.Track, start int) {
 	nextRequest(&m.requests.queue)
 	m.resetYTDLBatch()
-	m.playlistUndo = playlistUndo{}
+	m.queueUndo = queueUndo{}
 	if m.resumeSaver != nil {
 		tracks = playlist.WithPlaybackContext(tracks)
 	}
-	m.playlist.ReplaceAt(tracks, start)
+	m.queue.ReplaceAt(tracks, start)
 	m.normalizePlayNextOverlay()
 }
 
@@ -64,9 +64,9 @@ func (m *Model) playbackContextFor(track playlist.Track) ([]playlist.Track, int)
 	if index >= 0 && index < len(context) && context[index].Path == track.Path {
 		return context, index
 	}
-	if m.playlist != nil {
-		context = m.playlist.Tracks()
-		index = m.playlist.Index()
+	if m.queue != nil {
+		context = m.queue.Tracks()
+		index = m.queue.Index()
 		if index >= 0 && index < len(context) && context[index].Path == track.Path {
 			return context, index
 		}
@@ -129,23 +129,23 @@ func (m *Model) advanceToNext() (playlist.Track, bool) {
 	if m.playbackDetached {
 		m.playbackDetached = false
 		var activation playlist.SelectionActivation
-		activation, ok = m.playlist.ActivateSelected()
+		activation, ok = m.queue.ActivateSelected()
 		track = activation.Track
 		switch {
-		case !ok && m.playlist.Len() > 0:
+		case !ok && m.queue.Len() > 0:
 			m.status.Warning("No available tracks", statusTTLDefault)
 		case activation.Skipped:
 			m.status.Warning("Track unavailable, skipping...", statusTTLDefault)
 		}
 	} else {
-		track, ok = m.playlist.Next()
+		track, ok = m.queue.Next()
 	}
 	m.normalizePlayNextOverlay()
 	if !ok {
 		m.endQueue()
 		return playlist.Track{}, false
 	}
-	m.plCursor = m.playlist.Index()
+	m.queueCursor = m.queue.Index()
 	m.adjustScroll()
 	return track, true
 }
@@ -179,11 +179,11 @@ func (m *Model) prevTrack() tea.Cmd {
 		}
 		return nil
 	}
-	track, ok := m.playlist.Prev()
+	track, ok := m.queue.Prev()
 	if !ok {
 		return nil
 	}
-	m.plCursor = m.playlist.Index()
+	m.queueCursor = m.queue.Index()
 	m.adjustScroll()
 	return m.playTrack(track)
 }
@@ -191,12 +191,12 @@ func (m *Model) prevTrack() tea.Cmd {
 // playCurrentLogicalTrack starts playback from the playlist's active logical
 // track, preserving queued playback state.
 func (m *Model) playCurrentLogicalTrack() tea.Cmd {
-	track, idx := m.playlist.Current()
+	track, idx := m.queue.Current()
 	if idx < 0 {
 		return nil
 	}
 	m.resetTitleScroll()
-	m.plCursor = idx
+	m.queueCursor = idx
 	m.adjustScroll()
 	return m.playTrack(track)
 }
@@ -205,10 +205,10 @@ func (m *Model) playCurrentLogicalTrack() tea.Cmd {
 // playlist order if the selection is unplayable.
 func (m *Model) playCurrentTrack() tea.Cmd {
 	m.resetTitleScroll()
-	if m.playlist.Len() == 0 {
+	if m.queue.Len() == 0 {
 		return nil
 	}
-	activation, ok := m.playlist.ActivateSelected()
+	activation, ok := m.queue.ActivateSelected()
 	if !ok {
 		m.stopPlayback()
 		m.status.Warning("No available tracks", statusTTLDefault)
@@ -217,7 +217,7 @@ func (m *Model) playCurrentTrack() tea.Cmd {
 	if activation.Skipped {
 		m.status.Warning("Track unavailable, skipping...", statusTTLDefault)
 	}
-	m.plCursor = activation.Index
+	m.queueCursor = activation.Index
 	m.adjustScroll()
 	return m.playTrack(activation.Track)
 }
@@ -228,8 +228,8 @@ func (m *Model) playTrackImmediate(track playlist.Track) tea.Cmd {
 	m.stopPlayback()
 	m.player.ClearPreload()
 	idx := m.appendTracks(track)
-	m.playlist.SetIndex(idx)
-	m.plCursor = idx
+	m.queue.SetIndex(idx)
+	m.queueCursor = idx
 	m.adjustScroll()
 	m.status.Showf(statusTTLMedium, "Playing: %s", track.DisplayName())
 	return m.playCurrentTrack()
@@ -237,12 +237,12 @@ func (m *Model) playTrackImmediate(track playlist.Track) tea.Cmd {
 
 // appendTrack appends a track to the playlist; auto-plays if nothing is playing.
 func (m *Model) appendTrack(track playlist.Track) tea.Cmd {
-	wasEmpty := m.playlist.Len() == 0
+	wasEmpty := m.queue.Len() == 0
 	idx := m.appendTracks(track)
 	m.status.Showf(statusTTLMedium, "Added: %s", track.DisplayName())
 	if wasEmpty || !m.player.IsPlaying() {
-		m.playlist.SetIndex(idx)
-		m.plCursor = idx
+		m.queue.SetIndex(idx)
+		m.queueCursor = idx
 		m.adjustScroll()
 		return m.playCurrentTrack()
 	}
@@ -256,8 +256,8 @@ func (m *Model) playAlbumImmediate(album playlist.Track, tracks []playlist.Track
 	m.stopPlayback()
 	m.player.ClearPreload()
 	idx := m.appendTracks(tracks...)
-	m.playlist.SetIndex(idx)
-	m.plCursor = idx
+	m.queue.SetIndex(idx)
+	m.queueCursor = idx
 	m.adjustScroll()
 	m.status.Showf(statusTTLMedium, "Playing album: %s (%d tracks)", album.Title, len(tracks))
 	return m.playCurrentTrack()
@@ -266,12 +266,12 @@ func (m *Model) playAlbumImmediate(album playlist.Track, tracks []playlist.Track
 // appendAlbum appends an expanded album to the queue; auto-plays from its first
 // track if nothing is playing.
 func (m *Model) appendAlbum(album playlist.Track, tracks []playlist.Track) tea.Cmd {
-	wasEmpty := m.playlist.Len() == 0
+	wasEmpty := m.queue.Len() == 0
 	idx := m.appendTracks(tracks...)
 	m.status.Showf(statusTTLMedium, "Added album: %s (%d tracks)", album.Title, len(tracks))
 	if wasEmpty || !m.player.IsPlaying() {
-		m.playlist.SetIndex(idx)
-		m.plCursor = idx
+		m.queue.SetIndex(idx)
+		m.queueCursor = idx
 		m.adjustScroll()
 		return m.playCurrentTrack()
 	}
@@ -283,7 +283,7 @@ func (m *Model) appendAlbum(album playlist.Track, tracks []playlist.Track) tea.C
 func (m *Model) playNextAlbum(album playlist.Track, tracks []playlist.Track) tea.Cmd {
 	idx := m.appendTracks(tracks...)
 	for i := range tracks {
-		m.playlist.AddPlayNext(idx + i)
+		m.queue.AddPlayNext(idx + i)
 	}
 	m.status.Showf(statusTTLMedium, "Play next album: %s (%d tracks)", album.Title, len(tracks))
 	if !m.player.IsPlaying() {
@@ -334,7 +334,7 @@ func (m *Model) cancelSearchOverlayRequest() {
 // playNextTrack adds a track to the playlist and queues it to play next.
 func (m *Model) playNextTrack(track playlist.Track) tea.Cmd {
 	idx := m.appendTracks(track)
-	m.playlist.AddPlayNext(idx)
+	m.queue.AddPlayNext(idx)
 	m.normalizePlayNextOverlay()
 	m.status.Showf(statusTTLMedium, "Play next: %s", track.DisplayName())
 	if !m.player.IsPlaying() {
@@ -343,26 +343,26 @@ func (m *Model) playNextTrack(track playlist.Track) tea.Cmd {
 	return m.rearmStalePreload()
 }
 
-// recordPlaylistUndo lets Ctrl+Z undo the queue edit that just ran. The undo
+// recordQueueUndo lets Ctrl+Z undo the queue edit that just ran. The undo
 // holds only while the queue and the loaded playlist stay as the edit left
 // them.
-func (m *Model) recordPlaylistUndo(undo playlistUndo) {
+func (m *Model) recordQueueUndo(undo queueUndo) {
 	undo.active = true
-	undo.revision = m.playlist.Revision()
+	undo.revision = m.queue.Revision()
 	undo.loaded = m.loadedPlaylist
-	m.playlistUndo = undo
+	m.queueUndo = undo
 }
 
-func (m *Model) undoPlaylistMutation() tea.Cmd {
-	undo := m.playlistUndo
+func (m *Model) undoQueueMutation() tea.Cmd {
+	undo := m.queueUndo
 	if !undo.active {
 		m.status.Warning("Nothing to undo", statusTTLShort)
 		return nil
 	}
-	if undo.revision != m.playlist.Revision() || undo.loaded != m.loadedPlaylist {
+	if undo.revision != m.queue.Revision() || undo.loaded != m.loadedPlaylist {
 		// Restoring the snapshot would drop every change since the edit.
-		m.playlistUndo = playlistUndo{}
-		m.status.Warning("Can't undo: the playlist changed since the edit", statusTTLDefault)
+		m.queueUndo = queueUndo{}
+		m.status.Warning("Can't undo: the queue changed since the edit", statusTTLDefault)
 		return nil
 	}
 	if undo.persisted {
@@ -384,11 +384,11 @@ func (m *Model) undoPlaylistMutation() tea.Cmd {
 			return nil
 		}
 	}
-	m.playlist.Restore(undo.snapshot)
+	m.queue.Restore(undo.snapshot)
 	m.normalizePlayNextOverlay()
-	m.playlistUndo = playlistUndo{}
-	if m.plCursor >= m.playlist.Len() {
-		m.plCursor = max(0, m.playlist.Len()-1)
+	m.queueUndo = queueUndo{}
+	if m.queueCursor >= m.queue.Len() {
+		m.queueCursor = max(0, m.queue.Len()-1)
 	}
 	m.adjustScroll()
 	m.status.Show("Restored previous playlist state", statusTTLDefault)
@@ -514,10 +514,10 @@ func (m *Model) backfillLoadedPlaylistDuration(track playlist.Track) tea.Cmd {
 	if !ok {
 		return nil
 	}
-	if idx := m.playlist.Index(); idx >= 0 {
-		if current, ok := m.playlist.Track(idx); ok && current.Path == track.Path {
+	if idx := m.queue.Index(); idx >= 0 {
+		if current, ok := m.queue.Track(idx); ok && current.Path == track.Path {
 			track.DurationSecs = dur
-			m.playlist.SetTrack(idx, track)
+			m.queue.SetTrack(idx, track)
 		}
 	}
 	if track.DirSourced {
@@ -555,9 +555,9 @@ func (m *Model) beginPlaybackTrack(track playlist.Track) (playlist.Track, tea.Cm
 	nextRequest(&m.requests.lyrics)
 	track = playlist.RefreshEmbeddedMetadata(track)
 	context, index := track.PlaybackContext()
-	if index < 0 && m.playlist != nil {
-		context = m.playlist.Tracks()
-		index = m.playlist.Index()
+	if index < 0 && m.queue != nil {
+		context = m.queue.Tracks()
+		index = m.queue.Index()
 		if index < 0 || index >= len(context) || context[index].Path != track.Path {
 			index = trackIndexByPath(context, track.Path)
 		}
@@ -604,7 +604,7 @@ func (m *Model) togglePlayPause() tea.Cmd {
 		return nil
 	}
 	if !m.player.IsPlaying() {
-		if m.playlist.CurrentIsPlayNext() {
+		if m.queue.CurrentIsPlayNext() {
 			return m.playCurrentLogicalTrack()
 		}
 		return m.playCurrentTrack()

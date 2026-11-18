@@ -110,9 +110,9 @@ func TestQueueEditsFollowOneRule(t *testing.T) {
 			name:   "remove a track of a directory source",
 			cursor: 1,
 			setup: func(m *Model) {
-				track, _ := m.playlist.Track(1)
+				track, _ := m.queue.Track(1)
 				track.DirSourced = true
-				m.playlist.SetTrack(1, track)
+				m.queue.SetTrack(1, track)
 			},
 			key:  func(*Model) tea.Msg { return tea.KeyPressMsg{Text: "x"} },
 			v2Op: "queue.remove", v2: ipc.Request{Index: 1},
@@ -128,9 +128,9 @@ func TestQueueEditsFollowOneRule(t *testing.T) {
 			name:   "remove a track of a directory source from an unsaved queue",
 			cursor: 1,
 			setup: func(m *Model) {
-				track, _ := m.playlist.Track(1)
+				track, _ := m.queue.Track(1)
 				track.DirSourced = true
-				m.playlist.SetTrack(1, track)
+				m.queue.SetTrack(1, track)
 				m.appendTracks(d)
 			},
 			key:  func(*Model) tea.Msg { return tea.KeyPressMsg{Text: "x"} },
@@ -250,24 +250,24 @@ func queueOpModel(t *testing.T, shuffle bool, loaded string, cursor int) (Model,
 	engine := &playbackFakeEngine{playing: true, duration: 180 * time.Second, position: 179 * time.Second, hasPreload: true}
 	m := Model{
 		player:        engine,
-		playlist:      playlist.New(),
+		queue:         playlist.New(),
 		vis:           ui.NewVisualizer(44100),
-		focus:         focusPlaylist,
+		focus:         focusQueue,
 		provider:      lp,
 		localProvider: lp,
 		providers:     []provider.Entry{{Key: "local", Name: "Local", Provider: lp}},
 	}
-	m.playlist.Replace(tracks)
-	m.playlist.SetIndex(0)
+	m.queue.Replace(tracks)
+	m.queue.SetIndex(0)
 	if shuffle {
-		m.playlist.ToggleShuffle()
+		m.queue.ToggleShuffle()
 	}
 	m.SetLoadedPlaylist(loaded)
 	m.setHeaderStateFromTracks(tracks)
 	m.playingTrack, m.playingTrackActive, m.playingTrackStarted = tracks[0], true, true
-	next, _ := m.playlist.PeekNext()
+	next, _ := m.queue.PeekNext()
 	m.preloadFor = next.Path
-	m.plCursor = cursor
+	m.queueCursor = cursor
 	return m, lp, engine
 }
 
@@ -279,14 +279,14 @@ func queueOpStateOf(t *testing.T, m Model, lp *local.Provider, engine *playbackF
 		t.Fatal(err)
 	}
 	state := queueOpState{
-		queue:          queueOpPaths(m.playlist.Tracks()),
+		queue:          queueOpPaths(m.queue.Tracks()),
 		saved:          queueOpPaths(saved),
-		cursor:         m.plCursor,
-		index:          m.playlist.Index(),
+		cursor:         m.queueCursor,
+		index:          m.queue.Index(),
 		loaded:         m.loadedPlaylist,
 		headers:        m.showAlbumHeaders,
 		headerSegments: m.headerSegments,
-		undo:           m.playlistUndo.active,
+		undo:           m.queueUndo.active,
 		undoHint:       strings.Contains(m.status.text, "Ctrl+Z"),
 		stops:          engine.stopCalls,
 	}
@@ -407,7 +407,7 @@ func TestPlaylistUndoRestoresOnlyTheLastEdit(t *testing.T) {
 			m, lp, engine := queueOpModel(t, false, "Mix", 1)
 			next, _ := m.Update(tea.KeyPressMsg{Text: "x"})
 			m = next.(Model)
-			if !m.playlistUndo.active {
+			if !m.queueUndo.active {
 				t.Fatal("x recorded no undo")
 			}
 			if tc.between != nil {

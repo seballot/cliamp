@@ -128,8 +128,8 @@ func TestApplyTracksResume(t *testing.T) {
 			m.resume.secs = tt.preArmedSecs
 			m.applyTracksResume(tt.msg)
 
-			if m.plCursor != tt.wantCursor {
-				t.Fatalf("plCursor = %d, want %d", m.plCursor, tt.wantCursor)
+			if m.queueCursor != tt.wantCursor {
+				t.Fatalf("queueCursor = %d, want %d", m.queueCursor, tt.wantCursor)
 			}
 			if m.resume.path != tt.wantPath {
 				t.Fatalf("resume.path = %q, want %q", m.resume.path, tt.wantPath)
@@ -149,7 +149,7 @@ func TestTracksLoadedResumeKeepsCursorVisible(t *testing.T) {
 	prov := &resumeProv{}
 	m := Model{
 		player:   &playbackFakeEngine{},
-		playlist: playlist.New(),
+		queue:    playlist.New(),
 		provider: prov,
 	}
 	m.requests.tracks = 1
@@ -162,9 +162,9 @@ func TestTracksLoadedResumeKeepsCursorVisible(t *testing.T) {
 		gen:          1,
 	})
 	got := updated.(Model)
-	visible := got.effectivePlaylistVisible()
-	if got.plCursor != 30 || got.plScroll == 0 || got.plCursor-got.plScroll >= visible {
-		t.Fatalf("resume viewport = cursor:%d scroll:%d visible:%d", got.plCursor, got.plScroll, visible)
+	visible := got.effectiveQueueVisible()
+	if got.queueCursor != 30 || got.queueScroll == 0 || got.queueCursor-got.queueScroll >= visible {
+		t.Fatalf("resume viewport = cursor:%d scroll:%d visible:%d", got.queueCursor, got.queueScroll, visible)
 	}
 }
 

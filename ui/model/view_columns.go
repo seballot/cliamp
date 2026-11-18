@@ -27,12 +27,12 @@ func (m Model) renderBodyRegion() string {
 		return ui.FitRect(m.renderMainBody(), m.layout.panelWidth, m.layout.bodyRows)
 	}
 
-	rows := m.effectivePlaylistVisible()
+	rows := m.effectiveQueueVisible()
 	if rows <= 0 {
 		return ""
 	}
 
-	left := columnLines(m.renderPlaylistColumn(), m.layout.playlistWidth, rows)
+	left := columnLines(m.renderQueueColumn(), m.layout.playlistWidth, rows)
 	right := columnLines(m.renderSettingsPane(rows), m.layout.settingsWidth, rows)
 
 	joined := make([]string, rows)
@@ -42,10 +42,10 @@ func (m Model) renderBodyRegion() string {
 	return strings.Join(joined, "\n")
 }
 
-// renderPlaylistColumn renders the body against the playlist column width
+// renderQueueColumn renders the body against the playlist column width
 // rather than the full frame. The render helpers draw to m.layout.panelWidth,
 // so it narrows that width on its own copy of the Model.
-func (m Model) renderPlaylistColumn() string {
+func (m Model) renderQueueColumn() string {
 	m.layout.panelWidth = m.layout.playlistWidth
 	return m.renderMainBody()
 }
@@ -59,7 +59,7 @@ func (m Model) renderColumnHeaders() string {
 	// the panel width narrowed first: the headers that reach this layout render
 	// against their own column width, and the settings separator is re-fitted
 	// either way. The queue's header arrives here when it is toggled on.
-	return fillSeparator(m.renderPlaylistHeader(), m.layout.playlistWidth) +
+	return fillSeparator(m.renderQueueHeader(), m.layout.playlistWidth) +
 		columnGutter +
 		fillSeparator(sepHeader("Settings", m.layout.panelWidth), m.layout.settingsWidth)
 }
@@ -73,7 +73,7 @@ const settingsPaneMaxRows = 9
 type paneRow struct {
 	line  string
 	rank  int
-	focus focusArea // focusPlaylist marks non-focusable detail/info rows
+	focus focusArea // focusQueue marks non-focusable detail/info rows
 }
 
 const (
@@ -155,11 +155,11 @@ func (m Model) settingsPaneRows(rows int) []paneRow {
 	add(rankControl, focusProvPill, m.settingsSource(w))
 	add(rankControl, focusVolume, m.settingsVolume(w))
 	add(rankControl, focusEQ, m.settingsEQPreset())
-	add(rankDetail, focusPlaylist, m.settingsEQBands()...)
+	add(rankDetail, focusQueue, m.settingsEQBands()...)
 	add(rankMode, focusShuffle, m.settingsShuffle())
 	add(rankMode, focusRepeat, m.settingsRepeat())
 	add(rankControl, focusSpeed, m.settingsSpeed())
-	add(rankInfo, focusPlaylist, m.settingsNetwork(w))
+	add(rankInfo, focusQueue, m.settingsNetwork(w))
 
 	for rank := rankInfo; rank > rankControl && len(pane) > rows; rank-- {
 		pane = slices.DeleteFunc(pane, func(r paneRow) bool { return r.rank == rank })
@@ -292,14 +292,14 @@ func (m Model) settingsSpeed() string {
 // them, not counts describing the list.
 func (m Model) settingsShuffle() string {
 	value := "Off"
-	if m.playlist.Shuffled() {
+	if m.queue.Shuffled() {
 		value = "On"
 	}
-	return settingsRow("SHF ", value, m.playlist.Shuffled(), m.focus == focusShuffle)
+	return settingsRow("SHF ", value, m.queue.Shuffled(), m.focus == focusShuffle)
 }
 
 func (m Model) settingsRepeat() string {
-	mode := m.playlist.Repeat()
+	mode := m.queue.Repeat()
 	return settingsRow("RPT ", mode.String(), mode != 0, m.focus == focusRepeat)
 }
 

@@ -55,7 +55,7 @@ func pageOf(paths ...string) []playlist.Track {
 func newPagingModel(prov *pagerProv) Model {
 	m := Model{
 		player:   &playbackFakeEngine{},
-		playlist: playlist.New(),
+		queue:    playlist.New(),
 		provider: prov,
 		provPane: providerPane{
 			lists:   []playlist.PlaylistInfo{{ID: "list", Name: "List"}},
@@ -86,7 +86,7 @@ func TestFirstPageClearsProvLoading(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("no command returned for the next page; the chain stopped early")
 	}
-	if got := m.playlist.Len(); got != 2 {
+	if got := m.queue.Len(); got != 2 {
 		t.Errorf("playlist has %d tracks after page 1, want 2", got)
 	}
 }
@@ -109,7 +109,7 @@ func TestLaterPagesAppendWithoutReplacing(t *testing.T) {
 	if cmd != nil {
 		t.Error("a command was returned after the terminal page; the chain should stop")
 	}
-	if got := m.playlist.Len(); got != 4 {
+	if got := m.queue.Len(); got != 4 {
 		t.Errorf("playlist has %d tracks after both pages, want 4 (later pages must append)", got)
 	}
 	if m.provPane.loading {
@@ -137,7 +137,7 @@ func TestStaleGenPageDoesNotAppend(t *testing.T) {
 	})
 	m = updated.(Model)
 
-	if got := m.playlist.Len(); got != 2 {
+	if got := m.queue.Len(); got != 2 {
 		t.Errorf("playlist has %d tracks, want 2: a stale page appended", got)
 	}
 	if cmd != nil {
@@ -264,7 +264,7 @@ func TestProviderNavResetClearsThePagingFlag(t *testing.T) {
 func TestTickDoesNotArmPreloadWhilePaging(t *testing.T) {
 	prov := &pagerProv{name: "Pager", pages: [][]playlist.Track{pageOf("a", "b")}}
 	m := newPagingModel(prov)
-	m.playlist.Add(pageOf("a", "b")...)
+	m.queue.Add(pageOf("a", "b")...)
 	m.player.(*playbackFakeEngine).playing = true
 
 	m.tracksPaging = true
@@ -313,7 +313,7 @@ func TestIPCProviderLoadRetiresAnInFlightPagedLoad(t *testing.T) {
 	})
 	m = updated.(Model)
 
-	if got := m.playlist.Len(); got != 2 {
+	if got := m.queue.Len(); got != 2 {
 		t.Errorf("queue has %d tracks, want the 2 the IPC client loaded: a retired page appended", got)
 	}
 }
@@ -344,7 +344,7 @@ func TestWholesaleReplacementRetiresAnInFlightPagedLoad(t *testing.T) {
 	})
 	m = updated.(Model)
 
-	if got := m.playlist.Len(); got != 2 {
+	if got := m.queue.Len(); got != 2 {
 		t.Errorf("queue has %d tracks, want the 2 the replacement installed: a retired page appended", got)
 	}
 }

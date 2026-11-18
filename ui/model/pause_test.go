@@ -86,7 +86,7 @@ func TestTogglePlayPauseRestartsRuntimeLiveStationInPlace(t *testing.T) {
 		playlist.Track{Title: "Three", Path: "https://radio.example.com/three", Stream: true},
 	)
 	p.SetIndex(1)
-	m := Model{player: player, playlist: p}
+	m := Model{player: player, queue: p}
 
 	cmd := m.togglePlayPause()
 	if cmd == nil {
@@ -121,7 +121,7 @@ func TestTogglePlayPauseYTDLLiveFlagFollowsPlayerDuration(t *testing.T) {
 			p := playlist.New()
 			p.Add(playlist.Track{Title: "Live", Path: "https://music.youtube.com/watch?v=live1", Stream: true, Realtime: true})
 			p.SetIndex(0)
-			m := Model{player: player, playlist: p, pausedAt: time.Now().Add(-time.Second)}
+			m := Model{player: player, queue: p, pausedAt: time.Now().Add(-time.Second)}
 
 			cmd := m.togglePlayPause()
 			if cmd != nil {

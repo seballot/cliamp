@@ -217,7 +217,7 @@ func init() {
 					if m.playNext.confirmClear {
 						return sepHeader("Clear queue?", m.layout.panelWidth)
 					}
-					return sepHeaderN("Play next", m.playNext.cursor+1, m.playlist.PlayNextLen(), m.layout.panelWidth)
+					return sepHeaderN("Play next", m.playNext.cursor+1, m.queue.PlayNextLen(), m.layout.panelWidth)
 				},
 				(*Model).renderPlayNextBody},
 		},
@@ -290,7 +290,7 @@ func init() {
 			screen: screenSearch,
 			key:    (*Model).handleSearchKey,
 			paste: func(m *Model, s string) {
-				m.insertText("playlist-search", &m.search.query, s)
+				m.insertText("queue-search", &m.search.query, s)
 				m.updateSearch()
 			},
 			context: fixedContext(commandModeSearch, "Playlist Filter"),

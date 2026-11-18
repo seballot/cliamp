@@ -33,7 +33,7 @@ func TestProviderShortcutsSwitchFromEveryFocus(t *testing.T) {
 		name  string
 		focus focusArea
 	}{
-		{"playlist", focusPlaylist},
+		{"playlist", focusQueue},
 		{"provider", focusProvider},
 		{"equalizer", focusEQ},
 		{"volume", focusVolume},
@@ -277,7 +277,7 @@ func TestOverlayProviderShortcuts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := shortcutTestModel()
-			m.playlist.Add(playlist.Track{Path: "existing.mp3"})
+			m.queue.Add(playlist.Track{Path: "existing.mp3"})
 			m.providers = slices.DeleteFunc(m.providers, func(e provider.Entry) bool { return e.Key == tt.drop })
 			tt.open(&m)
 
@@ -324,7 +324,7 @@ func TestNavReplacePromptOwnsTheKeys(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := shortcutTestModel()
-			m.playlist.Add(playlist.Track{Path: "existing.mp3"})
+			m.queue.Add(playlist.Track{Path: "existing.mp3"})
 			prov := tt.prov
 			if prov == nil {
 				prov = commandsTestProvider{name: "Browse"}
@@ -400,11 +400,11 @@ func TestCtrlRRefreshesTheActiveProvider(t *testing.T) {
 		{name: "pane refreshes a provider with no stable IDs", focus: focusProvider, kind: "refresher", playlistID: "wave", want: lists, wantRefreshes: 1},
 		{name: "pane reloads a provider with no cache", focus: focusProvider, kind: "plain", playlistID: "wave", want: lists},
 		{name: "pane waits while the provider loads", focus: focusProvider, kind: "stable", playlistID: "wave", loading: true, want: none, wantID: "wave"},
-		{name: "playlist reopens a stable playlist", focus: focusPlaylist, kind: "stable", playlistID: "wave", want: tracks, wantRefreshes: 1, wantID: "wave"},
-		{name: "playlist skips a positional ID", focus: focusPlaylist, kind: "stable", playlistID: "station-3", want: none, wantID: "station-3"},
-		{name: "playlist skips with no open playlist", focus: focusPlaylist, kind: "stable", want: none},
-		{name: "playlist skips a provider with no stable IDs", focus: focusPlaylist, kind: "refresher", playlistID: "wave", want: none, wantID: "wave"},
-		{name: "playlist waits while the provider loads", focus: focusPlaylist, kind: "stable", playlistID: "wave", loading: true, want: none, wantID: "wave"},
+		{name: "playlist reopens a stable playlist", focus: focusQueue, kind: "stable", playlistID: "wave", want: tracks, wantRefreshes: 1, wantID: "wave"},
+		{name: "playlist skips a positional ID", focus: focusQueue, kind: "stable", playlistID: "station-3", want: none, wantID: "station-3"},
+		{name: "playlist skips with no open playlist", focus: focusQueue, kind: "stable", want: none},
+		{name: "playlist skips a provider with no stable IDs", focus: focusQueue, kind: "refresher", playlistID: "wave", want: none, wantID: "wave"},
+		{name: "playlist waits while the provider loads", focus: focusQueue, kind: "stable", playlistID: "wave", loading: true, want: none, wantID: "wave"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -419,7 +419,7 @@ func TestCtrlRRefreshesTheActiveProvider(t *testing.T) {
 			}
 			m := keybindingTestModel()
 			m.provider = prov
-			m.playlist.Add(playlist.Track{Title: "Song"})
+			m.queue.Add(playlist.Track{Title: "Song"})
 			m.focus = tt.focus
 			m.activeProviderPlaylistID = tt.playlistID
 			m.provPane.loading = tt.loading
@@ -492,7 +492,7 @@ func TestHandleGlobalKey(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := keybindingTestModel()
-			m.playlist.Add(playlist.Track{Title: "One"}, playlist.Track{Title: "Two"})
+			m.queue.Add(playlist.Track{Title: "One"}, playlist.Track{Title: "Two"})
 			if _, err := m.removeTrack(0, true); err != nil {
 				t.Fatalf("removeTrack: %v", err)
 			}
@@ -517,7 +517,7 @@ func TestHandleGlobalKey(t *testing.T) {
 			if tt.wantUndo {
 				wantLen = 2
 			}
-			if got := m.playlist.Len(); got != wantLen {
+			if got := m.queue.Len(); got != wantLen {
 				t.Errorf("playlist.Len() = %d, want %d", got, wantLen)
 			}
 		})
@@ -562,7 +562,7 @@ func TestConfirmPromptsHintOnStrayKeys(t *testing.T) {
 // the setup step, instead of closing the browser onto nothing.
 func TestOverlayProviderShortcutMissHintsSetup(t *testing.T) {
 	m := shortcutTestModel()
-	m.playlist.Add(playlist.Track{Path: "existing.mp3"})
+	m.queue.Add(playlist.Track{Path: "existing.mp3"})
 	m.providers = slices.DeleteFunc(m.providers, func(e provider.Entry) bool { return e.Key == "spotify" })
 	m.navBrowser = navBrowserState{
 		prov: commandsTestProvider{name: "Browse"}, visible: true, mode: navBrowseModeByAlbum, screen: navBrowseScreenTracks,

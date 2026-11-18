@@ -26,13 +26,13 @@ func newInlineOverlayModel(t *testing.T, w, h int) Model {
 	}
 
 	m := Model{
-		player:    p,
-		playlist:  pl,
-		vis:       ui.NewVisualizer(float64(p.SampleRate())),
-		width:     w,
-		height:    h,
-		focus:     focusPlaylist,
-		plVisible: 6,
+		player:       p,
+		queue:        pl,
+		vis:          ui.NewVisualizer(float64(p.SampleRate())),
+		width:        w,
+		height:       h,
+		focus:        focusQueue,
+		queueVisible: 6,
 	}
 	m.vis.Mode = ui.VisNone
 	m.refreshChrome()

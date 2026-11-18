@@ -115,7 +115,7 @@ func TestOverlayRoutesAgree(t *testing.T) {
 				}
 			} else {
 				for name, got := range map[string]string{
-					"header": m.renderPlaylistHeader(),
+					"header": m.renderQueueHeader(),
 					"body":   m.renderMainBody(),
 				} {
 					if w := fmt.Sprint(name, " ", want); got != w {
@@ -135,7 +135,7 @@ func TestOverlayRoutesAgree(t *testing.T) {
 			}
 
 			// An overlay with no context leaves the main screen context.
-			wantMode, wantName := commandModeMain, "Playlist"
+			wantMode, wantName := commandModeMain, "Queue"
 			if c.top.context != nil {
 				wantMode, wantName = c.top.context(&m)
 			}
@@ -224,7 +224,7 @@ func TestOverlayStackOrder(t *testing.T) {
 // provider search does, and Esc returns to the browser.
 func TestNavBrowserSearchFallbackOpensOnTop(t *testing.T) {
 	p := &readOnlyGenreProvider{}
-	m := Model{provider: p, playlist: playlist.New(), plVisible: 10}
+	m := Model{provider: p, queue: playlist.New(), queueVisible: 10}
 	m.openNavBrowserWith(p)
 
 	m.handleKey(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
@@ -251,7 +251,7 @@ func TestNavBrowserSearchFallbackOpensOnTop(t *testing.T) {
 func TestGlobalKeysReachEveryOverlay(t *testing.T) {
 	for _, spec := range overlayStack {
 		t.Run(fmt.Sprint("ctrl+c ", spec.screen), func(t *testing.T) {
-			m := Model{player: &playbackFakeEngine{}, playlist: playlist.New()}
+			m := Model{player: &playbackFakeEngine{}, queue: playlist.New()}
 			overlayOpeners[spec.screen](&m)
 			if cmd := m.handleKey(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}); cmd == nil || !m.quitting {
 				t.Fatalf("Ctrl+C over screen %d did not quit", spec.screen)
@@ -261,7 +261,7 @@ func TestGlobalKeysReachEveryOverlay(t *testing.T) {
 			continue
 		}
 		t.Run(fmt.Sprint("ctrl+k ", spec.screen), func(t *testing.T) {
-			m := Model{player: &playbackFakeEngine{}, playlist: playlist.New()}
+			m := Model{player: &playbackFakeEngine{}, queue: playlist.New()}
 			overlayOpeners[spec.screen](&m)
 			m.handleKey(tea.KeyPressMsg{Code: 'k', Mod: tea.ModCtrl})
 			if got := m.activeScreen(); got != screenKeymap {
@@ -288,7 +288,7 @@ func TestPickerNameScreenKeepsTheVisualizerOverTheManager(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := Model{width: 80, height: 30, playlist: playlist.New(), vis: ui.NewVisualizer(44100)}
+			m := Model{width: 80, height: 30, queue: playlist.New(), vis: ui.NewVisualizer(44100)}
 			tt.under(&m)
 			m.plPicker = playlistPickerState{visible: true, screen: plPickerNewName}
 			m.recomputeLayout()

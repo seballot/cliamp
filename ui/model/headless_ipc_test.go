@@ -88,7 +88,7 @@ func TestHeadlessStateSnapshot(t *testing.T) {
 		playlist.Track{Path: "https://example.com/one", Title: "One", Stream: true},
 		playlist.Track{Path: "https://example.com/two", Title: "Two", Stream: true},
 	)
-	m.playlist.AddPlayNext(1)
+	m.queue.AddPlayNext(1)
 	m.SetIPCBroker(ipc.NewBroker())
 	m.publishIPCRuntimeState()
 
@@ -100,8 +100,8 @@ func TestHeadlessStateSnapshot(t *testing.T) {
 		t.Fatalf("state.get = %+v", result)
 	}
 	snapshot := result.Result.Snapshot
-	if snapshot.Revision != m.ipcRuntime.revision || snapshot.Revision == 0 || snapshot.PlaylistRevision != m.playlist.Revision() {
-		t.Fatalf("revisions = %d/%d, want %d/%d", snapshot.Revision, snapshot.PlaylistRevision, m.ipcRuntime.revision, m.playlist.Revision())
+	if snapshot.Revision != m.ipcRuntime.revision || snapshot.Revision == 0 || snapshot.PlaylistRevision != m.queue.Revision() {
+		t.Fatalf("revisions = %d/%d, want %d/%d", snapshot.Revision, snapshot.PlaylistRevision, m.ipcRuntime.revision, m.queue.Revision())
 	}
 	if snapshot.State != "playing" || !snapshot.Seekable || snapshot.Position != 12 || snapshot.Duration != 180 || snapshot.Total != 2 || snapshot.PlayNextTotal != 1 {
 		t.Fatalf("snapshot = %+v", snapshot)
@@ -130,11 +130,11 @@ func TestHeadlessVolumeJobCarriesSnapshot(t *testing.T) {
 func TestHeadlessQueueAndPlayNextAreSeparate(t *testing.T) {
 	m := newHeadlessModel(t, &headlessEngine{}, nil)
 
-	if response := runV2(t, &m, "queue", ipc.Request{Path: "https://example.com/queued"}); !response.OK || m.playlist.Len() != 1 || m.playlist.PlayNextLen() != 0 {
-		t.Fatalf("queue = %+v, playlist %d, play-next %d", response, m.playlist.Len(), m.playlist.PlayNextLen())
+	if response := runV2(t, &m, "queue", ipc.Request{Path: "https://example.com/queued"}); !response.OK || m.queue.Len() != 1 || m.queue.PlayNextLen() != 0 {
+		t.Fatalf("queue = %+v, playlist %d, play-next %d", response, m.queue.Len(), m.queue.PlayNextLen())
 	}
-	if response := runV2(t, &m, "queue.enqueue", ipc.Request{Index: 0}); !response.OK || m.playlist.Len() != 1 || m.playlist.PlayNextLen() != 1 {
-		t.Fatalf("queue.enqueue = %+v, playlist %d, play-next %d", response, m.playlist.Len(), m.playlist.PlayNextLen())
+	if response := runV2(t, &m, "queue.enqueue", ipc.Request{Index: 0}); !response.OK || m.queue.Len() != 1 || m.queue.PlayNextLen() != 1 {
+		t.Fatalf("queue.enqueue = %+v, playlist %d, play-next %d", response, m.queue.Len(), m.queue.PlayNextLen())
 	}
 	playNext := runV2(t, &m, "playnext.list", ipc.Request{})
 	if len(playNext.Tracks) != 1 || playNext.Total != 1 || playNext.Tracks[0].PlayNextPosition != 1 {
@@ -172,7 +172,7 @@ func TestHeadlessQueueListIncludesMetadata(t *testing.T) {
 		playlist.Track{Path: "/one.flac", Title: "One", Album: "Album", DurationSecs: 60},
 		playlist.Track{Path: "/two.flac", Title: "Two"},
 	)
-	m.playlist.AddPlayNext(1)
+	m.queue.AddPlayNext(1)
 
 	response := runV2(t, &m, "queue.list", ipc.Request{})
 	if len(response.Tracks) != 2 || response.Tracks[0].Album != "Album" || response.Tracks[0].DurationSecs != 60 || response.Tracks[1].PlayNextPosition != 1 {
@@ -206,7 +206,7 @@ func TestHeadlessPlayRestartsLiveStation(t *testing.T) {
 	if response := runV2(t, &m, "play", ipc.Request{}); !response.OK {
 		t.Fatalf("play = %+v", response)
 	}
-	if got := m.playlist.Index(); got != 0 {
+	if got := m.queue.Index(); got != 0 {
 		t.Fatalf("playlist index = %d, want the current station 0", got)
 	}
 	if engine.stopCalls != 1 || m.playingTrack.Path != "https://radio.example.com/one" || len(engine.playCalls) != 1 || engine.playCalls[0] != "https://radio.example.com/one" {
@@ -246,7 +246,7 @@ func TestHeadlessDrainedLiveStream(t *testing.T) {
 
 			updated, _ := m.Update(tickMsg(time.Now()))
 			m = updated.(Model)
-			if got := m.playlist.Index(); got != tc.wantIndex {
+			if got := m.queue.Index(); got != tc.wantIndex {
 				t.Fatalf("playlist index = %d, want %d", got, tc.wantIndex)
 			}
 			if got := !m.reconnect.at.IsZero(); got != tc.wantReconnect {
@@ -395,7 +395,7 @@ func TestHeadlessProviderLoadStartsAtIndex(t *testing.T) {
 			engine := &headlessEngine{}
 			m := newHeadlessModel(t, engine, providers, playlist.Track{Path: "/music/old.flac", Title: "Old"})
 			if tc.shuffle {
-				m.playlist.ToggleShuffle()
+				m.queue.ToggleShuffle()
 			}
 
 			// runV2 drops the command of the load result, so run the load by
@@ -413,8 +413,8 @@ func TestHeadlessProviderLoadStartsAtIndex(t *testing.T) {
 			if !slices.Equal(engine.playCalls, []string{want}) || m.buffering || m.playingTrack.Path != want {
 				t.Fatalf("play calls = %v, buffering %v, playing %q; want only %q started", engine.playCalls, m.buffering, m.playingTrack.Path, want)
 			}
-			if idx := m.playlist.Index(); idx != tc.index || m.plCursor != tc.index {
-				t.Fatalf("index = %d, cursor %d; want %d", idx, m.plCursor, tc.index)
+			if idx := m.queue.Index(); idx != tc.index || m.queueCursor != tc.index {
+				t.Fatalf("index = %d, cursor %d; want %d", idx, m.queueCursor, tc.index)
 			}
 		})
 	}
@@ -488,7 +488,7 @@ func TestIPCSaveUsesRequestContext(t *testing.T) {
 			t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 			tracks := playlist.New()
 			tracks.Add(playlist.Track{Path: "https://www.youtube.com/watch?v=abc", Title: "Song"})
-			m := Model{playlist: tracks}
+			m := Model{queue: tracks}
 			m.SetDownloadsDirectory(t.TempDir())
 			reply := make(chan ipc.Response, 1)
 

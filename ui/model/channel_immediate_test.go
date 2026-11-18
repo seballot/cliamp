@@ -14,7 +14,7 @@ func TestOpenProviderListImmediateNavigation(t *testing.T) {
 		provider  playlist.Provider
 		wantFocus focusArea
 	}{
-		{name: "cliamp radio jumps to playlist", provider: radio.NewChannels(), wantFocus: focusPlaylist},
+		{name: "cliamp radio jumps to playlist", provider: radio.NewChannels(), wantFocus: focusQueue},
 		{name: "other provider stays in pane", provider: commandsTestProvider{name: "Radio"}, wantFocus: focusProvider},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -43,15 +43,15 @@ func TestOpenProviderListImmediateNavigation(t *testing.T) {
 func TestRenderPlaylistShowsFeedLoadingDuringProviderTrackLoad(t *testing.T) {
 	m := keybindingTestModel()
 	m.provider = radio.NewChannels()
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	m.provPane.loading = true
 	m.activeProviderPlaylistID = "lofi"
 	m.width = 80
 	m.height = 20
-	m.plVisible = 10
+	m.queueVisible = 10
 	m.recomputeLayout()
 
-	if got := stripAnsi(m.renderPlaylist()); !strings.Contains(got, "Loading feed") {
-		t.Fatalf("renderPlaylist() = %q, want Loading feed indicator", got)
+	if got := stripAnsi(m.renderQueue()); !strings.Contains(got, "Loading feed") {
+		t.Fatalf("renderQueue() = %q, want Loading feed indicator", got)
 	}
 }

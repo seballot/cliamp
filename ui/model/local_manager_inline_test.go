@@ -22,7 +22,7 @@ func newLocalInlineModel() Model {
 	}}}
 	remote := commandsTestProvider{name: "Spotify"}
 	return Model{
-		playlist:      playlist.New(),
+		queue:         playlist.New(),
 		provider:      local,
 		localProvider: local,
 		providers: []provider.Entry{
@@ -74,7 +74,7 @@ func TestStartInLocalOpensManager(t *testing.T) {
 
 func TestEscFromPlaylistOpensLocalManager(t *testing.T) {
 	m := newLocalInlineModel()
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	m.plManager.visible = false
 
 	m.handleMainKey(tea.KeyPressMsg{Text: "esc", Code: tea.KeyEscape})
@@ -97,7 +97,7 @@ func TestClosingLocalManagerLandsOnQueue(t *testing.T) {
 	if m.plManager.visible {
 		t.Fatal("esc should close the playlist list")
 	}
-	if m.focus != focusPlaylist {
-		t.Fatalf("focus = %v, want focusPlaylist (queue), not the removed Local pane list", m.focus)
+	if m.focus != focusQueue {
+		t.Fatalf("focus = %v, want focusQueue (queue), not the removed Local pane list", m.focus)
 	}
 }

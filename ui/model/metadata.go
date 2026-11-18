@@ -21,10 +21,10 @@ type metadataField struct {
 // selectedMetadataTrack reads the highlighted row, even while another track is
 // playing or a setting has focus. Inspecting metadata never resolves a source.
 func (m Model) selectedMetadataTrack() playlist.Track {
-	if m.playlist == nil {
+	if m.queue == nil {
 		return playlist.Track{}
 	}
-	track, _ := m.playlist.Track(m.plCursor)
+	track, _ := m.queue.Track(m.queueCursor)
 	return track
 }
 
@@ -133,7 +133,7 @@ func (m Model) renderMetadataPane(rows int) []string {
 func (m *Model) toggleMetadata() {
 	m.SetShowMetadata(!m.showMetadata)
 	_ = m.saveConfigBool("show_metadata", m.showMetadata)
-	if m.showMetadata && (!m.layout.twoColumn || m.metadataPaneRows(m.effectivePlaylistVisible()) == 0) {
+	if m.showMetadata && (!m.layout.twoColumn || m.metadataPaneRows(m.effectiveQueueVisible()) == 0) {
 		m.info = infoOverlay{visible: true}
 		m.refreshChrome()
 	}

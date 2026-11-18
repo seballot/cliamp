@@ -90,7 +90,7 @@ func TestPlaylistPickersOfferOnlyAddTargets(t *testing.T) {
 	})
 
 	t.Run("track picker", func(t *testing.T) {
-		m := Model{localProvider: local, playlist: playlist.New()}
+		m := Model{localProvider: local, queue: playlist.New()}
 		m.openPlaylistPicker([]playlist.Track{{Path: "/a.mp3"}}, "Track: A")
 		if got := ids(m.plPicker.playlists); !slices.Equal(got, []string{"mix"}) {
 			t.Fatalf("targets = %v, want [mix]", got)
@@ -102,7 +102,7 @@ func TestTracksLoadedMsgMarksOnlyExactLocalPlaylist(t *testing.T) {
 	player := &playbackFakeEngine{}
 	m := Model{
 		player:        player,
-		playlist:      playlist.New(),
+		queue:         playlist.New(),
 		localProvider: commandsTestProvider{name: "Local"},
 		provider:      commandsTestProvider{name: "Local"},
 		vis:           ui.NewVisualizer(float64(player.SampleRate())),
@@ -143,7 +143,7 @@ func TestPlaylistManagerTrackSortUsesLowercaseKey(t *testing.T) {
 	local := &playlistManagerTestProvider{commandsTestProvider: commandsTestProvider{name: "Local"}, saved: tracks}
 	m := Model{
 		player:        player,
-		playlist:      playlist.New(),
+		queue:         playlist.New(),
 		localProvider: local,
 		provider:      local,
 		providers: []provider.Entry{

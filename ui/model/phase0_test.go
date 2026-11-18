@@ -56,14 +56,14 @@ func TestFullVisualizerBlocksHiddenPlaylistMutations(t *testing.T) {
 	p := playlist.New()
 	p.Add(playlist.Track{Path: "one.mp3", Title: "One"})
 	m := Model{
-		player:   player,
-		playlist: p,
-		vis:      ui.NewVisualizer(float64(player.SampleRate())),
-		fullVis:  true,
+		player:  player,
+		queue:   p,
+		vis:     ui.NewVisualizer(float64(player.SampleRate())),
+		fullVis: true,
 	}
 
 	m.handleKey(tea.KeyPressMsg{Text: "x"})
-	if got := m.playlist.Len(); got != 1 {
+	if got := m.queue.Len(); got != 1 {
 		t.Fatalf("playlist length after hidden remove = %d, want 1", got)
 	}
 
@@ -93,8 +93,8 @@ func TestNavigationFilterWithNoMatchesCannotActOnHiddenTracks(t *testing.T) {
 	p := playlist.New()
 	p.Add(playlist.Track{Path: "existing.mp3", Title: "Existing"})
 	m := Model{
-		player:   &playbackFakeEngine{},
-		playlist: p,
+		player: &playbackFakeEngine{},
+		queue:  p,
 		navBrowser: navBrowserState{
 			prov:      commandsTestProvider{name: "Browse"},
 			visible:   true,
@@ -114,7 +114,7 @@ func TestNavigationFilterWithNoMatchesCannotActOnHiddenTracks(t *testing.T) {
 	} {
 		m.handleNavBrowserKey(key)
 	}
-	if got := m.playlist.Tracks()[0].Path; got != "existing.mp3" {
+	if got := m.queue.Tracks()[0].Path; got != "existing.mp3" {
 		t.Fatalf("playlist changed by zero-result filter: %q", got)
 	}
 }
@@ -126,7 +126,7 @@ func TestNavigationTrackReplaceWinsOverRadioShortcut(t *testing.T) {
 	current := commandsTestProvider{name: "Current"}
 	m := Model{
 		player:   player,
-		playlist: p,
+		queue:    p,
 		provider: current,
 		vis:      ui.NewVisualizer(float64(player.SampleRate())),
 		providers: []provider.Entry{
@@ -146,7 +146,7 @@ func TestNavigationTrackReplaceWinsOverRadioShortcut(t *testing.T) {
 		t.Fatal("replace confirmation was not opened")
 	}
 	m.handleNavBrowserKey(tea.KeyPressMsg{Code: tea.KeyEnter})
-	tracks := m.playlist.Tracks()
+	tracks := m.queue.Tracks()
 	if len(tracks) != 1 || tracks[0].Path != "replacement.mp3" {
 		t.Fatalf("playlist after R = %#v, want replacement track", tracks)
 	}
@@ -159,7 +159,7 @@ func TestStaleAsyncResponsesDoNotChangeCurrentState(t *testing.T) {
 	current := commandsTestProvider{name: "Current"}
 	m := Model{
 		player:   &playbackFakeEngine{},
-		playlist: playlist.New(),
+		queue:    playlist.New(),
 		provider: current,
 		provPane: providerPane{
 			lists:   []playlist.PlaylistInfo{{ID: "current", Name: "Current"}},
@@ -181,7 +181,7 @@ func TestStaleAsyncResponsesDoNotChangeCurrentState(t *testing.T) {
 		},
 		buffering: true,
 	}
-	m.playlist.Add(playlist.Track{Path: "current.mp3", Title: "Current"})
+	m.queue.Add(playlist.Track{Path: "current.mp3", Title: "Current"})
 	m.requests.tracks = 2
 	m.requests.nav = 2
 	m.requests.netSearch = 2
@@ -219,7 +219,7 @@ func TestStaleAsyncResponsesDoNotChangeCurrentState(t *testing.T) {
 		m = updated.(Model)
 	}
 
-	if got := m.playlist.Tracks()[0].Path; got != "current.mp3" {
+	if got := m.queue.Tracks()[0].Path; got != "current.mp3" {
 		t.Fatalf("playlist track = %q, want current.mp3", got)
 	}
 	if len(m.navBrowser.artists) != 0 || !m.navBrowser.loading {

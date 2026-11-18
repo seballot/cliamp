@@ -39,8 +39,8 @@ func registerQueueAPI(L *lua.LState, cliamp *lua.LTable, loadState func() *State
 	L.SetField(tbl, "count", L.NewFunction(func(L *lua.LState) int {
 		state := loadState()
 		n := 0
-		if state.PlaylistCount != nil {
-			n = state.PlaylistCount()
+		if state.QueueCount != nil {
+			n = state.QueueCount()
 		}
 		L.Push(lua.LNumber(n))
 		return 1

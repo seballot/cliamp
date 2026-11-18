@@ -39,14 +39,14 @@ func queueViewModel(t *testing.T) *Model {
 		"https://cdn/done.mp3": {Played: true},
 		"https://cdn/half.mp3": {Position: 5 * time.Minute},
 	}}
-	m := &Model{layout: frameLayout{panelWidth: 80}, provider: prov, playlist: playlist.New(), plVisible: 12, showAlbumHeaders: true}
-	m.playlist.Replace([]playlist.Track{
+	m := &Model{layout: frameLayout{panelWidth: 80}, provider: prov, queue: playlist.New(), queueVisible: 12, showAlbumHeaders: true}
+	m.queue.Replace([]playlist.Track{
 		{Path: "https://cdn/done.mp3", Title: "Finished One", Album: "Part Of The Problem", DurationSecs: 3768},
 		{Path: "https://cdn/half.mp3", Title: "Half Heard", Album: "Wading Through AI", DurationSecs: 6751},
 		{Path: "https://cdn/fresh.mp3", Title: "Untouched", Album: "Wading Through AI", DurationSecs: 60},
 	})
 	for i := range 3 {
-		m.playlist.AddPlayNext(i)
+		m.queue.AddPlayNext(i)
 	}
 	return m
 }
@@ -84,10 +84,10 @@ func TestRenderQueueBodyNumbersByQueuePosition(t *testing.T) {
 }
 
 func TestRenderQueueBodyEmpty(t *testing.T) {
-	m := &Model{layout: frameLayout{panelWidth: 80}, playlist: playlist.New(), plVisible: 12}
+	m := &Model{layout: frameLayout{panelWidth: 80}, queue: playlist.New(), queueVisible: 12}
 
 	got := stripAnsi(m.renderPlayNextBody())
-	for _, want := range []string{"Play next is empty.", "Press  a  on a playlist track to play it next."} {
+	for _, want := range []string{"Play next is empty.", "Press  a  on a queue track to play it next."} {
 		if !strings.Contains(got, want) {
 			t.Errorf("empty queue body = %q, want %q", got, want)
 		}
@@ -107,7 +107,7 @@ func TestQueueKeepsTheNormalLayout(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &Model{playlist: playlist.New()}
+			m := &Model{queue: playlist.New()}
 			tt.setup(m)
 			if got := m.usesContentFirstLayout(); got != tt.wantContentFirst {
 				t.Errorf("usesContentFirstLayout() = %v, want %v", got, tt.wantContentFirst)
@@ -121,9 +121,9 @@ func TestQueueKeepsTheNormalLayout(t *testing.T) {
 // With one row of budget, an album header would take it and leave the selected
 // track unrendered. The track wins.
 func TestRenderQueueBodyOneRowShowsTheTrackNotTheHeader(t *testing.T) {
-	m := &Model{layout: frameLayout{panelWidth: 80}, playlist: playlist.New(), plVisible: 1, showAlbumHeaders: true}
-	m.playlist.Replace([]playlist.Track{{Path: "/t0.mp3", Title: "Track 0", Album: "One Album"}})
-	m.playlist.AddPlayNext(0)
+	m := &Model{layout: frameLayout{panelWidth: 80}, queue: playlist.New(), queueVisible: 1, showAlbumHeaders: true}
+	m.queue.Replace([]playlist.Track{{Path: "/t0.mp3", Title: "Track 0", Album: "One Album"}})
+	m.queue.AddPlayNext(0)
 
 	body := stripAnsi(m.renderPlayNextBody())
 
@@ -136,14 +136,14 @@ func TestRenderQueueBodyOneRowShowsTheTrackNotTheHeader(t *testing.T) {
 }
 
 func TestRenderQueueBodyScrollsALongQueue(t *testing.T) {
-	m := &Model{layout: frameLayout{panelWidth: 80}, playlist: playlist.New(), plVisible: 8, showAlbumHeaders: true}
+	m := &Model{layout: frameLayout{panelWidth: 80}, queue: playlist.New(), queueVisible: 8, showAlbumHeaders: true}
 	tracks := make([]playlist.Track, 1000)
 	for i := range tracks {
 		tracks[i] = playlist.Track{Path: fmt.Sprintf("/t%d.mp3", i), Title: fmt.Sprintf("Track %d", i), Album: "One Album"}
 	}
-	m.playlist.Replace(tracks)
+	m.queue.Replace(tracks)
 	for i := range tracks {
-		m.playlist.AddPlayNext(i)
+		m.queue.AddPlayNext(i)
 	}
 	m.playNext.cursor = 999
 
@@ -158,14 +158,14 @@ func TestRenderQueueBodyScrollsALongQueue(t *testing.T) {
 }
 
 func TestRenderQueueBodyKeepsCursorVisiblePastHeaders(t *testing.T) {
-	m := &Model{layout: frameLayout{panelWidth: 80}, playlist: playlist.New(), plVisible: 5, showAlbumHeaders: true}
+	m := &Model{layout: frameLayout{panelWidth: 80}, queue: playlist.New(), queueVisible: 5, showAlbumHeaders: true}
 	tracks := make([]playlist.Track, 6)
 	for i := range tracks {
 		tracks[i] = playlist.Track{Path: fmt.Sprintf("/t%d.mp3", i), Title: fmt.Sprintf("Track %d", i), Album: "One Album"}
 	}
-	m.playlist.Replace(tracks)
+	m.queue.Replace(tracks)
 	for i := range tracks {
-		m.playlist.AddPlayNext(i)
+		m.queue.AddPlayNext(i)
 	}
 	// Five rows of budget: one header plus four tracks. The cursor on track 4
 	// would be the fifth track row, off the bottom unless the view scrolls.

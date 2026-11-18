@@ -157,8 +157,8 @@ func TestHeadlessZeroSizePlayNextDrain(t *testing.T) {
 			m = updated.(Model)
 			settlePlay(t, &m, cmd)
 			want := []string{tracks[0].Path, tracks[1].Path, tracks[2].Path}
-			if !slices.Equal(engine.playCalls, want) || m.playlist.Index() != 2 {
-				t.Fatalf("play calls = %v at index %d, want %v at index 2", engine.playCalls, m.playlist.Index(), want)
+			if !slices.Equal(engine.playCalls, want) || m.queue.Index() != 2 {
+				t.Fatalf("play calls = %v at index %d, want %v at index 2", engine.playCalls, m.queue.Index(), want)
 			}
 
 			// The last track drains, so the queue ends.

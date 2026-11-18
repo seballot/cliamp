@@ -33,10 +33,10 @@ func (m *Model) findTrackRater(track playlist.Track) (provider.TrackRater, strin
 }
 
 func (m *Model) rateSelectedTrack(rating int) tea.Cmd {
-	if rating < 0 || rating > 5 || m.playlist == nil || m.plCursor < 0 || m.plCursor >= m.playlist.Len() {
+	if rating < 0 || rating > 5 || m.queue == nil || m.queueCursor < 0 || m.queueCursor >= m.queue.Len() {
 		return nil
 	}
-	track, ok := m.playlist.Track(m.plCursor)
+	track, ok := m.queue.Track(m.queueCursor)
 	if !ok {
 		return nil
 	}
@@ -77,7 +77,7 @@ func (m *Model) rateSelectedTrack(rating int) tea.Cmd {
 }
 
 func (m *Model) handleTrackRatingSynced(msg trackRatingSyncedMsg) {
-	if m.playlist == nil {
+	if m.queue == nil {
 		return
 	}
 	identity := ratingTrackIdentity(msg.track)
@@ -90,8 +90,8 @@ func (m *Model) handleTrackRatingSynced(msg trackRatingSyncedMsg) {
 	}
 	var matched []int
 	var displayTrack playlist.Track
-	for i := 0; i < m.playlist.Len(); i++ {
-		candidate, ok := m.playlist.Track(i)
+	for i := 0; i < m.queue.Len(); i++ {
+		candidate, ok := m.queue.Track(i)
 		if ok && ratingTrackIdentity(candidate) == identity {
 			if len(matched) == 0 {
 				displayTrack = candidate
@@ -107,9 +107,9 @@ func (m *Model) handleTrackRatingSynced(msg trackRatingSyncedMsg) {
 		return
 	}
 	for _, index := range matched {
-		track, _ := m.playlist.Track(index)
+		track, _ := m.queue.Track(index)
 		track.UserRating = msg.rating
-		m.playlist.SetTrack(index, track)
+		m.queue.SetTrack(index, track)
 	}
 	if m.playingTrackActive && !m.playbackDetached && ratingTrackIdentity(m.playingTrack) == identity {
 		m.playingTrack.UserRating = msg.rating

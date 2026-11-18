@@ -221,17 +221,17 @@ func (m *Model) recomputeLayout() {
 	if !layout.tooSmall() {
 		layout.bodyRows = max(1, height-2*paddingV-layout.fixedRows-layout.footerRows)
 		if simplified {
-			m.plVisible = 0
+			m.queueVisible = 0
 		} else {
-			limit := maxPlVisible
+			limit := maxQueueVisible
 			if m.heightExpanded {
 				limit = layout.bodyRows
 			} else if contentFirst {
-				limit = maxPlExpandVisible
+				limit = maxQueueExpandVisible
 			} else if freed := layout.chromeRowsFreed(); freed > 0 {
-				limit = maxPlVisible + freed
+				limit = maxQueueVisible + freed
 			}
-			m.plVisible = min(limit, layout.bodyRows)
+			m.queueVisible = min(limit, layout.bodyRows)
 		}
 	}
 

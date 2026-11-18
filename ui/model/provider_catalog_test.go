@@ -93,7 +93,7 @@ func TestProviderSearchRenderingUsesCatalogCapability(t *testing.T) {
 	for _, prov := range []playlist.Provider{p, sectioned, sectionedOnly} {
 		for _, query := range []string{"", "science"} {
 			for _, loading := range []bool{false, true} {
-				m := Model{provider: prov, plVisible: 6, provPane: providerPane{loading: loading},
+				m := Model{provider: prov, queueVisible: 6, provPane: providerPane{loading: loading},
 					provSearch: provSearchState{active: true, query: query}}
 				body := stripAnsi(m.renderProviderList())
 				want, mode := "Type to filter", "[Filter: "
@@ -109,7 +109,7 @@ func TestProviderSearchRenderingUsesCatalogCapability(t *testing.T) {
 			}
 		}
 	}
-	m := Model{provider: p, plVisible: 6}
+	m := Model{provider: p, queueVisible: 6}
 	if body := stripAnsi(m.renderProviderList()); !strings.Contains(body, " / ") || strings.Contains(body, "Ctrl+F") {
 		t.Fatalf("empty catalog hint = %q, want slash search", body)
 	}

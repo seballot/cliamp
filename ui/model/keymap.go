@@ -171,7 +171,7 @@ func (m Model) commandContext() (commandMode, string) {
 	case focusProvPill:
 		return commandModeProviderPill, "Source"
 	default:
-		return commandModeMain, "Playlist"
+		return commandModeMain, "Queue"
 	}
 }
 
@@ -204,7 +204,7 @@ func (m *Model) openKeymap() {
 	// header/help are reflected in the visible-row budget, then fit the cursor.
 	m.refreshChrome()
 	m.applyHeightMode()
-	m.keymapMaybeAdjustScroll(m.effectivePlaylistVisible())
+	m.keymapMaybeAdjustScroll(m.effectiveQueueVisible())
 }
 
 // closeKeymap hides the keymap, clears its filter state, and restores playlist
@@ -219,7 +219,7 @@ func (m *Model) closeKeymap() {
 
 func (m *Model) handleKeymapSearchKey(msg tea.KeyPressMsg) tea.Cmd {
 	if m.filterKey(&m.keymap.filterList, "keymap", msg, len(m.keymap.entries), m.updateKeymapFilter) {
-		m.keymapMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.keymapMaybeAdjustScroll(m.effectiveQueueVisible())
 	}
 	return nil
 }
@@ -235,7 +235,7 @@ func (m *Model) handleKeymapKey(msg tea.KeyPressMsg) tea.Cmd {
 		m.keymap.filtering = true
 		return nil
 	}
-	visible := m.effectivePlaylistVisible()
+	visible := m.effectiveQueueVisible()
 	if stepListCursor(key, &m.keymap.cursor, m.keymapCount(), visible) {
 		m.keymapMaybeAdjustScroll(visible)
 		return nil
@@ -251,7 +251,7 @@ func (m *Model) handleKeymapKey(msg tea.KeyPressMsg) tea.Cmd {
 
 	case "ctrl+x":
 		m.toggleExpandedView()
-		m.keymapMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.keymapMaybeAdjustScroll(m.effectiveQueueVisible())
 
 	case "backspace", "h":
 		if m.keymap.filter != "" {
@@ -315,9 +315,9 @@ func (m *Model) updateKeymapFilter() {
 
 // renderKeymapList renders the keymap entries for the playlist region while the
 // keymap is open. The header and help line are supplied by the main layout
-// (renderPlaylistHeader / renderHelp), mirroring renderVisPickerList.
+// (renderQueueHeader / renderHelp), mirroring renderVisPickerList.
 func (m Model) renderKeymapList() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	if budget <= 0 {
 		return ""
 	}

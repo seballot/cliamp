@@ -141,7 +141,7 @@ func (m *Model) handleStreamPlayed(msg streamPlayedMsg) tea.Cmd {
 		// An unavailable YouTube video must not stall the queue. A live
 		// station stays put so its reconnect can run.
 		if playlist.IsYTDL(msg.path) && !m.currentPlaybackIsLive(track) && ytdlUnavailable(msg.err) {
-			if _, ok := m.playlist.PeekNext(); ok {
+			if _, ok := m.queue.PeekNext(); ok {
 				m.err = nil
 				m.status.Warningf(statusTTLDefault, "Skipped %s", track.DisplayName())
 				return m.nextTrack()

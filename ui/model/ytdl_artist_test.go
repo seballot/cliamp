@@ -57,7 +57,7 @@ func TestYTDLArtistFillsPlayingTrackAndQueue(t *testing.T) {
 			pl := playlist.New()
 			pl.Add(tc.queued)
 			pl.SetIndex(0)
-			m := Model{playlist: pl, playingTrack: tc.queued, playingTrackActive: true}
+			m := Model{queue: pl, playingTrack: tc.queued, playingTrackActive: true}
 			m.requests.ytdlArtist = 1
 			m.lyrics.visible = tc.lyricsVisible
 			m.lyrics.query = tc.lyricsQuery
@@ -68,7 +68,7 @@ func TestYTDLArtistFillsPlayingTrackAndQueue(t *testing.T) {
 			if m.playingTrack.Artist != tc.wantArtist {
 				t.Fatalf("playing artist = %q, want %q", m.playingTrack.Artist, tc.wantArtist)
 			}
-			if got, _ := m.playlist.Track(0); got.Artist != tc.wantArtist {
+			if got, _ := m.queue.Track(0); got.Artist != tc.wantArtist {
 				t.Fatalf("queue artist = %q, want %q", got.Artist, tc.wantArtist)
 			}
 			if m.lyrics.query != tc.wantQuery {

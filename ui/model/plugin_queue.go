@@ -37,7 +37,7 @@ func (m *Model) handlePluginQueue(msg PluginQueueMsg) tea.Cmd {
 		return m.appendPluginTracks(track)
 
 	case "jump":
-		if msg.Index < 0 || msg.Index >= m.playlist.Len() {
+		if msg.Index < 0 || msg.Index >= m.queue.Len() {
 			return nil
 		}
 		return m.playIndex(msg.Index)

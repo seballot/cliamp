@@ -63,9 +63,9 @@ func (m *Model) plPickerCount() int {
 
 func (m *Model) plPickerVisible() int {
 	if m.plPicker.screen == plPickerChoose {
-		return max(1, m.effectivePlaylistVisible()-1)
+		return max(1, m.effectiveQueueVisible()-1)
 	}
-	return m.effectivePlaylistVisible()
+	return m.effectiveQueueVisible()
 }
 
 func (m *Model) plPickerMaybeAdjustScroll(visible int) {
@@ -80,7 +80,7 @@ func (m Model) plPickerHeaderLine() string {
 }
 
 func (m Model) renderPlaylistPickerBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	if m.plPicker.screen == plPickerNewName {
 		msg := "Create an empty playlist."
 		if n := len(m.plPicker.tracks); n == 1 {
@@ -301,7 +301,7 @@ func (m *Model) refreshPlaylistManagerAfterWrite(name string) {
 		if tracks, err := m.localProvider.Tracks(name); err == nil {
 			m.plMgrLoadTracks(tracks)
 			m.plMgrRecomputeFilter()
-			m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+			m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 		}
 	}
 }

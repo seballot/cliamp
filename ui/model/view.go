@@ -259,7 +259,7 @@ func (m Model) View() tea.View {
 		content = m.renderFullVisualizer()
 	default:
 		// Overlays render in the playlist region (renderMainBody), with their
-		// header/help supplied by renderPlaylistHeader / renderHelp. List-heavy
+		// header/help supplied by renderQueueHeader / renderHelp. List-heavy
 		// tasks collapse to a compact now-playing summary so they can use the
 		// reclaimed rows for browsing.
 		body := m.renderBodyRegion()
@@ -340,7 +340,7 @@ func (m Model) mainSections(playlist string, includeTransient, contentFirst bool
 				m.renderTrackInfo(),
 				m.renderTimeStatus(),
 				m.renderSeekBar(),
-				m.renderPlaylistHeader(),
+				m.renderQueueHeader(),
 			}
 		} else {
 			sections = []string{
@@ -348,7 +348,7 @@ func (m Model) mainSections(playlist string, includeTransient, contentFirst bool
 				m.renderTrackInfo(),
 				m.renderTimeStatus(),
 				m.renderSeekBar(),
-				m.renderPlaylistHeader(),
+				m.renderQueueHeader(),
 			}
 		}
 	} else {
@@ -366,14 +366,14 @@ func (m Model) mainSections(playlist string, includeTransient, contentFirst bool
 				m.renderSeekBar(),
 				m.renderCompactControls(),
 				m.renderCompactSource(),
-				m.renderPlaylistHeader(),
+				m.renderQueueHeader(),
 			)
 		case layoutMinimal:
 			sections = []string{
 				m.renderTrackInfo(),
 				m.renderTimeStatus(),
 				m.renderSeekBar(),
-				m.renderPlaylistHeader(),
+				m.renderQueueHeader(),
 			}
 		default:
 			sections = []string{
@@ -398,13 +398,13 @@ func (m Model) mainSections(playlist string, includeTransient, contentFirst bool
 				// playlist header rule runs the whole frame width.
 				sections = append(sections,
 					m.renderSourceVolume(),
-					fillSeparator(m.renderPlaylistHeader(), m.layout.panelWidth))
+					fillSeparator(m.renderQueueHeader(), m.layout.panelWidth))
 			default:
 				sections = append(sections, m.renderControls())
 				if source := m.renderProviderPill(); source != "" {
 					sections = append(sections, source)
 				}
-				sections = append(sections, m.renderPlaylistHeader())
+				sections = append(sections, m.renderQueueHeader())
 			}
 		}
 	}
@@ -911,7 +911,7 @@ func (m Model) renderProviderPill() string {
 	return srcLabel + strings.Join(append([]string{indicator}, neighbors...), " ")
 }
 
-func (m Model) renderPlaylistHeader() string {
+func (m Model) renderQueueHeader() string {
 	if ov, ok := m.activeOverlay(); ok {
 		return ov.header(&m)
 	}
@@ -942,40 +942,40 @@ func (m Model) renderPlaybackHeader() string {
 	if !m.layout.twoColumn {
 		if m.focus == focusShuffle {
 			value := "Off"
-			if m.playlist.Shuffled() {
+			if m.queue.Shuffled() {
 				value = "On"
 			}
 			badges = append(badges, activeToggle.Render("[Shuffle ▸ "+value+"]"))
-		} else if m.playlist.Shuffled() {
+		} else if m.queue.Shuffled() {
 			badges = append(badges, activeToggle.Render("[Shuffle]"))
 		} else {
 			badges = append(badges, dimStyle.Render("[")+trackStyle.Render("Shuffle")+dimStyle.Render("]"))
 		}
 
-		repeatVal := m.playlist.Repeat().String()
+		repeatVal := m.queue.Repeat().String()
 		if m.focus == focusRepeat {
 			badges = append(badges, activeToggle.Render(fmt.Sprintf("[Repeat ▸ %s]", repeatVal)))
-		} else if m.playlist.Repeat() != 0 {
+		} else if m.queue.Repeat() != 0 {
 			badges = append(badges, activeToggle.Render(fmt.Sprintf("[Repeat: %s]", repeatVal)))
 		} else {
 			badges = append(badges, dimStyle.Render("[")+trackStyle.Render("Repeat")+dimStyle.Render(": ")+dimStyle.Render(repeatVal)+dimStyle.Render("]"))
 		}
 	}
 
-	if qLen := m.playlist.PlayNextLen(); qLen > 0 {
+	if qLen := m.queue.PlayNextLen(); qLen > 0 {
 		badges = append(badges, activeToggle.Render(fmt.Sprintf("[Next: %d]", qLen)))
 	}
 	// Render from the cached favSet: the render path must not hit disk.
 	if count := len(m.favSet); count > 0 {
 		badges = append(badges, activeToggle.Render(fmt.Sprintf("[%s %d]", favHeart, count)))
 	}
-	if total := m.playlist.Len(); total > 0 {
-		badges = append(badges, dimStyle.Render(fmt.Sprintf("[%d/%d]", m.playlist.Index()+1, total)))
+	if total := m.queue.Len(); total > 0 {
+		badges = append(badges, dimStyle.Render(fmt.Sprintf("[%d/%d]", m.queue.Index()+1, total)))
 	}
 
 	headerStyle := dimStyle
 	headerLabel := "── Playlist ── "
-	if m.focus == focusPlaylist {
+	if m.focus == focusQueue {
 		headerStyle = activeToggle
 		headerLabel = "▸─ Playlist ── "
 	}
@@ -1001,7 +1001,7 @@ func (m Model) renderPlaybackHeader() string {
 }
 
 func (m Model) renderProviderList() string {
-	visibleBudget := m.effectivePlaylistVisible()
+	visibleBudget := m.effectiveQueueVisible()
 	if visibleBudget <= 0 {
 		return ""
 	}
@@ -1204,8 +1204,8 @@ func (m Model) providerSectionTitle(prefix string) string {
 	return titler.SectionTitle(prefix)
 }
 
-func (m Model) renderPlaylist() string {
-	budget := m.effectivePlaylistVisible()
+func (m Model) renderQueue() string {
+	budget := m.effectiveQueueVisible()
 	if budget <= 0 {
 		return ""
 	}
@@ -1214,7 +1214,7 @@ func (m Model) renderPlaylist() string {
 		return m.renderProviderList()
 	}
 
-	trackCount := m.playlist.Len()
+	trackCount := m.queue.Len()
 	if trackCount == 0 {
 		var lines []string
 		if m.feedLoading || (m.provPane.loading && m.activeProviderPlaylistID != "") {
@@ -1230,10 +1230,10 @@ func (m Model) renderPlaylist() string {
 		return strings.Join(fitLines(lines, budget), "\n")
 	}
 
-	currentIdx := m.playlist.Index()
-	scroll := m.playlistScroll(budget)
+	currentIdx := m.queue.Index()
+	scroll := m.queueViewScroll(budget)
 	windowStart := max(0, scroll-1)
-	indices, tracks := m.playlist.OrderWindow(windowStart, budget+1)
+	indices, tracks := m.queue.OrderWindow(windowStart, budget+1)
 	localScroll := scroll - windowStart
 
 	lines := make([]string, 0, budget)
@@ -1244,7 +1244,7 @@ func (m Model) renderPlaylist() string {
 		stateReporters = m.playbackStateReporters()
 	}
 
-	showHeaders := m.plShowsAlbumHeaders()
+	showHeaders := m.queueShowsAlbumHeaders()
 	for row := range m.playlistRows(tracks, localScroll, showHeaders) {
 		if row.Index < 0 {
 			if len(lines)+1 >= budget {
@@ -1260,7 +1260,7 @@ func (m Model) renderPlaylist() string {
 
 		i, t := indices[row.Index], row.Track
 		style := playlistItemStyle
-		selected := m.focus == focusPlaylist && i == m.plCursor
+		selected := m.focus == focusQueue && i == m.queueCursor
 		playing := !m.playbackDetached && i == currentIdx && m.player.IsPlaying()
 		if playing {
 			style = playlistActiveStyle
@@ -1291,7 +1291,7 @@ func (m Model) renderPlaylist() string {
 		markers := cursorMarker + stateMarker
 		styledMarkers := dimStyle.Render(cursorMarker) + stateStyle.Render(stateMarker)
 
-		queuePosition := m.playlist.PlayNextPosition(i)
+		queuePosition := m.queue.PlayNextPosition(i)
 		if cols.playNext {
 			mark := " "
 			if queuePosition > 0 {
@@ -1302,7 +1302,7 @@ func (m Model) renderPlaylist() string {
 		}
 		if cols.favorite {
 			mark := " "
-			if m.playlistTrackFavorited(t) {
+			if m.queueTrackFavorited(t) {
 				mark = favHeart
 			}
 			markers += mark

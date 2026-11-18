@@ -20,7 +20,7 @@ func TestRenderSearchListAlignsNumbers(t *testing.T) {
 		if i == 2 || i == 105 {
 			title = "Opeth " + title
 		}
-		m.playlist.Add(playlist.Track{Title: title})
+		m.queue.Add(playlist.Track{Title: title})
 	}
 	m.search.active = true
 	m.search.query = "opeth"

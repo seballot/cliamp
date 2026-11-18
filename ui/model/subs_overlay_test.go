@@ -74,7 +74,7 @@ func stubSubsModel() *Model {
 			{ID: "feed-c", Name: "Dead Drop", Author: "John Kiriakou"},
 		},
 	}
-	m := &Model{provider: prov, playlist: playlist.New()}
+	m := &Model{provider: prov, queue: playlist.New()}
 	return m
 }
 
@@ -119,7 +119,7 @@ func TestOpenSubsOverlayKeepsInFlightLoad(t *testing.T) {
 }
 
 func TestOpenSubsOverlayWithoutSubscriptions(t *testing.T) {
-	m := &Model{provider: &subProv{}, playlist: playlist.New()}
+	m := &Model{provider: &subProv{}, queue: playlist.New()}
 
 	m.openSubsOverlay()
 
@@ -202,14 +202,14 @@ func TestAddSubscriptionEpisodesModes(t *testing.T) {
 			if start != 0 {
 				t.Fatalf("start = %d, want 0", start)
 			}
-			if got := m.playlist.Len(); got != tt.wantPlaylist {
+			if got := m.queue.Len(); got != tt.wantPlaylist {
 				t.Errorf("playlist length = %d, want %d", got, tt.wantPlaylist)
 			}
-			if got := m.playlist.PlayNextLen(); got != tt.wantQueue {
+			if got := m.queue.PlayNextLen(); got != tt.wantQueue {
 				t.Errorf("queue length = %d, want %d", got, tt.wantQueue)
 			}
 			if tt.wantQueueHead != "" {
-				head := m.playlist.PlayNextWindow(0, 1)
+				head := m.queue.PlayNextWindow(0, 1)
 				if len(head) != 1 || head[0].Title != tt.wantQueueHead {
 					t.Errorf("queue head = %v, want %q", head, tt.wantQueueHead)
 				}
@@ -231,14 +231,14 @@ func TestAddSubscriptionEpisodesAccumulates(t *testing.T) {
 	if start != 2 {
 		t.Errorf("second batch start = %d, want 2", start)
 	}
-	if got := m.playlist.Len(); got != 3 {
+	if got := m.queue.Len(); got != 3 {
 		t.Errorf("playlist length = %d, want 3", got)
 	}
-	if got := m.playlist.PlayNextLen(); got != 3 {
+	if got := m.queue.PlayNextLen(); got != 3 {
 		t.Errorf("queue length = %d, want 3", got)
 	}
 	titles := make([]string, 0, 3)
-	for _, tr := range m.playlist.PlayNextWindow(0, 3) {
+	for _, tr := range m.queue.PlayNextWindow(0, 3) {
 		titles = append(titles, tr.Title)
 	}
 	want := []string{"a1", "a2", "b1"}
@@ -261,8 +261,8 @@ func TestAddSubscriptionEpisodesEmptyFeed(t *testing.T) {
 	if m.status.text == "" {
 		t.Error("no status warning for an empty feed requested from the provider list")
 	}
-	if m.playlist.Len() != 0 {
-		t.Errorf("playlist length = %d, want 0", m.playlist.Len())
+	if m.queue.Len() != 0 {
+		t.Errorf("playlist length = %d, want 0", m.queue.Len())
 	}
 
 	// With the overlay open the message stays in the overlay.
@@ -289,7 +289,7 @@ func TestLoadLatestFromAllSubscriptionsKeepsSubscriptionOrder(t *testing.T) {
 			// feed-c returns nothing, so it must be reported as failed.
 		},
 	}
-	m := &Model{provider: prov, playlist: playlist.New()}
+	m := &Model{provider: prov, queue: playlist.New()}
 	m.openSubsOverlay()
 
 	cmd := m.loadLatestFromAllSubscriptions()
@@ -328,10 +328,10 @@ func TestHandleSubsLatestAllAppendsWithoutQueueing(t *testing.T) {
 	if m.subs.loading {
 		t.Error("loading flag still set after the sweep returned")
 	}
-	if got := m.playlist.Len(); got != 2 {
+	if got := m.queue.Len(); got != 2 {
 		t.Errorf("playlist length = %d, want 2", got)
 	}
-	if got := m.playlist.PlayNextLen(); got != 0 {
+	if got := m.queue.PlayNextLen(); got != 0 {
 		t.Errorf("queue length = %d, want 0; the sweep builds a list, it does not queue", got)
 	}
 }
@@ -373,7 +373,7 @@ func TestSelectedProviderShow(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := Model{provider: prov, playlist: playlist.New(), provPane: providerPane{lists: lists, cursor: tt.cursor, loading: tt.loading}}
+			m := Model{provider: prov, queue: playlist.New(), provPane: providerPane{lists: lists, cursor: tt.cursor, loading: tt.loading}}
 			id, _, ok := m.selectedProviderShow()
 			if ok != tt.wantOK {
 				t.Fatalf("ok = %v, want %v", ok, tt.wantOK)
@@ -394,7 +394,7 @@ func TestLoadLatestFromProviderListQueuesNewest(t *testing.T) {
 	}
 	m := &Model{
 		provider: prov,
-		playlist: playlist.New(),
+		queue:    playlist.New(),
 		provPane: providerPane{lists: []playlist.PlaylistInfo{{ID: "f:feed-a", Name: "Show"}}},
 	}
 
@@ -415,10 +415,10 @@ func TestLoadLatestFromProviderListQueuesNewest(t *testing.T) {
 
 	m.addSubscriptionEpisodes(msg.tracks, msg.mode, msg.name)
 
-	if got := m.playlist.Len(); got != 1 {
+	if got := m.queue.Len(); got != 1 {
 		t.Errorf("playlist length = %d, want 1", got)
 	}
-	if got := m.playlist.PlayNextLen(); got != 1 {
+	if got := m.queue.PlayNextLen(); got != 1 {
 		t.Errorf("queue length = %d, want 1", got)
 	}
 }
@@ -427,7 +427,7 @@ func TestLoadLatestFromProviderListIgnoresSectionRows(t *testing.T) {
 	prov := &sectionedSubProv{favoritable: map[string]bool{}}
 	m := &Model{
 		provider: prov,
-		playlist: playlist.New(),
+		queue:    playlist.New(),
 		provPane: providerPane{lists: []playlist.PlaylistInfo{{ID: "browse:categories", Name: "Browse Categories"}}},
 	}
 
@@ -445,7 +445,7 @@ func TestProviderListShowActionsNeedAShowLister(t *testing.T) {
 	}
 	m := &Model{
 		provider: prov,
-		playlist: playlist.New(),
+		queue:    playlist.New(),
 		provPane: providerPane{lists: []playlist.PlaylistInfo{{ID: "album-1", Name: "An Album"}}},
 	}
 
@@ -469,11 +469,11 @@ func TestAppendShowFromProviderListAppendsEverything(t *testing.T) {
 	}
 	m := &Model{
 		provider: prov,
-		playlist: playlist.New(),
+		queue:    playlist.New(),
 		provPane: providerPane{lists: []playlist.PlaylistInfo{{ID: "f:feed-a", Name: "Show"}}},
 	}
-	m.playlist.Add(playlist.Track{Path: "/already-here.mp3"})
-	m.playlist.AddPlayNext(0)
+	m.queue.Add(playlist.Track{Path: "/already-here.mp3"})
+	m.queue.AddPlayNext(0)
 
 	cmd := m.appendShowFromProviderList()
 	if cmd == nil {
@@ -485,13 +485,13 @@ func TestAppendShowFromProviderListAppendsEverything(t *testing.T) {
 	}
 	m.addSubscriptionEpisodes(msg.tracks, msg.mode, msg.name)
 
-	if got := m.playlist.Len(); got != 3 {
+	if got := m.queue.Len(); got != 3 {
 		t.Errorf("playlist length = %d, want 3; the existing track must survive", got)
 	}
-	if got := m.playlist.PlayNextLen(); got != 1 {
+	if got := m.queue.PlayNextLen(); got != 1 {
 		t.Errorf("queue length = %d, want the existing queue entry to survive", got)
 	}
-	first, _ := m.playlist.Track(0)
+	first, _ := m.queue.Track(0)
 	if first.Path != "/already-here.mp3" {
 		t.Errorf("first track = %q, want the pre-existing one", first.Path)
 	}
@@ -509,7 +509,7 @@ func TestOverlayLoadsThroughTheSubscriptionProvider(t *testing.T) {
 	m := &Model{
 		provider:  other,
 		providers: []provider.Entry{{Name: "Other", Provider: other}, {Name: "Podcasts", Provider: podcasts}},
-		playlist:  playlist.New(),
+		queue:     playlist.New(),
 	}
 
 	if m.openSubsOverlay(); !m.subs.visible {
@@ -530,7 +530,7 @@ func TestOpenSubsOverlayOpensOnlyWithShows(t *testing.T) {
 	if m.openSubsOverlay(); !m.subs.visible {
 		t.Error("overlay stayed closed with subscriptions present")
 	}
-	empty := &Model{provider: &subProv{}, playlist: playlist.New()}
+	empty := &Model{provider: &subProv{}, queue: playlist.New()}
 	if empty.openSubsOverlay(); empty.subs.visible {
 		t.Error("overlay opened with nothing to show")
 	}
@@ -541,7 +541,7 @@ func TestRenderSubsBodyOneRowWithNotice(t *testing.T) {
 	m := stubSubsModel()
 	m.layout.panelWidth = 60
 	m.openSubsOverlay()
-	m.plVisible = 1
+	m.queueVisible = 1
 	m.subs.err = "feed failed"
 
 	body := m.renderSubsBody()

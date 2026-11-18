@@ -16,7 +16,7 @@ func (m *Model) subsHeaderLine() string {
 // renderSubsBody lists the subscribed shows, with any loading or error line
 // pinned to the top so a slow feed fetch is visible while the list stays put.
 func (m Model) renderSubsBody() string {
-	budget := m.effectivePlaylistVisible()
+	budget := m.effectiveQueueVisible()
 	if budget <= 0 {
 		return ""
 	}

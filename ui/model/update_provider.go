@@ -92,7 +92,7 @@ func (m *Model) handleTracksLoaded(msg tracksLoadedMsg) tea.Cmd {
 		return nil
 	}
 	if msg.offset > 0 {
-		m.playlist.Add(msg.tracks...)
+		m.queue.Add(msg.tracks...)
 		m.normalizePlayNextOverlay()
 		m.addToHeaderState(msg.tracks)
 		// Add mixes the page into the upcoming shuffle order, so an armed
@@ -118,7 +118,7 @@ func (m *Model) handleTracksLoaded(msg tracksLoadedMsg) tea.Cmd {
 		}
 	}
 	if msg.offset > 0 {
-		msg.tracks = m.playlist.Tracks()
+		msg.tracks = m.queue.Tracks()
 	}
 	m.applyTracksResume(msg)
 	m.adjustScroll()

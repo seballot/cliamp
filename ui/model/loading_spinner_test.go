@@ -60,7 +60,7 @@ func TestLoadingTextsShowTheSpinner(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := keybindingTestModel()
 			m.layout.panelWidth = 80
-			m.plVisible = 6
+			m.queueVisible = 6
 			tt.setup(&m)
 			body := ansi.Strip(tt.body(&m))
 			for line := range strings.Lines(body) {

@@ -536,8 +536,8 @@ func (m *Model) handleNavTrackListKey(msg tea.KeyPressMsg) tea.Cmd {
 			toAdd := tracks[index:min(index+maxAdd, len(tracks))]
 
 			newIdx := m.appendTracks(toAdd...)
-			m.playlist.SetIndex(newIdx)
-			m.plCursor = newIdx
+			m.queue.SetIndex(newIdx)
+			m.queueCursor = newIdx
 			m.adjustScroll()
 			if len(toAdd) > 1 {
 				m.status.Showf(statusTTLMedium, "Playing: %s (+%d queued)", toAdd[0].DisplayName(), len(toAdd)-1)
@@ -547,7 +547,7 @@ func (m *Model) handleNavTrackListKey(msg tea.KeyPressMsg) tea.Cmd {
 			return m.playCurrentTrack()
 		}
 	case "R":
-		if m.playlist.Len() > 0 {
+		if m.queue.Len() > 0 {
 			m.navBrowser.confirmReplace = true
 			return nil
 		}
@@ -556,11 +556,11 @@ func (m *Model) handleNavTrackListKey(msg tea.KeyPressMsg) tea.Cmd {
 		// Append all displayed tracks to the playlist (keep current playback).
 		tracks := m.navPlaybackTracks()
 		if len(tracks) > 0 {
-			wasEmpty := m.playlist.Len() == 0
+			wasEmpty := m.queue.Len() == 0
 			m.appendTracks(tracks...)
 			m.status.Showf(statusTTLMedium, "Added %d tracks", len(tracks))
 			if wasEmpty || !m.player.IsPlaying() {
-				m.playlist.SetIndex(0)
+				m.queue.SetIndex(0)
 				return m.playCurrentTrack()
 			}
 		}
@@ -573,7 +573,7 @@ func (m *Model) handleNavTrackListKey(msg tea.KeyPressMsg) tea.Cmd {
 		if index := m.navBrowser.cursor; index >= 0 && index < len(tracks) {
 			t := tracks[index]
 			newIdx := m.appendTracks(t)
-			m.playlist.AddPlayNext(newIdx)
+			m.queue.AddPlayNext(newIdx)
 			m.normalizePlayNextOverlay()
 			m.status.Showf(statusTTLMedium, "Play next: %s", t.DisplayName())
 			if !m.player.IsPlaying() {
@@ -636,10 +636,10 @@ func (m *Model) replacePlaylistFromNav() tea.Cmd {
 	m.replacePlaylist(tracks)
 	m.clearLoadedPlaylist()
 	m.setHeaderStateFromTracks(tracks)
-	m.plCursor = 0
-	m.plScroll = 0
-	m.playlist.SetIndex(0)
-	m.focus = focusPlaylist
+	m.queueCursor = 0
+	m.queueScroll = 0
+	m.queue.SetIndex(0)
+	m.focus = focusQueue
 	m.navBrowser.visible = false
 	m.status.Successf(statusTTLDefault, "Replaced queue with %d tracks", len(tracks))
 	return m.playCurrentTrack()
@@ -711,5 +711,5 @@ func (m *Model) navMaybeAdjustScroll() {
 	if m.navBrowser.search != "" {
 		count = len(m.navBrowser.searchIdx)
 	}
-	clampScroll(&m.navBrowser.cursor, &m.navBrowser.scroll, count, m.effectivePlaylistVisible())
+	clampScroll(&m.navBrowser.cursor, &m.navBrowser.scroll, count, m.effectiveQueueVisible())
 }

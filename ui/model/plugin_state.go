@@ -54,7 +54,7 @@ func (m *Model) PluginStateLoader() func() PluginState {
 // publishPluginState stores the state that Lua plugins read. It makes a new
 // Queue only when the playlist revision changed.
 func (m *Model) publishPluginState() {
-	if m.pluginState == nil || m.player == nil || m.playlist == nil {
+	if m.pluginState == nil || m.player == nil || m.queue == nil {
 		return
 	}
 	track, _ := m.currentPlaybackTrack()
@@ -63,14 +63,14 @@ func (m *Model) publishPluginState() {
 		Volume:   m.player.Volume(),
 		Speed:    m.player.Speed(),
 		Mono:     m.player.Mono(),
-		Repeat:   m.playlist.Repeat().String(),
-		Shuffle:  m.playlist.Shuffled(),
+		Repeat:   m.queue.Repeat().String(),
+		Shuffle:  m.queue.Shuffled(),
 		EQBands:  m.player.EQBands(),
 		Track:    pluginTrack(track),
-		Count:    m.playlist.Len(),
-		Index:    m.playlist.Index(),
-		HasNext:  m.playlist.HasNext(),
-		revision: m.playlist.Revision(),
+		Count:    m.queue.Len(),
+		Index:    m.queue.Index(),
+		HasNext:  m.queue.HasNext(),
+		revision: m.queue.Revision(),
 	}
 	state.Track.Artist, state.Track.Title = m.resolveTrackDisplay(track)
 	// Providers resolve the cover on demand, so the playlist row may not have it.
@@ -79,7 +79,7 @@ func (m *Model) publishPluginState() {
 	if prev := m.pluginState.Load(); prev != nil && prev.revision == state.revision {
 		state.Queue = prev.Queue
 	} else {
-		pl := m.playlist
+		pl := m.queue
 		state.Queue = sync.OnceValue(func() []luaplugin.QueueEntry { return pluginQueue(pl) })
 	}
 	m.pluginState.Store(state)

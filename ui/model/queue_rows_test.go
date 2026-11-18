@@ -28,17 +28,17 @@ func shuffleRowsTestModel(t *testing.T, shuffle bool) Model {
 	}
 	m := playlistScrollTestModel(tracks, 0, 0, false)
 	if shuffle {
-		m.playlist.ToggleShuffle()
-		for !rowsDifferFromTracks(m.playlist) {
-			m.playlist.ToggleShuffle()
-			m.playlist.ToggleShuffle()
+		m.queue.ToggleShuffle()
+		for !rowsDifferFromTracks(m.queue) {
+			m.queue.ToggleShuffle()
+			m.queue.ToggleShuffle()
 		}
 	}
 	m.player = &playbackFakeEngine{}
 	m.layout.panelWidth = 80
-	m.focus = focusPlaylist
-	m.plVisible = shuffleRowsTrackCount
-	m.plCursor = m.playlist.Index()
+	m.focus = focusQueue
+	m.queueVisible = shuffleRowsTrackCount
+	m.queueCursor = m.queue.Index()
 	return m
 }
 
@@ -57,8 +57,8 @@ func rowsDifferFromTracks(pl *playlist.Playlist) bool {
 // wantCursorOnLastRow checks that the cursor is on the track at the last row.
 func wantCursorOnLastRow(t *testing.T, m Model, order []int, _ []playlist.Track) {
 	t.Helper()
-	if want := order[len(order)-1]; m.plCursor != want {
-		t.Fatalf("cursor on track %d, want track %d on the last row", m.plCursor, want)
+	if want := order[len(order)-1]; m.queueCursor != want {
+		t.Fatalf("cursor on track %d, want track %d on the last row", m.queueCursor, want)
 	}
 }
 
@@ -66,18 +66,18 @@ func TestPlaylistRowMapping(t *testing.T) {
 	for _, shuffle := range []bool{false, true} {
 		t.Run(fmt.Sprintf("shuffle=%t", shuffle), func(t *testing.T) {
 			m := shuffleRowsTestModel(t, shuffle)
-			order, tracks := m.playlist.OrderWindow(0, shuffleRowsTrackCount)
+			order, tracks := m.queue.OrderWindow(0, shuffleRowsTrackCount)
 			if !shuffle && !slices.Equal(order, []int{0, 1, 2, 3, 4, 5, 6, 7}) {
 				t.Fatalf("play order without shuffle = %v, want the track order", order)
 			}
 
 			for row, want := range order {
-				m.setPlCursorRow(row)
-				if m.plCursor != want {
-					t.Fatalf("setPlCursorRow(%d) put the cursor on track %d, want %d", row, m.plCursor, want)
+				m.setQueueCursorRow(row)
+				if m.queueCursor != want {
+					t.Fatalf("setQueueCursorRow(%d) put the cursor on track %d, want %d", row, m.queueCursor, want)
 				}
-				if got := m.plCursorRow(); got != row {
-					t.Fatalf("plCursorRow() = %d, want %d", got, row)
+				if got := m.queueCursorRow(); got != row {
+					t.Fatalf("queueCursorRow() = %d, want %d", got, row)
 				}
 			}
 
@@ -100,7 +100,7 @@ func TestPlaylistCursorActionsFollowShuffleOrder(t *testing.T) {
 			name: "enter plays the track under the cursor",
 			keys: []tea.KeyPressMsg{{Code: tea.KeyDown}, {Code: tea.KeyEnter}},
 			check: func(t *testing.T, m Model, order []int, _ []playlist.Track) {
-				if got := m.playlist.Index(); got != order[1] {
+				if got := m.queue.Index(); got != order[1] {
 					t.Fatalf("playing track %d, want track %d on row 1", got, order[1])
 				}
 			},
@@ -109,8 +109,8 @@ func TestPlaylistCursorActionsFollowShuffleOrder(t *testing.T) {
 			name: "a queues the track under the cursor",
 			keys: []tea.KeyPressMsg{{Code: tea.KeyDown}, {Code: 'a', Text: "a"}},
 			check: func(t *testing.T, m Model, order []int, _ []playlist.Track) {
-				if got := m.playlist.PlayNextPosition(order[1]); got != 1 || m.playlist.PlayNextLen() != 1 {
-					t.Fatalf("PlayNextPosition(%d) = %d with queue length %d, want 1 and 1", order[1], got, m.playlist.PlayNextLen())
+				if got := m.queue.PlayNextPosition(order[1]); got != 1 || m.queue.PlayNextLen() != 1 {
+					t.Fatalf("PlayNextPosition(%d) = %d with queue length %d, want 1 and 1", order[1], got, m.queue.PlayNextLen())
 				}
 			},
 		},
@@ -119,17 +119,17 @@ func TestPlaylistCursorActionsFollowShuffleOrder(t *testing.T) {
 			keys: []tea.KeyPressMsg{{Code: tea.KeyDown}, {Code: 'x', Text: "x"}},
 			check: func(t *testing.T, m Model, order []int, before []playlist.Track) {
 				removed := before[order[1]].Path
-				for _, track := range m.playlist.Tracks() {
+				for _, track := range m.queue.Tracks() {
 					if track.Path == removed {
 						t.Fatalf("track %q is still in the playlist", removed)
 					}
 				}
-				if m.playlist.Len() != shuffleRowsTrackCount-1 {
-					t.Fatalf("playlist length = %d, want %d", m.playlist.Len(), shuffleRowsTrackCount-1)
+				if m.queue.Len() != shuffleRowsTrackCount-1 {
+					t.Fatalf("playlist length = %d, want %d", m.queue.Len(), shuffleRowsTrackCount-1)
 				}
-				cursor, _ := m.playlist.Track(m.plCursor)
-				if want := before[order[2]].Path; cursor.Path != want || m.plCursorRow() != 1 {
-					t.Fatalf("cursor on %q at row %d, want %q at row 1", cursor.Path, m.plCursorRow(), want)
+				cursor, _ := m.queue.Track(m.queueCursor)
+				if want := before[order[2]].Path; cursor.Path != want || m.queueCursorRow() != 1 {
+					t.Fatalf("cursor on %q at row %d, want %q at row 1", cursor.Path, m.queueCursorRow(), want)
 				}
 			},
 		},
@@ -147,11 +147,11 @@ func TestPlaylistCursorActionsFollowShuffleOrder(t *testing.T) {
 			name: "shift+down does not move a track",
 			keys: []tea.KeyPressMsg{{Code: tea.KeyDown}, {Code: tea.KeyDown, Mod: tea.ModShift}},
 			check: func(t *testing.T, m Model, order []int, before []playlist.Track) {
-				if got := m.playlist.Tracks(); !slices.EqualFunc(got, before, func(a, b playlist.Track) bool { return a.Path == b.Path }) {
+				if got := m.queue.Tracks(); !slices.EqualFunc(got, before, func(a, b playlist.Track) bool { return a.Path == b.Path }) {
 					t.Fatal("Shift+Down changed the track order while shuffle is on")
 				}
-				if m.plCursor != order[1] {
-					t.Fatalf("cursor on track %d, want track %d", m.plCursor, order[1])
+				if m.queueCursor != order[1] {
+					t.Fatalf("cursor on track %d, want track %d", m.queueCursor, order[1])
 				}
 				if m.status.text != shuffleMoveWarning {
 					t.Fatalf("status = %q, want %q", m.status.text, shuffleMoveWarning)
@@ -162,7 +162,7 @@ func TestPlaylistCursorActionsFollowShuffleOrder(t *testing.T) {
 			name: "the view marks the track under the cursor",
 			keys: []tea.KeyPressMsg{{Code: tea.KeyDown}, {Code: tea.KeyDown}},
 			check: func(t *testing.T, m Model, order []int, before []playlist.Track) {
-				lines := strings.Split(ansi.Strip(m.renderPlaylist()), "\n")
+				lines := strings.Split(ansi.Strip(m.renderQueue()), "\n")
 				for row, idx := range order {
 					if !strings.Contains(lines[row], before[idx].Title) {
 						t.Fatalf("row %d = %q, want %q", row, lines[row], before[idx].Title)
@@ -178,10 +178,10 @@ func TestPlaylistCursorActionsFollowShuffleOrder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := shuffleRowsTestModel(t, true)
-			order, _ := m.playlist.OrderWindow(0, shuffleRowsTrackCount)
-			before := m.playlist.Tracks()
-			if m.plCursorRow() != 0 {
-				t.Fatalf("cursor starts at row %d, want row 0", m.plCursorRow())
+			order, _ := m.queue.OrderWindow(0, shuffleRowsTrackCount)
+			before := m.queue.Tracks()
+			if m.queueCursorRow() != 0 {
+				t.Fatalf("cursor starts at row %d, want row 0", m.queueCursorRow())
 			}
 			for _, key := range tt.keys {
 				m.handleKey(key)
@@ -195,14 +195,14 @@ func TestShuffleOffKeepsCursorOnTrack(t *testing.T) {
 	m := shuffleRowsTestModel(t, true)
 	m.handleKey(tea.KeyPressMsg{Code: tea.KeyDown})
 	m.handleKey(tea.KeyPressMsg{Code: tea.KeyDown})
-	want := m.plCursor
+	want := m.queueCursor
 
 	m.handleKey(tea.KeyPressMsg{Code: 'z', Text: "z"})
-	if m.playlist.Shuffled() {
+	if m.queue.Shuffled() {
 		t.Fatal("z did not turn off shuffle")
 	}
-	if m.plCursor != want || m.plCursorRow() != want {
-		t.Fatalf("cursor on track %d at row %d, want track %d at row %d", m.plCursor, m.plCursorRow(), want, want)
+	if m.queueCursor != want || m.queueCursorRow() != want {
+		t.Fatalf("cursor on track %d at row %d, want track %d at row %d", m.queueCursor, m.queueCursorRow(), want, want)
 	}
 }
 
@@ -225,15 +225,15 @@ func albumRowsTestModel(t *testing.T, perAlbum, visible int) Model {
 	}
 	m.player = &playbackFakeEngine{}
 	m.layout.panelWidth = 80
-	m.focus = focusPlaylist
-	m.plVisible = visible
+	m.focus = focusQueue
+	m.queueVisible = visible
 	return m
 }
 
 // playlistViewLines renders the playlist view and splits it into lines
 // without styles. A line with a "─" is an album header.
 func playlistViewLines(m Model) (lines []string, headers int) {
-	lines = strings.Split(ansi.Strip(m.renderPlaylist()), "\n")
+	lines = strings.Split(ansi.Strip(m.renderQueue()), "\n")
 	for _, line := range lines {
 		if strings.Contains(line, "─") {
 			headers++
@@ -249,7 +249,7 @@ func wantCursorInView(t *testing.T, m Model, lines []string, visible int) {
 	if len(lines) != visible {
 		t.Fatalf("view has %d lines, want %d", len(lines), visible)
 	}
-	cursor, _ := m.playlist.Track(m.plCursor)
+	cursor, _ := m.queue.Track(m.queueCursor)
 	for _, line := range lines {
 		if strings.HasPrefix(line, ">") {
 			if !strings.Contains(line, cursor.Title) {
@@ -275,7 +275,7 @@ func TestShuffleHidesAlbumHeaders(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := albumRowsTestModel(t, perAlbum, visible)
 			if tt.shuffle {
-				m.playlist.ToggleShuffle()
+				m.queue.ToggleShuffle()
 			}
 			lines, headers := playlistViewLines(m)
 			if headers != tt.wantHeaders {
@@ -313,13 +313,13 @@ func TestShuffleToggleKeepsCursorInViewWithAlbumHeaders(t *testing.T) {
 			for _, key := range tt.keys {
 				m.handleKey(key)
 			}
-			want := m.plCursor
+			want := m.queueCursor
 			for _, shuffle := range []bool{false, true, false} {
-				if m.playlist.Shuffled() != shuffle {
+				if m.queue.Shuffled() != shuffle {
 					m.handleKey(tea.KeyPressMsg{Code: 'z', Text: "z"})
 				}
-				if m.plCursor != want {
-					t.Fatalf("shuffle=%t: cursor on track %d, want track %d", shuffle, m.plCursor, want)
+				if m.queueCursor != want {
+					t.Fatalf("shuffle=%t: cursor on track %d, want track %d", shuffle, m.queueCursor, want)
 				}
 				lines, headers := playlistViewLines(m)
 				if (headers > 0) == shuffle {
@@ -345,7 +345,7 @@ func TestCtrlHWhileShuffleOn(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := albumRowsTestModel(t, 3, 12)
 			if tt.shuffle {
-				m.playlist.ToggleShuffle()
+				m.queue.ToggleShuffle()
 			}
 			m.handleKey(tea.KeyPressMsg{Code: 'h', Mod: tea.ModCtrl})
 			if m.showAlbumHeaders != tt.wantHeaders {
@@ -380,7 +380,7 @@ func TestShufflePagesDrawNoAlbumHeaders(t *testing.T) {
 	}
 	prov := &pagerProv{name: "Pager", pages: pages}
 	m := newPagingModel(prov)
-	m.playlist.ToggleShuffle()
+	m.queue.ToggleShuffle()
 
 	for i, page := range pages {
 		updated, _ := m.Update(tracksLoadedMsg{
@@ -388,17 +388,17 @@ func TestShufflePagesDrawNoAlbumHeaders(t *testing.T) {
 		})
 		m = updated.(Model)
 		m.layout.panelWidth = 80
-		m.plVisible = 16
+		m.queueVisible = 16
 		if lines, headers := playlistViewLines(m); headers != 0 {
 			t.Fatalf("page %d: view has %d album headers with shuffle on:\n%s", i, headers, strings.Join(lines, "\n"))
 		}
 	}
-	if got := m.playlist.Len(); got != 12 {
+	if got := m.queue.Len(); got != 12 {
 		t.Fatalf("playlist has %d tracks, want 12", got)
 	}
 
 	m.handleKey(tea.KeyPressMsg{Code: 'z', Text: "z"})
-	if m.playlist.Shuffled() {
+	if m.queue.Shuffled() {
 		t.Fatal("z did not turn off shuffle")
 	}
 	if lines, headers := playlistViewLines(m); headers != 3 {

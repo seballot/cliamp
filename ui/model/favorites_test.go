@@ -75,8 +75,8 @@ func favoriteKeyTestModel(t *testing.T) (Model, *favorites.Store) {
 	local := &dirSourceTestProvider{commandsTestProvider: commandsTestProvider{name: "Local"}}
 	m := keybindingTestModel()
 	m.localProvider, m.favStore = local, local.useFavorites(t)
-	m.focus = focusPlaylist
-	m.playlist.Add(playlist.Track{Path: "/playlist.mp3", Title: "Playlist"})
+	m.focus = focusQueue
+	m.queue.Add(playlist.Track{Path: "/playlist.mp3", Title: "Playlist"})
 	return m, m.favStore
 }
 
@@ -362,9 +362,9 @@ func (p fixedTracksProvider) Tracks(string) ([]playlist.Track, error) { return p
 func TestIPCTrackInfoBookmarkReportsFavorite(t *testing.T) {
 	m, _ := favoriteKeyTestModel(t)
 	legacy := playlist.Track{Path: "/legacy.mp3", Title: "Legacy", Bookmark: true}
-	m.playlist.Add(legacy)
+	m.queue.Add(legacy)
 	m.favSet = map[string]struct{}{"/playlist.mp3": {}}
-	m.playlist.SetIndex(0)
+	m.queue.SetIndex(0)
 
 	snapshot := m.runtimeSnapshot()
 	if snapshot.LogicalTrack == nil || !snapshot.LogicalTrack.Bookmark {
@@ -482,7 +482,7 @@ func TestLocalStoreWritesRefreshOnlyTheLocalPane(t *testing.T) {
 				remote := &countingListsProvider{commandsTestProvider: commandsTestProvider{name: "Navidrome"}}
 				m := Model{
 					player:       &playbackFakeEngine{},
-					playlist:     playlist.New(),
+					queue:        playlist.New(),
 					favStore:     favorites.New(),
 					historyStore: history.New(),
 					providers: []provider.Entry{

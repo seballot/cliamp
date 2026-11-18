@@ -24,7 +24,7 @@ func TestSaveUsesConfiguredDirectory(t *testing.T) {
 			destination := filepath.Join(t.TempDir(), "downloads")
 			tracks := playlist.New()
 			tracks.Add(playlist.Track{Path: source, Title: "Song", Artist: "Artist"})
-			m := Model{playlist: tracks}
+			m := Model{queue: tracks}
 			m.SetDownloadsDirectory(destination)
 			if viaIPC {
 				reply := make(chan ipc.Response, 1)
@@ -105,7 +105,7 @@ func TestSaveTrackKeyUsesTrackSaveRules(t *testing.T) {
 			track.Path = source
 			tracks := playlist.New()
 			tracks.Add(track)
-			m := Model{playlist: tracks}
+			m := Model{queue: tracks}
 			m.SetDownloadsDirectory(destination)
 
 			cmd := m.saveTrack()
@@ -156,7 +156,7 @@ func TestSaveTrackStartsDownloadForYTDLTracks(t *testing.T) {
 		t.Run(tc.path, func(t *testing.T) {
 			tracks := playlist.New()
 			tracks.Add(playlist.Track{Path: tc.path, Title: "Song"})
-			m := Model{playlist: tracks}
+			m := Model{queue: tracks}
 			if cmd := m.saveTrack(); cmd == nil {
 				t.Fatal("saveTrack returned no command")
 			}

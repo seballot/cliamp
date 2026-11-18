@@ -58,8 +58,8 @@ func (m *Model) handleFeedTrackResolved(msg feedTrackResolvedMsg) tea.Cmd {
 	m.replacePlaylist(msg.tracks)
 	m.clearLoadedPlaylist()
 	m.setHeaderStateFromTracks(msg.tracks)
-	m.plCursor = 0
-	m.plScroll = 0
+	m.queueCursor = 0
+	m.queueScroll = 0
 	m.applyHeightMode()
 	m.adjustScroll()
 	m.status.Showf(statusTTLDefault, "Loaded %d episode(s)", len(msg.tracks))
@@ -86,7 +86,7 @@ func (m *Model) handleFeedsLoaded(msg feedsLoadedMsg) tea.Cmd {
 		// The source URLs are carried in the message so we don't
 		// need to re-scan pendingURLs (which misses interactive loads).
 		batchCmd := m.initYTDLBatch(msg.urls)
-		if msg.autoPlay && m.playlist.Len() > 0 && !m.player.IsPlaying() {
+		if msg.autoPlay && m.queue.Len() > 0 && !m.player.IsPlaying() {
 			playCmd := m.playCurrentTrack()
 			if batchCmd != nil {
 				return tea.Batch(playCmd, batchCmd)
@@ -142,12 +142,12 @@ func (m *Model) handleFBTracksResolved(msg fbTracksResolvedMsg) tea.Cmd {
 		m.replacePlaylist(msg.tracks)
 		m.clearLoadedPlaylist()
 		m.setHeaderStateFromTracks(msg.tracks)
-		m.plCursor = 0
-		m.plScroll = 0
+		m.queueCursor = 0
+		m.queueScroll = 0
 	} else {
 		m.appendTracks(msg.tracks...)
 	}
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	m.applyHeightMode()
 	m.adjustScroll()
 	if msg.replace {
@@ -155,9 +155,9 @@ func (m *Model) handleFBTracksResolved(msg fbTracksResolvedMsg) tea.Cmd {
 	} else {
 		m.status.Successf(statusTTLDefault, "Added %d track(s)", len(msg.tracks))
 	}
-	if !m.player.IsPlaying() && m.playlist.Len() > 0 {
+	if !m.player.IsPlaying() && m.queue.Len() > 0 {
 		if msg.replace {
-			m.playlist.SetIndex(0)
+			m.queue.SetIndex(0)
 		}
 		return m.playCurrentTrack()
 	}

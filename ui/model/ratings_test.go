@@ -39,10 +39,10 @@ func ratingTestModel(p *ratingTestProvider, tracks ...playlist.Track) Model {
 	pl := playlist.New()
 	pl.Add(tracks...)
 	return Model{
-		playlist:  pl,
+		queue:     pl,
 		provider:  p,
 		providers: []provider.Entry{{Key: "navidrome", Name: p.name, Provider: p}},
-		focus:     focusPlaylist,
+		focus:     focusQueue,
 	}
 }
 
@@ -134,10 +134,10 @@ func TestRatingWritesSerializeAndSkipSupersededQueuedValue(t *testing.T) {
 	pl := playlist.New()
 	pl.Add(track)
 	m := Model{
-		playlist:  pl,
+		queue:     pl,
 		provider:  p,
 		providers: []provider.Entry{{Key: "navidrome", Name: p.Name(), Provider: p}},
-		focus:     focusPlaylist,
+		focus:     focusQueue,
 	}
 
 	first := m.rateSelectedTrack(3)
@@ -170,7 +170,7 @@ func TestRatingWritesUseProviderSongIdentityAcrossStreamURLs(t *testing.T) {
 
 	secondTrack := firstTrack
 	secondTrack.Path = strings.Replace(firstTrack.Path, "salt=first", "salt=second", 1)
-	m.playlist.SetTrack(0, secondTrack)
+	m.queue.SetTrack(0, secondTrack)
 	second := m.rateSelectedTrack(4)
 
 	second()
@@ -187,7 +187,7 @@ func TestRatingProviderFailureDoesNotMutateLocalState(t *testing.T) {
 	m.setPlaybackTrack(track)
 
 	m.handleTrackRatingSynced(m.rateSelectedTrack(4)().(trackRatingSyncedMsg))
-	got, _ := m.playlist.Track(0)
+	got, _ := m.queue.Track(0)
 	if got.UserRating != 2 || m.playingTrack.UserRating != 2 {
 		t.Fatalf("ratings after failure = row %d playing %d, want 2/2", got.UserRating, m.playingTrack.UserRating)
 	}
@@ -203,7 +203,7 @@ func TestRatingSuccessUpdatesRowAndMatchingActivePlayback(t *testing.T) {
 	m.setPlaybackTrack(track)
 
 	m.handleTrackRatingSynced(m.rateSelectedTrack(5)().(trackRatingSyncedMsg))
-	got, _ := m.playlist.Track(0)
+	got, _ := m.queue.Track(0)
 	if got.UserRating != 5 || m.playingTrack.UserRating != 5 {
 		t.Fatalf("ratings after success = row %d playing %d, want 5/5", got.UserRating, m.playingTrack.UserRating)
 	}
@@ -224,14 +224,14 @@ func TestRatingRepliesUpdateTrackBySongIDAfterCursorMoveOrLaterRequest(t *testin
 	m := ratingTestModel(p, first, second)
 
 	firstReply := m.rateSelectedTrack(5)().(trackRatingSyncedMsg)
-	m.plCursor = 1
+	m.queueCursor = 1
 	secondReply := m.rateSelectedTrack(4)().(trackRatingSyncedMsg)
 
 	m.handleTrackRatingSynced(firstReply)
 	m.handleTrackRatingSynced(secondReply)
 
-	gotFirst, _ := m.playlist.Track(0)
-	gotSecond, _ := m.playlist.Track(1)
+	gotFirst, _ := m.queue.Track(0)
+	gotSecond, _ := m.queue.Track(1)
 	if gotFirst.UserRating != 5 || gotSecond.UserRating != 4 {
 		t.Fatalf("ratings after replies = %d/%d, want 5/4", gotFirst.UserRating, gotSecond.UserRating)
 	}
@@ -245,7 +245,7 @@ func TestRatingReplyMatchesTrackByPathWithoutNavidromeID(t *testing.T) {
 	msg := trackRatingSyncedMsg{provider: p.name, track: track, rating: 4}
 	m.handleTrackRatingSynced(msg)
 
-	got, _ := m.playlist.Track(0)
+	got, _ := m.queue.Track(0)
 	if got.UserRating != 4 {
 		t.Fatalf("rating after path-matched reply = %d, want 4", got.UserRating)
 	}
@@ -260,7 +260,7 @@ func TestRatingReplyIgnoresOlderRequestForSameSong(t *testing.T) {
 	m.handleTrackRatingSynced(newer)
 	m.handleTrackRatingSynced(older)
 
-	got, _ := m.playlist.Track(0)
+	got, _ := m.queue.Track(0)
 	if got.UserRating != 5 {
 		t.Fatalf("rating after reverse replies = %d, want latest 5", got.UserRating)
 	}
@@ -275,8 +275,8 @@ func TestRatingSuccessUpdatesEveryMatchingPlaylistRow(t *testing.T) {
 
 	m.handleTrackRatingSynced(m.rateSelectedTrack(4)().(trackRatingSyncedMsg))
 
-	gotFirst, _ := m.playlist.Track(0)
-	gotSecond, _ := m.playlist.Track(1)
+	gotFirst, _ := m.queue.Track(0)
+	gotSecond, _ := m.queue.Track(1)
 	if gotFirst.UserRating != 4 || gotSecond.UserRating != 4 {
 		t.Fatalf("duplicate ratings = %d/%d, want 4/4", gotFirst.UserRating, gotSecond.UserRating)
 	}
@@ -286,7 +286,7 @@ func TestRatingFailureWarnsAfterCursorMove(t *testing.T) {
 	p := &ratingTestProvider{name: "Navidrome", accept: true, err: errors.New("late failure")}
 	m := ratingTestModel(p, ratingTrack("one", 1), ratingTrack("two", 2))
 	msg := m.rateSelectedTrack(5)().(trackRatingSyncedMsg)
-	m.plCursor = 1
+	m.queueCursor = 1
 
 	m.handleTrackRatingSynced(msg)
 
@@ -301,7 +301,7 @@ func TestRatingUnsupportedTrackDoesNotReturnCommandOrMutate(t *testing.T) {
 	if cmd := m.rateSelectedTrack(4); cmd != nil {
 		t.Fatal("unsupported track returned a command")
 	}
-	got, _ := m.playlist.Track(0)
+	got, _ := m.queue.Track(0)
 	if got.UserRating != 2 || p.calls != 0 {
 		t.Fatalf("unsupported state = rating %d calls %d", got.UserRating, p.calls)
 	}

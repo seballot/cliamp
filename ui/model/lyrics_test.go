@@ -72,7 +72,7 @@ func TestLyricsSyncable(t *testing.T) {
 			p := playlist.New()
 			p.Replace([]playlist.Track{tt.track})
 			p.SetIndex(0)
-			m := Model{playlist: p}
+			m := Model{queue: p}
 			if got := m.lyricsSyncable(); got != tt.want {
 				t.Fatalf("lyricsSyncable() = %v, want %v", got, tt.want)
 			}
@@ -85,8 +85,8 @@ func TestLyricsSyncable(t *testing.T) {
 func assertRadioLyricsScrollable(t *testing.T, track playlist.Track) {
 	t.Helper()
 	m := keybindingTestModel()
-	m.playlist.Replace([]playlist.Track{track})
-	m.playlist.SetIndex(0)
+	m.queue.Replace([]playlist.Track{track})
+	m.queue.SetIndex(0)
 	m.lyrics.visible = true
 	m.lyrics.lines = []lyrics.Line{
 		{Start: time.Second, Text: "First"},
@@ -121,11 +121,11 @@ func TestRadioLyricsRemainScrollable(t *testing.T) {
 
 func TestLyricsSyncableRuntimeLiveStream(t *testing.T) {
 	m := keybindingTestModel()
-	m.playlist.Replace([]playlist.Track{{
+	m.queue.Replace([]playlist.Track{{
 		Path: "https://radio.example/stream", Stream: true,
 		ProviderMeta: map[string]string{"title": "Station"},
 	}})
-	m.playlist.SetIndex(0)
+	m.queue.SetIndex(0)
 	m.player.(*playbackFakeEngine).live = true
 	if m.lyricsSyncable() {
 		t.Fatal("runtime-detected live stream must not synchronize lyrics")

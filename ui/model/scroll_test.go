@@ -42,9 +42,9 @@ func TestPlaylistScrollPreservesCursorAndAlbumHeaders(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := playlistScrollTestModel(tracks, tt.scroll, tt.cursor, tt.showHeaders)
-			got := m.playlistScroll(tt.visible)
+			got := m.queueViewScroll(tt.visible)
 			if got != tt.want {
-				t.Fatalf("playlistScroll(%d) = %d, want %d", tt.visible, got, tt.want)
+				t.Fatalf("queueViewScroll(%d) = %d, want %d", tt.visible, got, tt.want)
 			}
 
 			cursor := min(max(0, tt.cursor), len(tracks)-1)
@@ -72,7 +72,7 @@ func TestPlaylistScrollMatchesFullSpanReference(t *testing.T) {
 					for _, visible := range []int{0, 1, 2, 3, 5, len(tracks)} {
 						m := playlistScrollTestModel(tracks, scroll, cursor, showHeaders)
 						want := fullSpanPlaylistScroll(m, tracks, visible)
-						if got := m.playlistScroll(visible); got != want {
+						if got := m.queueViewScroll(visible); got != want {
 							t.Fatalf("%s: headers=%t scroll=%d cursor=%d visible=%d: got %d, want %d", name, showHeaders, scroll, cursor, visible, got, want)
 						}
 					}
@@ -103,8 +103,8 @@ func TestPlaylistScrollLargeJump(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := playlistScrollTestModel(albumTracks(trackCount, tt.albumSize), 0, trackCount-1, tt.showHeaders)
-			if got := m.playlistScroll(visible); got != tt.want {
-				t.Fatalf("playlistScroll(%d) = %d, want %d", visible, got, tt.want)
+			if got := m.queueViewScroll(visible); got != tt.want {
+				t.Fatalf("queueViewScroll(%d) = %d, want %d", visible, got, tt.want)
 			}
 		})
 	}
@@ -116,7 +116,7 @@ func TestPlaylistScrollJumpAllocationsDoNotScaleWithPlaylist(t *testing.T) {
 	large := playlistScrollAllocationModel(10_000)
 
 	withoutHeaders := testing.AllocsPerRun(10, func() {
-		playlistScrollSink = large.playlistScroll(visible)
+		playlistScrollSink = large.queueViewScroll(visible)
 	})
 	if withoutHeaders != 0 {
 		t.Fatalf("header-disabled jump allocations = %.0f, want 0", withoutHeaders)
@@ -125,13 +125,13 @@ func TestPlaylistScrollJumpAllocationsDoNotScaleWithPlaylist(t *testing.T) {
 	small.showAlbumHeaders = true
 	large.showAlbumHeaders = true
 	smallAllocs := testing.AllocsPerRun(10, func() {
-		playlistScrollSink = small.playlistScroll(visible)
+		playlistScrollSink = small.queueViewScroll(visible)
 	})
 	largeAllocs := testing.AllocsPerRun(10, func() {
-		playlistScrollSink = large.playlistScroll(visible)
+		playlistScrollSink = large.queueViewScroll(visible)
 	})
 	if largeAllocs > smallAllocs+1 {
-		t.Fatalf("header-enabled jump allocations scale with playlist: 100 tracks %.0f, 10,000 tracks %.0f", smallAllocs, largeAllocs)
+		t.Fatalf("header-enabled jump allocations scale with queue: 100 tracks %.0f, 10,000 tracks %.0f", smallAllocs, largeAllocs)
 	}
 }
 
@@ -141,9 +141,9 @@ func playlistScrollTestModel(tracks []playlist.Track, scroll, cursor int, showHe
 	p := playlist.New()
 	p.Replace(tracks)
 	return Model{
-		playlist:         p,
-		plScroll:         scroll,
-		plCursor:         cursor,
+		queue:            p,
+		queueScroll:      scroll,
+		queueCursor:      cursor,
 		showAlbumHeaders: showHeaders,
 	}
 }
@@ -168,8 +168,8 @@ func fullSpanPlaylistScroll(m Model, tracks []playlist.Track, visible int) int {
 	if len(tracks) == 0 {
 		return 0
 	}
-	scroll := min(max(0, m.plScroll), len(tracks)-1)
-	cursor := min(max(0, m.plCursor), len(tracks)-1)
+	scroll := min(max(0, m.queueScroll), len(tracks)-1)
+	cursor := min(max(0, m.queueCursor), len(tracks)-1)
 	if cursor < scroll {
 		return cursor
 	}

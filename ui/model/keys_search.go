@@ -205,7 +205,7 @@ func (m *Model) handleSearchKey(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case "ctrl+x":
 		m.toggleExpandedView()
-		m.searchMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchMaybeAdjustScroll(m.effectiveQueueVisible())
 		return nil
 	case "ctrl+n":
 		if m.search.cursor < len(m.search.results)-1 {
@@ -213,7 +213,7 @@ func (m *Model) handleSearchKey(msg tea.KeyPressMsg) tea.Cmd {
 		} else if len(m.search.results) > 0 {
 			m.search.cursor = 0
 		}
-		m.searchMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchMaybeAdjustScroll(m.effectiveQueueVisible())
 		return nil
 	case "ctrl+p":
 		if m.search.cursor > 0 {
@@ -221,14 +221,14 @@ func (m *Model) handleSearchKey(msg tea.KeyPressMsg) tea.Cmd {
 		} else if len(m.search.results) > 0 {
 			m.search.cursor = len(m.search.results) - 1
 		}
-		m.searchMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchMaybeAdjustScroll(m.effectiveQueueVisible())
 		return nil
 	case "ctrl+u":
-		m.editText("playlist-search", &m.search.query, msg)
+		m.editText("queue-search", &m.search.query, msg)
 		m.updateSearch()
 		return nil
 	case "ctrl+d":
-		step := m.effectivePlaylistVisible()
+		step := m.effectiveQueueVisible()
 		if step < 1 {
 			step = 1
 		}
@@ -236,7 +236,7 @@ func (m *Model) handleSearchKey(msg tea.KeyPressMsg) tea.Cmd {
 		if m.search.cursor >= len(m.search.results) {
 			m.search.cursor = max(0, len(m.search.results)-1)
 		}
-		m.searchMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchMaybeAdjustScroll(m.effectiveQueueVisible())
 		return nil
 	}
 
@@ -252,7 +252,7 @@ func (m *Model) handleSearchKey(msg tea.KeyPressMsg) tea.Cmd {
 			cmd = m.playIndex(m.search.results[m.search.cursor])
 		}
 		m.search.active = false
-		m.focus = focusPlaylist
+		m.focus = focusQueue
 		m.closeSearchLayout()
 		return cmd
 
@@ -260,8 +260,8 @@ func (m *Model) handleSearchKey(msg tea.KeyPressMsg) tea.Cmd {
 		// Toggle queue for selected search result.
 		if len(m.search.results) > 0 && m.search.cursor < len(m.search.results) {
 			idx := m.search.results[m.search.cursor]
-			if !m.playlist.RemovePlayNext(idx) {
-				m.playlist.AddPlayNext(idx)
+			if !m.queue.RemovePlayNext(idx) {
+				m.queue.AddPlayNext(idx)
 			}
 			m.normalizePlayNextOverlay()
 			return m.rearmStalePreload()
@@ -273,7 +273,7 @@ func (m *Model) handleSearchKey(msg tea.KeyPressMsg) tea.Cmd {
 		} else if len(m.search.results) > 0 {
 			m.search.cursor = len(m.search.results) - 1
 		}
-		m.searchMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchMaybeAdjustScroll(m.effectiveQueueVisible())
 
 	case tea.KeyDown:
 		if m.search.cursor < len(m.search.results)-1 {
@@ -281,10 +281,10 @@ func (m *Model) handleSearchKey(msg tea.KeyPressMsg) tea.Cmd {
 		} else if len(m.search.results) > 0 {
 			m.search.cursor = 0
 		}
-		m.searchMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchMaybeAdjustScroll(m.effectiveQueueVisible())
 
 	default:
-		if m.editText("playlist-search", &m.search.query, msg) {
+		if m.editText("queue-search", &m.search.query, msg) {
 			m.updateSearch()
 		}
 	}
@@ -345,21 +345,21 @@ func (m *Model) handleNetSearchResultsKey(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case "ctrl+x":
 		m.toggleExpandedView()
-		m.netSearchResultsMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.netSearchResultsMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "up", "k", "ctrl+p":
 		if m.netSearch.cursor > 0 {
 			m.netSearch.cursor--
 		} else if count > 0 {
 			m.netSearch.cursor = count - 1
 		}
-		m.netSearchResultsMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.netSearchResultsMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "down", "j", "ctrl+n":
 		if m.netSearch.cursor < count-1 {
 			m.netSearch.cursor++
 		} else if count > 0 {
 			m.netSearch.cursor = 0
 		}
-		m.netSearchResultsMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.netSearchResultsMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "enter":
 		if count > 0 && !m.netSearch.loading {
 			track := m.netSearch.results[m.netSearch.cursor]
@@ -389,7 +389,7 @@ func (m *Model) handleNetSearchResultsKey(msg tea.KeyPressMsg) tea.Cmd {
 		m.netSearch.scroll = 0
 		m.netSearch.err = ""
 	case "ctrl+u":
-		step := m.effectivePlaylistVisible()
+		step := m.effectiveQueueVisible()
 		if step < 1 {
 			step = 1
 		}
@@ -398,9 +398,9 @@ func (m *Model) handleNetSearchResultsKey(msg tea.KeyPressMsg) tea.Cmd {
 		} else {
 			m.netSearch.cursor = 0
 		}
-		m.netSearchResultsMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.netSearchResultsMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "ctrl+d":
-		step := m.effectivePlaylistVisible()
+		step := m.effectiveQueueVisible()
 		if step < 1 {
 			step = 1
 		}
@@ -408,7 +408,7 @@ func (m *Model) handleNetSearchResultsKey(msg tea.KeyPressMsg) tea.Cmd {
 		if m.netSearch.cursor >= count {
 			m.netSearch.cursor = max(0, count-1)
 		}
-		m.netSearchResultsMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.netSearchResultsMaybeAdjustScroll(m.effectiveQueueVisible())
 	}
 	return nil
 }

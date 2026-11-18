@@ -5,19 +5,19 @@ import tea "charm.land/bubbletea/v2"
 // normalizePlayNextOverlay keeps the selected queue row and scroll window valid
 // after queue mutations, including mutations made while the overlay is hidden.
 func (m *Model) normalizePlayNextOverlay() {
-	if m.playlist == nil {
+	if m.queue == nil {
 		m.playNext.cursor = 0
 		m.playNext.scroll = 0
 		return
 	}
-	count := m.playlist.PlayNextLen()
+	count := m.queue.PlayNextLen()
 	if count == 0 {
 		m.playNext.cursor = 0
 		m.playNext.scroll = 0
 		return
 	}
 	m.playNext.cursor = min(max(0, m.playNext.cursor), count-1)
-	visible := m.effectivePlaylistVisible()
+	visible := m.effectiveQueueVisible()
 	if visible <= 0 {
 		m.playNext.scroll = min(max(0, m.playNext.scroll), count-1)
 		if m.playNext.cursor < m.playNext.scroll {
@@ -30,7 +30,7 @@ func (m *Model) normalizePlayNextOverlay() {
 
 // handlePlayNextKey processes key presses while the queue manager overlay is open.
 func (m *Model) handlePlayNextKey(msg tea.KeyPressMsg) tea.Cmd {
-	qLen := m.playlist.PlayNextLen()
+	qLen := m.queue.PlayNextLen()
 
 	switch msg.String() {
 	case "ctrl+x":
@@ -54,7 +54,7 @@ func (m *Model) handlePlayNextKey(msg tea.KeyPressMsg) tea.Cmd {
 	case "shift+up":
 		moved := false
 		if m.playNext.cursor > 0 {
-			if m.playlist.MovePlayNext(m.playNext.cursor, m.playNext.cursor-1) {
+			if m.queue.MovePlayNext(m.playNext.cursor, m.playNext.cursor-1) {
 				m.playNext.cursor--
 				moved = true
 			}
@@ -66,7 +66,7 @@ func (m *Model) handlePlayNextKey(msg tea.KeyPressMsg) tea.Cmd {
 	case "shift+down":
 		moved := false
 		if m.playNext.cursor < qLen-1 {
-			if m.playlist.MovePlayNext(m.playNext.cursor, m.playNext.cursor+1) {
+			if m.queue.MovePlayNext(m.playNext.cursor, m.playNext.cursor+1) {
 				m.playNext.cursor++
 				moved = true
 			}
@@ -78,9 +78,9 @@ func (m *Model) handlePlayNextKey(msg tea.KeyPressMsg) tea.Cmd {
 	case "d":
 		removed := false
 		if qLen > 0 {
-			snapshot := m.playlist.Snapshot()
-			m.playlist.RemovePlayNextAt(m.playNext.cursor)
-			m.recordPlaylistUndo(playlistUndo{snapshot: snapshot})
+			snapshot := m.queue.Snapshot()
+			m.queue.RemovePlayNextAt(m.playNext.cursor)
+			m.recordQueueUndo(queueUndo{snapshot: snapshot})
 			removed = true
 			m.status.Show("Removed from play next (Ctrl+Z to undo)", statusTTLDefault)
 		} else {
@@ -97,9 +97,9 @@ func (m *Model) handlePlayNextKey(msg tea.KeyPressMsg) tea.Cmd {
 			return nil
 		}
 		if qLen == 1 || m.playNext.confirmClear {
-			snapshot := m.playlist.Snapshot()
-			m.playlist.ClearPlayNext()
-			m.recordPlaylistUndo(playlistUndo{snapshot: snapshot})
+			snapshot := m.queue.Snapshot()
+			m.queue.ClearPlayNext()
+			m.recordQueueUndo(queueUndo{snapshot: snapshot})
 			m.playNext.confirmClear = false
 			m.normalizePlayNextOverlay()
 			m.status.Show("Cleared play next (Ctrl+Z to undo)", statusTTLDefault)

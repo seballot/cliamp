@@ -22,7 +22,7 @@ func newPluginStateModel(engine *playbackFakeEngine, tracks ...playlist.Track) M
 	pl.SetIndex(0)
 	return Model{
 		player:      engine,
-		playlist:    pl,
+		queue:       pl,
 		provider:    commandsTestProvider{name: "Test"},
 		vis:         ui.NewVisualizer(float64(engine.SampleRate())),
 		pluginState: new(atomic.Pointer[PluginState]),
@@ -86,7 +86,7 @@ func TestPluginStateReportsThePlayingTrack(t *testing.T) {
 				m := newPluginStateModel(&playbackFakeEngine{},
 					playlist.Track{Title: "A", Path: "a.mp3", Year: 2001, TrackNumber: 3},
 					playlist.Track{Title: "B", Path: "b.mp3"})
-				m.playlist.AddPlayNext(1)
+				m.queue.AddPlayNext(1)
 				updated, _ := m.Update(pluginStateTestMsg{})
 				return updated.(Model)
 			},
@@ -118,7 +118,7 @@ func TestPluginStateReportsThePlayingTrack(t *testing.T) {
 // With no plugin loaded, the Model publishes nothing, and a read returns a
 // stopped state at normal speed.
 func TestPluginStateLoaderWithoutPlugins(t *testing.T) {
-	m := Model{player: &playbackFakeEngine{playing: true}, playlist: playlist.New()}
+	m := Model{player: &playbackFakeEngine{playing: true}, queue: playlist.New()}
 	updated, _ := m.Update(pluginStateTestMsg{})
 	m = updated.(Model)
 	got := m.PluginStateLoader()()
@@ -140,7 +140,7 @@ func TestPluginStateRebuildsQueueOnPlaylistChange(t *testing.T) {
 	if second := load().Queue(); &second[0] != &first[0] {
 		t.Fatal("the queue was built again with no playlist change")
 	}
-	m.playlist.Add(playlist.Track{Title: "C", Path: "c.mp3"})
+	m.queue.Add(playlist.Track{Title: "C", Path: "c.mp3"})
 	m.publishPluginState()
 	if third := load().Queue(); len(third) != 3 || third[2].Title != "C" {
 		t.Fatalf("queue = %+v, want the added track", third)
@@ -154,7 +154,7 @@ func TestPluginStateBuildsQueueOnFirstRead(t *testing.T) {
 		playlist.Track{Title: "A", Path: "a.mp3"},
 		playlist.Track{Title: "B", Path: "b.mp3"})
 	m.publishPluginState()
-	m.playlist.Add(playlist.Track{Title: "C", Path: "c.mp3"})
+	m.queue.Add(playlist.Track{Title: "C", Path: "c.mp3"})
 	if queue := m.PluginStateLoader()().Queue(); len(queue) != 3 || queue[2].Title != "C" {
 		t.Fatalf("queue = %+v, want the playlist at the first read", queue)
 	}
@@ -184,7 +184,7 @@ func TestPluginStateConcurrentReads(t *testing.T) {
 		}()
 	}
 	for i := range 200 {
-		m.playlist.Add(playlist.Track{Title: "T", Path: "t.mp3"})
+		m.queue.Add(playlist.Track{Title: "T", Path: "t.mp3"})
 		msgs := []any{playback.SetSpeedMsg{Ratio: 1 + float64(i%4)/4}, playback.ToggleMonoMsg{}, pluginStateTestMsg{}}
 		updated, _ := m.Update(msgs[i%len(msgs)])
 		m = updated.(Model)
@@ -209,7 +209,7 @@ func TestPluginHookReadsTheChangeOfItsEvent(t *testing.T) {
 		want   string
 	}{
 		{luaplugin.EventTrackChange, `ev.title .. "|" .. cliamp.track.title()`, func(m *Model, _ *playbackFakeEngine) {
-			m.playlist.SetIndex(1)
+			m.queue.SetIndex(1)
 			m.setPlaybackTrack(b)
 			m.nowPlaying(b)
 		}, "B|B"},
@@ -218,7 +218,7 @@ func TestPluginHookReadsTheChangeOfItsEvent(t *testing.T) {
 			m.notifyPlaybackChange()
 		}, "paused|paused"},
 		{luaplugin.EventQueueChange, `ev.count .. "|" .. cliamp.queue.count()`, func(m *Model, _ *playbackFakeEngine) {
-			m.playlist.Add(playlist.Track{Title: "C", Path: "c.mp3"})
+			m.queue.Add(playlist.Track{Title: "C", Path: "c.mp3"})
 			m.emitPluginEvents()
 		}, "3|3"},
 		{luaplugin.EventPlaybackStop, `cliamp.player.state()`, func(m *Model, _ *playbackFakeEngine) {
@@ -236,9 +236,9 @@ func TestPluginHookReadsTheChangeOfItsEvent(t *testing.T) {
 			m.setPlaybackTrack(a)
 			load := m.PluginStateLoader()
 			mgr.SetStateProvider(luaplugin.StateProvider{
-				PlayerState:   func() string { return load().Status },
-				CurrentTrack:  func() luaplugin.Track { return load().Track },
-				PlaylistCount: func() int { return load().Count },
+				PlayerState:  func() string { return load().Status },
+				CurrentTrack: func() luaplugin.Track { return load().Track },
+				QueueCount:   func() int { return load().Count },
 			})
 			m.emitPluginEvents()
 			m.publishPluginState()

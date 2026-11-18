@@ -24,7 +24,7 @@ func TestSearchInputsShowModeAndExitKey(t *testing.T) {
 			name:   "playlist search",
 			setup:  func(m *Model) { m.search.active = true; m.search.query = "jazz" },
 			header: (*Model).searchHeaderLine,
-			want:   "[Filter: Playlist] jazz_",
+			want:   "[Filter: Queue] jazz_",
 		},
 		{
 			name:   "file browser filter",
@@ -79,7 +79,7 @@ func TestSearchInputsShowModeAndExitKey(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				m := keybindingTestModel()
 				m.layout.panelWidth = width
-				m.plVisible = 6
+				m.queueVisible = 6
 				tt.setup(&m)
 				line, _, _ := strings.Cut(tt.header(&m), "\n")
 				plain := ansi.Strip(line)
@@ -99,7 +99,7 @@ func TestSearchInputsShowModeAndExitKey(t *testing.T) {
 
 func TestCtrlFFallbackNamesTheProviderWithoutSearch(t *testing.T) {
 	m := keybindingTestModel()
-	m.plVisible = 6
+	m.queueVisible = 6
 	m.provider = commandsTestProvider{name: "Radio"}
 
 	m.openProviderSearch()
@@ -135,7 +135,7 @@ func TestProviderSearchHelpShowsHowToLeave(t *testing.T) {
 			if help := ansi.Strip(m.renderHelpBar()); !strings.Contains(help, "Esc") || !strings.Contains(help, tt.want) {
 				t.Fatalf("help = %q, want Esc %s", help, tt.want)
 			}
-			if header := ansi.Strip(m.renderPlaylistHeader()); !strings.Contains(header, tt.wantLabel) {
+			if header := ansi.Strip(m.renderQueueHeader()); !strings.Contains(header, tt.wantLabel) {
 				t.Fatalf("header = %q, want %q", header, tt.wantLabel)
 			}
 		})

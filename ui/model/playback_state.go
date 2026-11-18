@@ -10,10 +10,10 @@ func (m Model) currentPlaybackTrack() (playlist.Track, int) {
 	if m.playingTrackActive && (m.buffering || (m.player != nil && m.player.IsPlaying())) {
 		return m.playingTrack, 0
 	}
-	if m.playlist == nil {
+	if m.queue == nil {
 		return playlist.Track{}, -1
 	}
-	return m.playlist.Current()
+	return m.queue.Current()
 }
 
 func (m Model) currentPlaybackIsLive(track playlist.Track) bool {

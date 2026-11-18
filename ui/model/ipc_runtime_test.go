@@ -107,9 +107,9 @@ func TestV2StateRequestReturnsRetainedGUIState(t *testing.T) {
 	})
 	broker := ipc.NewBroker()
 	m := Model{
-		player:   engine,
-		playlist: pl,
-		vis:      ui.NewVisualizer(float64(engine.SampleRate())),
+		player: engine,
+		queue:  pl,
+		vis:    ui.NewVisualizer(float64(engine.SampleRate())),
 	}
 	m.SetIPCBroker(broker)
 
@@ -150,7 +150,7 @@ func TestV2QueueAndPlayNextUseSeparateIndexes(t *testing.T) {
 		playlist.Track{Path: "/music/one.flac", Title: "One"},
 		playlist.Track{Path: "/music/two.flac", Title: "Two"},
 	)
-	m := Model{player: engine, playlist: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
+	m := Model{player: engine, queue: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
 	jobs := ipc.NewJobStore()
 
 	job, err := jobs.Create("queue.enqueue")
@@ -187,7 +187,7 @@ func TestV2RevisionConflictPreventsMutation(t *testing.T) {
 	engine := &playbackFakeEngine{}
 	pl := playlist.New()
 	pl.Add(playlist.Track{Path: "/music/one.flac", Title: "One"})
-	m := Model{player: engine, playlist: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
+	m := Model{player: engine, queue: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
 	jobs := ipc.NewJobStore()
 	job, err := jobs.Create("queue.clear")
 	if err != nil {
@@ -214,7 +214,7 @@ func TestV2QueueRemoveStopsActivePlayback(t *testing.T) {
 		playlist.Track{Path: "/music/one.flac", Title: "One"},
 		playlist.Track{Path: "/music/two.flac", Title: "Two"},
 	)
-	m := Model{player: engine, playlist: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
+	m := Model{player: engine, queue: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
 	jobs := ipc.NewJobStore()
 	job, err := jobs.Create("queue.remove")
 	if err != nil {
@@ -251,7 +251,7 @@ func TestV2SettingsOperations(t *testing.T) {
 	}{
 		{name: "shuffle on", op: "shuffle", params: ipc.Request{Name: "on"}, want: ipc.Response{OK: true, Shuffle: &on}, wantSaved: map[string]string{"shuffle": "true"}},
 		{name: "shuffle toggle", op: "shuffle", want: ipc.Response{OK: true, Shuffle: &on}, wantSaved: map[string]string{"shuffle": "true"}},
-		{name: "shuffle off", op: "shuffle", params: ipc.Request{Name: "off"}, setup: func(m *Model) { m.playlist.ToggleShuffle() }, want: ipc.Response{OK: true, Shuffle: &off}, wantSaved: map[string]string{"shuffle": "false"}},
+		{name: "shuffle off", op: "shuffle", params: ipc.Request{Name: "off"}, setup: func(m *Model) { m.queue.ToggleShuffle() }, want: ipc.Response{OK: true, Shuffle: &off}, wantSaved: map[string]string{"shuffle": "false"}},
 		{name: "repeat one", op: "repeat", params: ipc.Request{Name: "one"}, want: ipc.Response{OK: true, Repeat: "One"}, wantSaved: map[string]string{"repeat": `"One"`}},
 		{name: "repeat cycle", op: "repeat", want: ipc.Response{OK: true, Repeat: "All"}, wantSaved: map[string]string{"repeat": `"All"`}},
 		{name: "mono on", op: "mono", params: ipc.Request{Name: "on"}, want: ipc.Response{OK: true, Mono: &on}},
@@ -289,7 +289,7 @@ func TestV2SettingsOperations(t *testing.T) {
 				playlist.Track{Path: "/music/three.flac", Title: "Three"},
 			)
 			saver := &recordingSaver{}
-			m := Model{player: &playbackFakeEngine{}, playlist: pl, configSaver: saver, vis: ui.NewVisualizer(44100)}
+			m := Model{player: &playbackFakeEngine{}, queue: pl, configSaver: saver, vis: ui.NewVisualizer(44100)}
 			if tc.setup != nil {
 				tc.setup(&m)
 			}
@@ -314,7 +314,7 @@ func TestV2LoadReadsLocalPlaylist(t *testing.T) {
 	pl.Add(playlist.Track{Path: "/music/old.mp3", Title: "Old"})
 	m := Model{
 		player:        &playbackFakeEngine{},
-		playlist:      pl,
+		queue:         pl,
 		vis:           ui.NewVisualizer(44100),
 		localProvider: local,
 		providers:     []provider.Entry{{Key: "local", Name: "Local", Provider: local}},
@@ -324,8 +324,8 @@ func TestV2LoadReadsLocalPlaylist(t *testing.T) {
 	if !response.OK || response.Playlist != "Mix" || response.Total != len(tracks) {
 		t.Fatalf("response = %+v, want the 2 tracks of Mix", response)
 	}
-	if !reflect.DeepEqual(m.playlist.Tracks(), tracks) || m.loadedPlaylist != "Mix" {
-		t.Fatalf("playlist = %+v, loaded %q; want the tracks of Mix", m.playlist.Tracks(), m.loadedPlaylist)
+	if !reflect.DeepEqual(m.queue.Tracks(), tracks) || m.loadedPlaylist != "Mix" {
+		t.Fatalf("playlist = %+v, loaded %q; want the tracks of Mix", m.queue.Tracks(), m.loadedPlaylist)
 	}
 }
 
@@ -358,7 +358,7 @@ func TestV2ProviderLoadIndex(t *testing.T) {
 			pl.Add(old)
 			m := Model{
 				player:         &playbackFakeEngine{},
-				playlist:       pl,
+				queue:          pl,
 				vis:            ui.NewVisualizer(44100),
 				localProvider:  local,
 				loadedPlaylist: "Old",
@@ -369,7 +369,7 @@ func TestV2ProviderLoadIndex(t *testing.T) {
 				t.Fatalf("response = %+v, want error %q", response, tc.wantErr)
 			}
 			current, _ := m.currentPlaybackTrack()
-			if got := trackPaths(m.playlist.Tracks()); !reflect.DeepEqual(got, tc.wantQueue) || m.loadedPlaylist != tc.wantLoaded || current.Path != tc.wantCurrent {
+			if got := trackPaths(m.queue.Tracks()); !reflect.DeepEqual(got, tc.wantQueue) || m.loadedPlaylist != tc.wantLoaded || current.Path != tc.wantCurrent {
 				t.Fatalf("queue = %v, loaded %q, current %q; want %v, %q, %q", got, m.loadedPlaylist, current.Path, tc.wantQueue, tc.wantLoaded, tc.wantCurrent)
 			}
 		})
@@ -391,7 +391,7 @@ func TestV2DeviceResponseRecordsDevice(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			saver := &recordingSaver{}
-			m := Model{player: &playbackFakeEngine{}, playlist: playlist.New(), configSaver: saver}
+			m := Model{player: &playbackFakeEngine{}, queue: playlist.New(), configSaver: saver}
 			m.applyV2DeviceResponse(tc.response)
 			if got := m.runtimeSnapshot().Device; got != tc.wantDevice {
 				t.Fatalf("snapshot device = %q, want %q", got, tc.wantDevice)
@@ -412,7 +412,7 @@ func TestV2DeviceResponseRecordsDevice(t *testing.T) {
 func TestV2SnapshotReportsLoadedPlaylist(t *testing.T) {
 	pl := playlist.New()
 	pl.Add(playlist.Track{Path: "/music/one.flac", Title: "One"})
-	m := Model{player: &playbackFakeEngine{}, playlist: pl, configSaver: &recordingSaver{}}
+	m := Model{player: &playbackFakeEngine{}, queue: pl, configSaver: &recordingSaver{}}
 	m.SetIPCBroker(ipc.NewBroker())
 	m.publishIPCRuntimeState()
 	revision := m.ipcRuntime.revision
@@ -467,7 +467,7 @@ func TestV2ProviderResponsesNameThePlaylistAndCount(t *testing.T) {
 	prov := &writableTestProvider{commandsTestProvider: commandsTestProvider{name: "Writable"}}
 	m := Model{
 		player:    &playbackFakeEngine{},
-		playlist:  playlist.New(),
+		queue:     playlist.New(),
 		providers: []provider.Entry{{Key: "writable", Name: "Writable", Provider: prov}},
 	}
 
@@ -498,7 +498,7 @@ func TestNormalizeV2OperationCoversRegistryAliases(t *testing.T) {
 			t.Errorf("%s maps to %q, want a registered operation", name, canonical)
 		}
 	}
-	for _, name := range []string{"player.play", "player.previous", "player.volume.set", "runtime.playlist.get"} {
+	for _, name := range []string{"player.play", "player.previous", "player.volume.set", "runtime.queue.get"} {
 		if _, ok := registry.Lookup(name); ok {
 			t.Errorf("%s is registered, want an unknown operation", name)
 		}
@@ -510,7 +510,7 @@ func TestNormalizeV2OperationCoversRegistryAliases(t *testing.T) {
 	pl := playlist.New()
 	pl.Add(playlist.Track{Path: "/music/one.flac", Title: "One"})
 	engine := &playbackFakeEngine{}
-	m := Model{player: engine, playlist: pl}
+	m := Model{player: engine, queue: pl}
 	if response := runV2(t, &m, "runtime.queue.list", ipc.Request{}); !response.OK || response.Total != 1 {
 		t.Fatalf("runtime.queue.list = %+v, want the live playlist", response)
 	}
@@ -530,7 +530,7 @@ func TestRuntimeStateFollowsAStreamStart(t *testing.T) {
 		playlist.Track{Path: "https://radio.example/show.mp3", Title: "Show", Stream: true, DurationSecs: 240},
 	)
 	pl.SetIndex(0)
-	m := Model{player: engine, playlist: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
+	m := Model{player: engine, queue: pl, vis: ui.NewVisualizer(float64(engine.SampleRate()))}
 	m.SetIPCBroker(ipc.NewBroker())
 
 	updated, _ := m.Update(playback.NextMsg{})

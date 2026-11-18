@@ -11,13 +11,13 @@ func TestSetInitialTrackSelectsRestoredContextWithoutPlayback(t *testing.T) {
 	tracks := []playlist.Track{{Path: "one", Title: "One"}, {Path: "two", Title: "Two"}, {Path: "three", Title: "Three"}}
 	pl := playlist.New()
 	pl.Add(tracks...)
-	m := Model{playlist: pl}
+	m := Model{queue: pl}
 
 	m.SetInitialTrack(1)
 
 	current, index := pl.Current()
-	if index != 1 || current.Title != "Two" || m.plCursor != 1 {
-		t.Fatalf("restored selection = current:%q index:%d cursor:%d", current.Title, index, m.plCursor)
+	if index != 1 || current.Title != "Two" || m.queueCursor != 1 {
+		t.Fatalf("restored selection = current:%q index:%d cursor:%d", current.Title, index, m.queueCursor)
 	}
 	if len(m.playbackContext) != 3 {
 		t.Fatalf("playback context length = %d, want 3", len(m.playbackContext))

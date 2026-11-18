@@ -53,7 +53,7 @@ func TestProviderListWrapsTheSignInURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := signingInModel(keybindingTestModel(), tt.url)
 			m.layout.panelWidth = tt.width
-			m.plVisible = tt.budget
+			m.queueVisible = tt.budget
 
 			raw := m.renderProviderList()
 			body := ansi.Strip(raw)

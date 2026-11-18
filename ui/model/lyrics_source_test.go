@@ -98,8 +98,8 @@ func TestLyricsOverlayAndIPCAgree(t *testing.T) {
 			pl.Add(tt.track)
 			pl.SetIndex(0)
 			m := Model{
-				player:   &playbackFakeEngine{playing: true},
-				playlist: pl,
+				player: &playbackFakeEngine{playing: true},
+				queue:  pl,
 				providers: []provider.Entry{
 					{Key: "spotify", Name: "Spotify", Provider: &fakeLyricsSource{prefix: "spotify:track:", lines: []lyrics.Line{{Start: time.Second, Text: "spotify line"}}}},
 					{Key: "other", Name: "Other", Provider: &fakeLyricsSource{prefix: "other:track:", lines: []lyrics.Line{{Start: time.Second, Text: "other line"}}}},

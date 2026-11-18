@@ -29,7 +29,7 @@ func TestLyricsOffsetAdvancesTheHighlightPosition(t *testing.T) {
 // The offset keys must do nothing for plain lyrics: the registry disables them,
 // and the key handler enforces the same rule.
 func TestLyricsOffsetKeysIgnoreUnsyncedLyrics(t *testing.T) {
-	m := Model{playlist: playlist.New()}
+	m := Model{queue: playlist.New()}
 	m.lyrics.visible = true
 	m.lyrics.lines = []lyrics.Line{{Text: "plain"}}
 

@@ -19,19 +19,19 @@ import (
 // Updates.
 func luaStateProvider(clock engineClock, load func() model.PluginState) luaplugin.StateProvider {
 	return luaplugin.StateProvider{
-		PlayerState:   func() string { return load().Status },
-		Position:      func() float64 { return clock.Position().Seconds() },
-		Duration:      func() float64 { return clock.Duration().Seconds() },
-		Volume:        func() float64 { return load().Volume },
-		Speed:         func() float64 { return load().Speed },
-		Mono:          func() bool { return load().Mono },
-		RepeatMode:    func() string { return load().Repeat },
-		Shuffle:       func() bool { return load().Shuffle },
-		EQBands:       func() [10]float64 { return load().EQBands },
-		CurrentTrack:  func() luaplugin.Track { return load().Track },
-		PlaylistCount: func() int { return load().Count },
-		CurrentIndex:  func() int { return load().Index },
-		HasNext:       func() bool { return load().HasNext },
+		PlayerState:  func() string { return load().Status },
+		Position:     func() float64 { return clock.Position().Seconds() },
+		Duration:     func() float64 { return clock.Duration().Seconds() },
+		Volume:       func() float64 { return load().Volume },
+		Speed:        func() float64 { return load().Speed },
+		Mono:         func() bool { return load().Mono },
+		RepeatMode:   func() string { return load().Repeat },
+		Shuffle:      func() bool { return load().Shuffle },
+		EQBands:      func() [10]float64 { return load().EQBands },
+		CurrentTrack: func() luaplugin.Track { return load().Track },
+		QueueCount:   func() int { return load().Count },
+		CurrentIndex: func() int { return load().Index },
+		HasNext:      func() bool { return load().HasNext },
 		QueueList: func() []luaplugin.QueueEntry {
 			if queue := load().Queue; queue != nil {
 				return queue()

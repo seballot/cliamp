@@ -7,9 +7,9 @@ import (
 )
 
 func appendTestModel() *Model {
-	m := &Model{playlist: playlist.New()}
-	m.playlist.Replace([]playlist.Track{{Path: "/playing.mp3", Title: "Playing"}})
-	m.playlist.AddPlayNext(0)
+	m := &Model{queue: playlist.New()}
+	m.queue.Replace([]playlist.Track{{Path: "/playing.mp3", Title: "Playing"}})
+	m.queue.AddPlayNext(0)
 	return m
 }
 
@@ -21,17 +21,17 @@ func TestAppendTracksToPlaylistKeepsExistingListAndQueue(t *testing.T) {
 		{Path: "/b.mp3", Title: "B"},
 	}, "Saved List")
 
-	if got := m.playlist.Len(); got != 3 {
+	if got := m.queue.Len(); got != 3 {
 		t.Errorf("playlist length = %d, want 3", got)
 	}
-	if got := m.playlist.PlayNextLen(); got != 1 {
+	if got := m.queue.PlayNextLen(); got != 1 {
 		t.Errorf("queue length = %d, want the existing entry to survive", got)
 	}
-	first, _ := m.playlist.Track(0)
+	first, _ := m.queue.Track(0)
 	if first.Path != "/playing.mp3" {
 		t.Errorf("first track = %q, want the pre-existing one", first.Path)
 	}
-	last, _ := m.playlist.Track(2)
+	last, _ := m.queue.Track(2)
 	if last.Path != "/b.mp3" {
 		t.Errorf("last track = %q, want the appended one", last.Path)
 	}
@@ -43,7 +43,7 @@ func TestAppendTracksToPlaylistIgnoresAnEmptyBatch(t *testing.T) {
 	if _, ok := m.addTracksToCurrentPlaylist(nil, "Saved List"); ok {
 		t.Error("an empty batch reported success")
 	}
-	if got := m.playlist.Len(); got != 1 {
+	if got := m.queue.Len(); got != 1 {
 		t.Errorf("playlist length = %d, want it unchanged at 1", got)
 	}
 }
@@ -63,7 +63,7 @@ func TestPlMgrAppendSelectedTracks(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &Model{playlist: playlist.New()}
+			m := &Model{queue: playlist.New()}
 			m.plManager = plManagerState{
 				visible:     true,
 				screen:      plMgrScreenTracks,
@@ -79,10 +79,10 @@ func TestPlMgrAppendSelectedTracks(t *testing.T) {
 
 			m.addTracksToCurrentPlaylist(m.plMgrSelectedTracks(), "Saved List")
 
-			if got := m.playlist.Len(); got != tt.wantAdded {
+			if got := m.queue.Len(); got != tt.wantAdded {
 				t.Fatalf("playlist length = %d, want %d", got, tt.wantAdded)
 			}
-			first, _ := m.playlist.Track(0)
+			first, _ := m.queue.Track(0)
 			if first.Path != tt.wantFirst {
 				t.Errorf("first appended = %q, want %q", first.Path, tt.wantFirst)
 			}

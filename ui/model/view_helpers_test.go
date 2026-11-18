@@ -215,7 +215,7 @@ func TestRenderTrackInfoFitsWithoutScrolling(t *testing.T) {
 	name := "Bonobo - Kerala · Migration"
 
 	for _, tick := range []int{0, 1, 7, 40, 1000} {
-		m := Model{layout: frameLayout{panelWidth: 80}, playlist: p, titleOff: tick}
+		m := Model{layout: frameLayout{panelWidth: 80}, queue: p, titleOff: tick}
 		if got := marqueeWindow(t, m); got != name {
 			t.Fatalf("tick %d: renderTrackInfo() = %q, want the whole name %q", tick, got, name)
 		}
@@ -234,7 +234,7 @@ func TestRenderTrackInfoMarqueeLoops(t *testing.T) {
 	width := panelWidth - 2
 	cycle := lipgloss.Width(name + marqueeGap)
 	window := func(tick int) string {
-		return marqueeWindow(t, Model{layout: frameLayout{panelWidth: panelWidth}, playlist: p, titleOff: tick})
+		return marqueeWindow(t, Model{layout: frameLayout{panelWidth: panelWidth}, queue: p, titleOff: tick})
 	}
 
 	start := window(0)
@@ -291,7 +291,7 @@ func TestRenderSimplifiedTrackInfoLeavesRoomForDuration(t *testing.T) {
 	})
 
 	for _, tick := range []int{0, marqueeHoldTicks + 2, 200} {
-		m := Model{layout: frameLayout{panelWidth: 30}, playlist: p, titleOff: tick}
+		m := Model{layout: frameLayout{panelWidth: 30}, queue: p, titleOff: tick}
 		row := ansi.Strip(m.renderSimplifiedTrackInfo())
 		if got := lipgloss.Width(row); got > m.layout.panelWidth {
 			t.Fatalf("tick %d: row width = %d, want at most %d: %q", tick, got, m.layout.panelWidth, row)
@@ -311,7 +311,7 @@ func TestRenderTrackInfoShowsRatingWithinMarqueeBudget(t *testing.T) {
 			DurationSecs: 1,
 			UserRating:   rating,
 		})
-		m := Model{layout: frameLayout{panelWidth: 30}, playlist: p, titleOff: marqueeHoldTicks + 2}
+		m := Model{layout: frameLayout{panelWidth: 30}, queue: p, titleOff: marqueeHoldTicks + 2}
 		for name, row := range map[string]string{
 			"full":       ansi.Strip(m.renderTrackInfo()),
 			"simplified": ansi.Strip(m.renderSimplifiedTrackInfo()),

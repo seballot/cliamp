@@ -13,7 +13,7 @@ import (
 func TestPodcastBrowserOnlyOpensCategoryShows(t *testing.T) {
 	t.Setenv("CLIAMP_CONFIG_DIR", t.TempDir())
 	p := podcast.New("")
-	m := Model{provider: p, playlist: playlist.New(), player: &playbackFakeEngine{}, focus: focusProvider}
+	m := Model{provider: p, queue: playlist.New(), player: &playbackFakeEngine{}, focus: focusProvider}
 	m.handleKey(tea.KeyPressMsg{Text: "N"})
 	items := m.navMenuItems()
 	if len(items) != 1 || items[0].mode != provider.BrowseArtistAlbums {
@@ -37,7 +37,7 @@ func TestPodcastBrowserOnlyOpensCategoryShows(t *testing.T) {
 	m.navBrowser.selAlbum = provider.AlbumInfo{ID: feedURL}
 	next, _ = m.Update(navTracksLoadedMsg{gen: m.requests.nav, tracks: []playlist.Track{{Title: "Episode", Path: "https://example.com/episode.mp3"}}})
 	m = next.(Model)
-	if m.navBrowser.visible || m.focus != focusPlaylist || m.activeProviderPlaylistID != feedURL {
+	if m.navBrowser.visible || m.focus != focusQueue || m.activeProviderPlaylistID != feedURL {
 		t.Fatalf("opened show state = visible %v, focus %v, playlist %q", m.navBrowser.visible, m.focus, m.activeProviderPlaylistID)
 	}
 	m.catalogBatch = catalogBatchState{offset: 100, done: true}
@@ -53,7 +53,7 @@ func TestProviderRefreshRestartsCatalogPagination(t *testing.T) {
 	t.Setenv("CLIAMP_CONFIG_DIR", t.TempDir())
 	p := podcast.New("")
 	m := Model{
-		provider: p, playlist: playlist.New(), player: &playbackFakeEngine{}, focus: focusProvider,
+		provider: p, queue: playlist.New(), player: &playbackFakeEngine{}, focus: focusProvider,
 		catalogBatch: catalogBatchState{offset: 100, done: true},
 	}
 	oldGeneration := m.requests.catalog
@@ -92,7 +92,7 @@ func TestPodcastShortcut(t *testing.T) {
 			m := keybindingTestModel()
 			m.provider = current
 			m.providers = []provider.Entry{{Key: "other", Provider: current}, {Key: "podcast", Name: p.Name(), Provider: p}}
-			m.focus = focusPlaylist
+			m.focus = focusQueue
 			if view == "provider" {
 				m.focus = focusProvider
 			} else if view == "browser" {

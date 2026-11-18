@@ -13,7 +13,7 @@ import (
 )
 
 func TestSettingsFocusCycle(t *testing.T) {
-	full := []focusArea{focusPlaylist, focusProvPill, focusVolume, focusEQ, focusShuffle, focusRepeat, focusSpeed}
+	full := []focusArea{focusQueue, focusProvPill, focusVolume, focusEQ, focusShuffle, focusRepeat, focusSpeed}
 	tests := []struct {
 		name          string
 		width, height int
@@ -23,14 +23,14 @@ func TestSettingsFocusCycle(t *testing.T) {
 		{name: "full", width: 100, height: 30, want: full},
 		{name: "compact", width: 56, height: 16, want: full},
 		{name: "single source", width: 100, height: 30, setup: func(m *Model) { m.providers = m.providers[:1] },
-			want: []focusArea{focusPlaylist, focusVolume, focusEQ, focusShuffle, focusRepeat, focusSpeed}},
+			want: []focusArea{focusQueue, focusVolume, focusEQ, focusShuffle, focusRepeat, focusSpeed}},
 		{name: "closed", width: 80, height: 24, setup: func(m *Model) { m.hideSettings = true },
-			want: []focusArea{focusPlaylist, focusProvPill, focusVolume, focusShuffle, focusRepeat}},
+			want: []focusArea{focusQueue, focusProvPill, focusVolume, focusShuffle, focusRepeat}},
 		{name: "short pane", width: 80, height: 24, setup: func(m *Model) { m.visRows = 100 },
-			want: []focusArea{focusPlaylist, focusProvPill, focusVolume, focusEQ, focusSpeed}},
-		{name: "minimal", width: 40, height: 10, want: []focusArea{focusPlaylist}},
-		{name: "too small", width: 39, height: 9, want: []focusArea{focusPlaylist}},
-		{name: "simplified", width: 100, height: 30, setup: func(m *Model) { m.simplified = true }, want: []focusArea{focusPlaylist}},
+			want: []focusArea{focusQueue, focusProvPill, focusVolume, focusEQ, focusSpeed}},
+		{name: "minimal", width: 40, height: 10, want: []focusArea{focusQueue}},
+		{name: "too small", width: 39, height: 9, want: []focusArea{focusQueue}},
+		{name: "simplified", width: 100, height: 30, setup: func(m *Model) { m.simplified = true }, want: []focusArea{focusQueue}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -66,7 +66,7 @@ func TestSettingsFocusCycle(t *testing.T) {
 func TestSettingsFocusMatchesShedRows(t *testing.T) {
 	m := newColumnTestModel(100, 30)
 	for rows := 1; rows <= settingsPaneMaxRows; rows++ {
-		m.plVisible = rows
+		m.queueVisible = rows
 		pane := ansi.Strip(m.renderSettingsPane(rows))
 		for _, setting := range []struct {
 			focus focusArea
@@ -86,24 +86,24 @@ func TestSettingsFocusMatchesHeaderWithPadding(t *testing.T) {
 		t.Run(fmt.Sprintf("panel=%d", width-16), func(t *testing.T) {
 			m := newColumnTestModel(width, 16)
 			m.SetPadding(8, 1)
-			m.playlist.SetRepeat(playlist.RepeatAll)
+			m.queue.SetRepeat(playlist.RepeatAll)
 			wantRepeat := width == 58
-			want := []focusArea{focusPlaylist, focusProvPill, focusVolume, focusEQ, focusShuffle}
+			want := []focusArea{focusQueue, focusProvPill, focusVolume, focusEQ, focusShuffle}
 			if wantRepeat {
 				want = append(want, focusRepeat)
 			}
 			want = append(want, focusSpeed)
-			for _, current := range []focusArea{focusPlaylist, focusShuffle, focusRepeat} {
+			for _, current := range []focusArea{focusQueue, focusShuffle, focusRepeat} {
 				m.focus = current
 				if got := m.mainFocusAreas(); !slices.Equal(got, want) {
 					t.Fatalf("from %s: focus areas = %v, want %v", current.label(), got, want)
 				}
 			}
-			if header := ansi.Strip(m.renderPlaylistHeader()); strings.Contains(header, "[Repeat \u25b8 All]") != wantRepeat {
+			if header := ansi.Strip(m.renderQueueHeader()); strings.Contains(header, "[Repeat \u25b8 All]") != wantRepeat {
 				t.Fatalf("focused Repeat visibility differs from eligibility: %q", header)
 			}
 
-			m.focus = focusPlaylist
+			m.focus = focusQueue
 			for _, reverse := range []bool{false, true} {
 				key := tea.KeyPressMsg{Code: tea.KeyTab}
 				if reverse {
@@ -120,7 +120,7 @@ func TestSettingsFocusMatchesHeaderWithPadding(t *testing.T) {
 						t.Fatalf("%s step %d: focus = %s, want %s", key.String(), i, m.focus.label(), want[idx].label())
 					}
 					if m.focus == focusShuffle || m.focus == focusRepeat {
-						if header := ansi.Strip(m.renderPlaylistHeader()); !strings.Contains(header, "["+m.focus.label()+" \u25b8 ") {
+						if header := ansi.Strip(m.renderQueueHeader()); !strings.Contains(header, "["+m.focus.label()+" \u25b8 ") {
 							t.Fatalf("%s reached an invisible %s: %q", key.String(), m.focus.label(), header)
 						}
 					}
@@ -129,7 +129,7 @@ func TestSettingsFocusMatchesHeaderWithPadding(t *testing.T) {
 
 			m.focus, m.prevFocus = focusRepeat, focusRepeat
 			m.normalizeMainFocus()
-			wantFocus := focusPlaylist
+			wantFocus := focusQueue
 			if wantRepeat {
 				wantFocus = focusRepeat
 			}
@@ -190,7 +190,7 @@ func TestSettingsFocusNormalizesHiddenControls(t *testing.T) {
 			m.focus, m.prevFocus = focus, focus
 			updated, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 10})
 			m = updated.(Model)
-			if m.focus != focusPlaylist || m.prevFocus != focusPlaylist {
+			if m.focus != focusQueue || m.prevFocus != focusQueue {
 				t.Fatalf("hidden focus survived resize: current=%s previous=%s", m.focus.label(), m.prevFocus.label())
 			}
 		})
@@ -200,7 +200,7 @@ func TestSettingsFocusNormalizesHiddenControls(t *testing.T) {
 		m.focus, m.prevFocus = focus, focus
 		m.visRows = 100
 		m.applyHeightMode()
-		if m.focus != focusPlaylist || m.prevFocus != focusPlaylist {
+		if m.focus != focusQueue || m.prevFocus != focusQueue {
 			t.Fatalf("shed %s kept focus", focus.label())
 		}
 	}
@@ -252,7 +252,7 @@ func TestSettingsFocusActions(t *testing.T) {
 				notifier := &fakeNotifier{}
 				saver := &recordingSaver{}
 				m.player, m.notifier, m.configSaver, m.focus = p, notifier, saver, focus
-				m.plCursor = 2
+				m.queueCursor = 2
 				next, cmd := m.Update(key)
 				m = next.(Model)
 				s := key.String()
@@ -270,7 +270,7 @@ func TestSettingsFocusActions(t *testing.T) {
 					}
 				case s == "z" || focus == focusShuffle && (arrow || s == "enter"):
 					modeChanged = true
-					if !m.playlist.Shuffled() || saver.saved["shuffle"] != "true" {
+					if !m.queue.Shuffled() || saver.saved["shuffle"] != "true" {
 						t.Fatalf("shuffle was not toggled and persisted: %v", saver.saved)
 					}
 				case s == "r" || focus == focusRepeat && (arrow || s == "enter"):
@@ -279,8 +279,8 @@ func TestSettingsFocusActions(t *testing.T) {
 					if back {
 						want = playlist.RepeatOne
 					}
-					if m.playlist.Repeat() != want || saver.saved["repeat"] != fmt.Sprintf("%q", want.String()) {
-						t.Fatalf("repeat = %s, saved = %v, want %s", m.playlist.Repeat(), saver.saved, want)
+					if m.queue.Repeat() != want || saver.saved["repeat"] != fmt.Sprintf("%q", want.String()) {
+						t.Fatalf("repeat = %s, saved = %v, want %s", m.queue.Repeat(), saver.saved, want)
 					}
 				case s == "m":
 					if !p.mono {
@@ -291,7 +291,7 @@ func TestSettingsFocusActions(t *testing.T) {
 				if modeChanged && (cmd != nil || m.preloading || len(p.preloadCalls) != 0) {
 					t.Fatal("mode change armed a gapless preload while nothing plays")
 				}
-				if m.plCursor != 2 || len(p.seekCalls) != 0 || m.buffering || m.focus != focus {
+				if m.queueCursor != 2 || len(p.seekCalls) != 0 || m.buffering || m.focus != focus {
 					t.Fatal("focused action moved the playlist, sought, played, or changed focus")
 				}
 			})
@@ -349,7 +349,7 @@ func TestSettingsFocusHelpAndReservation(t *testing.T) {
 		}
 	}
 	m := New(&playbackFakeEngine{}, playlist.New(), nil, "", nil, nil, nil, nil, nil, nil)
-	if m.focus != focusPlaylist {
+	if m.focus != focusQueue {
 		t.Fatalf("startup focus = %s, want unchanged playlist focus", m.focus.label())
 	}
 }

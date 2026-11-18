@@ -140,7 +140,7 @@ func (m *Model) advanceTerminalTitle() {
 }
 
 func (m Model) terminalTitleValues() terminalTitleValues {
-	if m.playlist == nil {
+	if m.queue == nil {
 		return terminalTitleStateValues(m.isPlaying(), m.isPaused())
 	}
 	track, idx := m.currentPlaybackTrack()

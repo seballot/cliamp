@@ -73,7 +73,7 @@ func TestTickIntervalStoppedUsesIdle(t *testing.T) {
 	m := Model{
 		player:    p,
 		vis:       ui.NewVisualizer(float64(p.SampleRate())),
-		playlist:  playlist.New(),
+		queue:     playlist.New(),
 		termTitle: terminalTitleState{},
 	}
 
@@ -94,9 +94,9 @@ func TestTickIntervalStoppedUsesIdle(t *testing.T) {
 func TestTickIntervalPendingStatusUsesSlow(t *testing.T) {
 	p := &playbackFakeEngine{}
 	m := Model{
-		player:   p,
-		vis:      ui.NewVisualizer(float64(p.SampleRate())),
-		playlist: playlist.New(),
+		player: p,
+		vis:    ui.NewVisualizer(float64(p.SampleRate())),
+		queue:  playlist.New(),
 	}
 	m.status.Show("hello", statusTTL(2*time.Second))
 
@@ -111,11 +111,11 @@ func TestTickIntervalPendingStatusUsesSlow(t *testing.T) {
 func TestTickIntervalPlayingUsesFastCadence(t *testing.T) {
 	p := &playbackFakeEngine{playing: true}
 	m := Model{
-		player:   p,
-		vis:      ui.NewVisualizer(float64(p.SampleRate())),
-		playlist: playlist.New(),
-		width:    80,
-		height:   24,
+		player: p,
+		vis:    ui.NewVisualizer(float64(p.SampleRate())),
+		queue:  playlist.New(),
+		width:  80,
+		height: 24,
 	}
 	m.recomputeLayout()
 	m.SetVisualizer("none")
@@ -128,11 +128,11 @@ func TestTickIntervalPlayingUsesFastCadence(t *testing.T) {
 func TestTickIntervalClampsFastVisualizerCadence(t *testing.T) {
 	p := &playbackFakeEngine{playing: true}
 	m := Model{
-		player:   p,
-		vis:      ui.NewVisualizer(float64(p.SampleRate())),
-		playlist: playlist.New(),
-		width:    80,
-		height:   24,
+		player: p,
+		vis:    ui.NewVisualizer(float64(p.SampleRate())),
+		queue:  playlist.New(),
+		width:  80,
+		height: 24,
 	}
 	m.recomputeLayout()
 
@@ -147,11 +147,11 @@ func TestTickIntervalClampsFastVisualizerCadence(t *testing.T) {
 func TestTickIntervalVisualizer60FPS(t *testing.T) {
 	p := &playbackFakeEngine{playing: true}
 	m := Model{
-		player:   p,
-		vis:      ui.NewVisualizer(float64(p.SampleRate())),
-		playlist: playlist.New(),
-		width:    80,
-		height:   24,
+		player: p,
+		vis:    ui.NewVisualizer(float64(p.SampleRate())),
+		queue:  playlist.New(),
+		width:  80,
+		height: 24,
 	}
 	m.recomputeLayout()
 	m.SetVisualizer60FPS(true)
@@ -172,7 +172,7 @@ func TestCadenceOwnerPlaybackHonorsDriverCadence(t *testing.T) {
 			p := &playbackFakeEngine{playing: true}
 			m := Model{
 				player: p, vis: ui.NewVisualizer(float64(p.SampleRate())),
-				playlist: playlist.New(), width: 80, height: 24,
+				queue: playlist.New(), width: 80, height: 24,
 			}
 			m.recomputeLayout()
 			m.SetVisualizer(mode)
@@ -199,11 +199,11 @@ func TestTickIntervalRawSampleVisualizerUsesWaveCadence(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			p := &playbackFakeEngine{playing: true}
 			m := Model{
-				player:   p,
-				vis:      ui.NewVisualizer(float64(p.SampleRate())),
-				playlist: playlist.New(),
-				width:    80,
-				height:   24,
+				player: p,
+				vis:    ui.NewVisualizer(float64(p.SampleRate())),
+				queue:  playlist.New(),
+				width:  80,
+				height: 24,
 			}
 			m.recomputeLayout()
 			m.SetVisualizer(mode)
@@ -223,11 +223,11 @@ func TestVisualizerSelectsAudibleTap(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			p := &samplingFakeEngine{playbackFakeEngine: &playbackFakeEngine{playing: true}}
 			m := Model{
-				player:   p,
-				vis:      ui.NewVisualizer(float64(p.SampleRate())),
-				playlist: playlist.New(),
-				width:    80,
-				height:   24,
+				player: p,
+				vis:    ui.NewVisualizer(float64(p.SampleRate())),
+				queue:  playlist.New(),
+				width:  80,
+				height: 24,
 			}
 			m.recomputeLayout()
 			m.SetVisualizer(mode)
@@ -246,9 +246,9 @@ func TestVisualizerSelectsAudibleTap(t *testing.T) {
 func TestTickIntervalLowPowerPlayingUsesLowPowerCadence(t *testing.T) {
 	p := &playbackFakeEngine{playing: true}
 	m := Model{
-		player:   p,
-		vis:      ui.NewVisualizer(float64(p.SampleRate())),
-		playlist: playlist.New(),
+		player: p,
+		vis:    ui.NewVisualizer(float64(p.SampleRate())),
+		queue:  playlist.New(),
 	}
 	m.SetLowPower(true)
 
@@ -261,11 +261,11 @@ func chargedPausedModel(t *testing.T) (Model, *samplingFakeEngine) {
 	t.Helper()
 	p := &samplingFakeEngine{playbackFakeEngine: &playbackFakeEngine{playing: true}}
 	m := Model{
-		player:   p,
-		vis:      ui.NewVisualizer(float64(p.SampleRate())),
-		playlist: playlist.New(),
-		width:    80,
-		height:   24,
+		player: p,
+		vis:    ui.NewVisualizer(float64(p.SampleRate())),
+		queue:  playlist.New(),
+		width:  80,
+		height: 24,
 	}
 	m.recomputeLayout()
 	m.vis.Mode = ui.VisBars
@@ -595,7 +595,7 @@ func TestTickReconnect(t *testing.T) {
 			engine := &playbackFakeEngine{playing: true}
 			p := playlist.New()
 			p.Replace(tt.tracks)
-			m := Model{player: engine, playlist: p}
+			m := Model{player: engine, queue: p}
 			m.reconnect.at = tt.at
 			m.reconnect.attempts = 2
 			m.reconnect.ytdlLiveDrain = tt.ytdlLiveDrain

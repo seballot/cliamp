@@ -106,11 +106,11 @@ const (
 	starRadioFavorite
 )
 
-func (m Model) selectedPlaylistStarAction() playlistStarAction {
-	if m.playlist == nil || m.focus != focusPlaylist || m.plCursor < 0 || m.plCursor >= m.playlist.Len() {
+func (m Model) selectedQueueStarAction() playlistStarAction {
+	if m.queue == nil || m.focus != focusQueue || m.queueCursor < 0 || m.queueCursor >= m.queue.Len() {
 		return starUnavailable
 	}
-	track, _ := m.playlist.Track(m.plCursor)
+	track, _ := m.queue.Track(m.queueCursor)
 	if _, ok := m.favoriteStation(track, m.loadedPlaylist != ""); ok {
 		return starRadioFavorite
 	}
@@ -134,10 +134,10 @@ func (m Model) favoriteStation(track playlist.Track, savedPlaylist bool) (radio.
 // It matches rows by path. IPC clients send a track that can come from the
 // queue or from a provider list, and only a queue row uses the saved rule.
 func (m Model) savedPlaylistRow(track playlist.Track) bool {
-	if m.loadedPlaylist == "" || m.playlist == nil {
+	if m.loadedPlaylist == "" || m.queue == nil {
 		return false
 	}
-	for _, row := range m.playlist.Tracks() {
+	for _, row := range m.queue.Tracks() {
 		if row.Path == track.Path {
 			return true
 		}
@@ -146,10 +146,10 @@ func (m Model) savedPlaylistRow(track playlist.Track) bool {
 }
 
 func (m *Model) togglePlaylistStar() tea.Cmd {
-	if m.selectedPlaylistStarAction() == starUnavailable {
+	if m.selectedQueueStarAction() == starUnavailable {
 		return nil
 	}
-	track, _ := m.playlist.Track(m.plCursor)
+	track, _ := m.queue.Track(m.queueCursor)
 	cmd, err := m.togglePlaylistTrackFavorite(track, m.loadedPlaylist != "")
 	if err != nil {
 		m.status.Errorf(statusTTLDefault, "Favorite failed: %s", err)
@@ -186,11 +186,11 @@ func (m *Model) togglePlaylistTrackFavorite(track playlist.Track, savedPlaylist 
 	return nil, nil
 }
 
-// playlistTrackFavorited reports whether a playback row shows the ♥ marker.
-// It uses the same rule as selectedPlaylistStarAction, so the marker always
+// queueTrackFavorited reports whether a playback row shows the ♥ marker.
+// It uses the same rule as selectedQueueStarAction, so the marker always
 // shows the state that f toggles. The render path calls it, so it must not do
 // I/O.
-func (m Model) playlistTrackFavorited(track playlist.Track) bool {
+func (m Model) queueTrackFavorited(track playlist.Track) bool {
 	return trackFavorited(track, m.favSet, m.radioFavorites, m.loadedPlaylist != "")
 }
 

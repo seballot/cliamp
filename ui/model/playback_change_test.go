@@ -73,12 +73,12 @@ func newPlaybackChange() playbackChange {
 	engine := &changeEngine{playbackFakeEngine: playbackFakeEngine{playing: true, position: 150 * time.Second, duration: 180 * time.Second, startsAtOffset: true}}
 	reporter := &countingReporter{}
 	m := newColumnTestModel(100, 30)
-	m.playlist.Replace([]playlist.Track{
+	m.queue.Replace([]playlist.Track{
 		{Title: "A", Path: "a.mp3", DurationSecs: 180},
 		{Title: "B", Path: "b.mp3", DurationSecs: 180},
 		{Title: "C", Path: "c.mp3", DurationSecs: 180},
 	})
-	m.playlist.SetIndex(0)
+	m.queue.SetIndex(0)
 	m.player = engine
 	m.providers = []provider.Entry{{Key: "p", Name: "P", Provider: reporter}}
 	m.playingTrack, m.playingTrackActive, m.playingTrackStarted = playlist.Track{Title: "A", Path: "a.mp3", DurationSecs: 180}, true, true
@@ -133,7 +133,7 @@ func TestPlaybackChangesNotifyAndScrobbleOnce(t *testing.T) {
 		{name: "V2 queue.play", msg: func(t *testing.T) tea.Msg { return v2Request(t, "queue.play", ipc.Request{Index: 2}) }, notify: true, scrobble: true},
 		{name: "V2 queue.clear", msg: func(t *testing.T) tea.Msg { return v2Request(t, "queue.clear", ipc.Request{}) }, notify: true, scrobble: true},
 		{name: "plugin jump", msg: func(*testing.T) tea.Msg { return PluginQueueMsg{Op: "jump", Index: 2} }, notify: true, scrobble: true},
-		{name: "enter on a row", setup: func(c *playbackChange) { c.m.plCursor = 2 },
+		{name: "enter on a row", setup: func(c *playbackChange) { c.m.queueCursor = 2 },
 			msg: func(*testing.T) tea.Msg { return tea.KeyPressMsg{Code: tea.KeyEnter} }, notify: true, scrobble: true},
 		{name: "url.load with play", msg: func(*testing.T) tea.Msg {
 			return ipcURLLoadResult{
@@ -171,7 +171,7 @@ func TestPlaybackChangesNotifyAndScrobbleOnce(t *testing.T) {
 			c.m.plManager.selPlaylist = "Mix"
 			c.m.plManager.tracks = []playlist.Track{{Title: "D", Path: "d.mp3"}}
 		}, msg: func(*testing.T) tea.Msg { return tea.KeyPressMsg{Code: tea.KeyEnter} }, notify: true, scrobble: true},
-		{name: "remove key on the playing row", setup: func(c *playbackChange) { c.m.focus = focusPlaylist },
+		{name: "remove key on the playing row", setup: func(c *playbackChange) { c.m.focus = focusQueue },
 			msg: func(*testing.T) tea.Msg { return key("x") }, notify: true, scrobble: true},
 		{name: "V2 queue.remove of the playing row", msg: func(t *testing.T) tea.Msg {
 			return v2Request(t, "queue.remove", ipc.Request{Index: 0})
@@ -187,7 +187,7 @@ func TestPlaybackChangesNotifyAndScrobbleOnce(t *testing.T) {
 			msg: func(*testing.T) tea.Msg { return tickMsg(time.Now()) }, notify: true, scrobble: true},
 		{name: "a drained last track", setup: func(c *playbackChange) {
 			c.engine.drained = true
-			c.m.playlist.SetIndex(2)
+			c.m.queue.SetIndex(2)
 		}, msg: func(*testing.T) tea.Msg { return tickMsg(time.Now()) }, notify: true, scrobble: true},
 		{name: "pause message", msg: func(*testing.T) tea.Msg { return playback.PauseMsg{} }, notify: true},
 		{name: "pause key", msg: func(*testing.T) tea.Msg { return key("space") }, notify: true},

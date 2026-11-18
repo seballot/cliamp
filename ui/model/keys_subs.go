@@ -115,7 +115,7 @@ func (m *Model) subsMoveCursor(delta int) {
 }
 
 func (m *Model) subsMaybeAdjustScroll() {
-	clampScroll(&m.subs.cursor, &m.subs.scroll, len(m.subsVisibleShows()), m.effectivePlaylistVisible())
+	clampScroll(&m.subs.cursor, &m.subs.scroll, len(m.subsVisibleShows()), m.effectiveQueueVisible())
 }
 
 // handleSubsKey processes key presses while the subscriptions overlay is open.
@@ -190,11 +190,11 @@ func (m *Model) addSubscriptionEpisodes(tracks []playlist.Track, mode subsLoadMo
 	switch mode {
 	case subsLoadQueue:
 		for i := range tracks {
-			m.playlist.AddPlayNext(start + i)
+			m.queue.AddPlayNext(start + i)
 		}
 		m.status.Showf(statusTTLDefault, "Play next: %d episodes from %s", len(tracks), showName)
 	case subsLoadLatest:
-		m.playlist.AddPlayNext(start)
+		m.queue.AddPlayNext(start)
 		m.status.Showf(statusTTLDefault, "Play next: %s", tracks[0].DisplayName())
 	default:
 		m.status.Showf(statusTTLDefault, "Added %d episode(s) from %s", len(tracks), showName)
@@ -211,8 +211,8 @@ func (m *Model) appendSubscriptionTracks(tracks []playlist.Track, mode subsLoadM
 	}
 	if mode == subsLoadPlay {
 		m.subs.visible = false
-		m.playlist.SetIndex(start)
-		m.plCursor = start
+		m.queue.SetIndex(start)
+		m.queueCursor = start
 		m.adjustScroll()
 		return m.playCurrentTrack()
 	}

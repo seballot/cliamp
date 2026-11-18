@@ -62,46 +62,46 @@ func stepListCursor(key string, cursor *int, count, page int) bool {
 	return true
 }
 
-// applyHeightMode sets plVisible based on the current heightExpanded state.
+// applyHeightMode sets queueVisible based on the current heightExpanded state.
 func (m *Model) applyHeightMode() {
 	m.recomputeLayout()
 	m.normalizeMainFocus()
 }
 
-// adjustScroll ensures plCursor is visible in the playlist view.
+// adjustScroll ensures queueCursor is visible in the playlist view.
 // It accounts for album separator lines that reduce the number of
 // tracks that fit in the visible window.
 func (m *Model) adjustScroll() {
-	if m.playlist == nil {
+	if m.queue == nil {
 		return
 	}
-	if m.playlist.Len() == 0 {
+	if m.queue.Len() == 0 {
 		return
 	}
-	visible := m.effectivePlaylistVisible()
+	visible := m.effectiveQueueVisible()
 	if visible <= 0 {
 		return
 	}
-	m.plScroll = m.playlistScroll(visible)
+	m.queueScroll = m.queueViewScroll(visible)
 }
 
-func (m Model) playlistScroll(visible int) int {
-	count := m.playlist.Len()
+func (m Model) queueViewScroll(visible int) int {
+	count := m.queue.Len()
 	if count == 0 {
 		return 0
 	}
-	scroll := max(0, m.plScroll)
+	scroll := max(0, m.queueScroll)
 	if scroll >= count {
 		scroll = count - 1
 	}
-	cursor := min(max(0, m.plCursorRow()), count-1)
+	cursor := min(max(0, m.queueCursorRow()), count-1)
 	if cursor < scroll {
 		return cursor
 	}
 	if visible <= 0 {
 		return cursor
 	}
-	showHeaders := m.plShowsAlbumHeaders()
+	showHeaders := m.queueShowsAlbumHeaders()
 	if !showHeaders {
 		if cursor-scroll >= visible {
 			return cursor - visible + 1
@@ -113,7 +113,7 @@ func (m Model) playlistScroll(visible int) int {
 	// the cursor visible. Include one lookback track for sticky album headers.
 	scroll = max(scroll, cursor-visible+1)
 	start := max(0, scroll-1)
-	_, tracks := m.playlist.OrderWindow(start, cursor-start+1)
+	_, tracks := m.queue.OrderWindow(start, cursor-start+1)
 	return start + m.fitHeaderScroll(tracks, scroll-start, cursor-start, visible, showHeaders)
 }
 
@@ -134,17 +134,17 @@ func (m Model) mainFrameFixedLines(includeTransient bool) int {
 	return fixed
 }
 
-func (m Model) effectivePlaylistVisible() int {
+func (m Model) effectiveQueueVisible() int {
 	if m.layout.frameWidth == 0 {
-		if m.plVisible > 0 {
-			return m.plVisible
+		if m.queueVisible > 0 {
+			return m.queueVisible
 		}
 		return 0
 	}
 	if m.layout.tooSmall() || m.layout.bodyRows <= 0 {
 		return 0
 	}
-	return min(m.plVisible, m.layout.bodyRows)
+	return min(m.queueVisible, m.layout.bodyRows)
 }
 
 func (m *Model) refreshChrome() {
@@ -157,13 +157,13 @@ func (m *Model) clampActiveScrollState() {
 	}
 	switch m.activeScreen() {
 	case screenKeymap:
-		m.keymapMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.keymapMaybeAdjustScroll(m.effectiveQueueVisible())
 	case screenThemePicker:
-		m.themePickerMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.themePickerMaybeAdjustScroll(m.effectiveQueueVisible())
 	case screenVisPicker:
-		m.visPickerMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.visPickerMaybeAdjustScroll(m.effectiveQueueVisible())
 	case screenDevicePicker:
-		clampScroll(&m.devicePicker.cursor, &m.devicePicker.scroll, len(m.devicePicker.devices), m.effectivePlaylistVisible())
+		clampScroll(&m.devicePicker.cursor, &m.devicePicker.scroll, len(m.devicePicker.devices), m.effectiveQueueVisible())
 	case screenPlaylistPicker:
 		m.plPickerMaybeAdjustScroll(m.plPickerVisible())
 	case screenFileBrowser:
@@ -172,30 +172,30 @@ func (m *Model) clampActiveScrollState() {
 		m.navMaybeAdjustScroll()
 	case screenPlaylistManager:
 		if m.plManager.screen == plMgrScreenList {
-			m.plMgrListMaybeAdjustScroll(m.effectivePlaylistVisible())
+			m.plMgrListMaybeAdjustScroll(m.effectiveQueueVisible())
 		} else if m.plManager.screen == plMgrScreenTracks {
-			m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+			m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 		} else if m.plManager.screen == plMgrScreenDirs {
-			m.plMgrDirsMaybeAdjustScroll(m.effectivePlaylistVisible())
+			m.plMgrDirsMaybeAdjustScroll(m.effectiveQueueVisible())
 		}
 	case screenSearchOverlay:
 		if m.searchOverlay.screen == searchOverlayResults {
 			m.searchOverlayResultsMaybeAdjustScroll(m.searchOverlayResultsVisible())
 		} else if m.searchOverlay.screen == searchOverlayPlaylist {
-			m.searchOverlayPlaylistMaybeAdjustScroll(m.effectivePlaylistVisible())
+			m.searchOverlayPlaylistMaybeAdjustScroll(m.effectiveQueueVisible())
 		}
 	case screenPlayNext:
 		m.normalizePlayNextOverlay()
 	case screenInfo:
 		m.infoMaybeAdjustScroll()
 	case screenSearch:
-		m.searchMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.searchMaybeAdjustScroll(m.effectiveQueueVisible())
 	case screenNetSearch:
 		if m.netSearch.screen == netSearchResults {
-			m.netSearchResultsMaybeAdjustScroll(m.effectivePlaylistVisible())
+			m.netSearchResultsMaybeAdjustScroll(m.effectiveQueueVisible())
 		}
 	case screenLyrics:
-		m.lyrics.scroll = min(m.lyrics.scroll, max(0, len(m.lyrics.lines)-m.effectivePlaylistVisible()))
+		m.lyrics.scroll = min(m.lyrics.scroll, max(0, len(m.lyrics.lines)-m.effectiveQueueVisible()))
 	default:
 		// The provider filter shows only in the provider pane.
 		switch {

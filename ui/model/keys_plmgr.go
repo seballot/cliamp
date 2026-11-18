@@ -125,37 +125,37 @@ func (m *Model) handlePlMgrListKey(msg tea.KeyPressMsg) tea.Cmd {
 		} else if count > 0 {
 			m.plManager.cursor = count - 1
 		}
-		m.plMgrListMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrListMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "down", "j":
 		if m.plManager.cursor < count-1 {
 			m.plManager.cursor++
 		} else if count > 0 {
 			m.plManager.cursor = 0
 		}
-		m.plMgrListMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrListMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "ctrl+x":
 		m.toggleExpandedView()
-		m.plMgrListMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrListMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "pgup", "ctrl+u":
 		if m.plManager.cursor > 0 {
-			visible := m.effectivePlaylistVisible()
+			visible := m.effectiveQueueVisible()
 			m.plManager.cursor -= min(m.plManager.cursor, visible)
 			m.plMgrListMaybeAdjustScroll(visible)
 		}
 	case "pgdown", "ctrl+d":
 		if m.plManager.cursor < count-1 {
-			visible := m.effectivePlaylistVisible()
+			visible := m.effectiveQueueVisible()
 			m.plManager.cursor = min(count-1, m.plManager.cursor+visible)
 			m.plMgrListMaybeAdjustScroll(visible)
 		}
 	case "home", "g":
 		m.plManager.cursor = 0
-		m.plMgrListMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrListMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "end", "G":
 		if count > 0 {
 			m.plManager.cursor = count - 1
 		}
-		m.plMgrListMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrListMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "enter", "l", "right":
 		realIdx := m.plMgrPlaylistRealIndex(m.plManager.cursor)
 		if realIdx >= 0 {
@@ -189,7 +189,7 @@ func (m *Model) handlePlMgrListKey(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		m.openFileBrowserForPlaylist(name)
 	case "w":
-		tracks := m.playlist.Tracks()
+		tracks := m.queue.Tracks()
 		if len(tracks) == 0 {
 			m.status.Warning("Queue is empty", statusTTLShort)
 			return nil
@@ -271,9 +271,9 @@ func (m *Model) handlePlMgrFilterKey(msg tea.KeyPressMsg) tea.Cmd {
 		if count > 0 {
 			m.plManager.cursor = 0
 			if m.plManager.screen == plMgrScreenList {
-				m.plMgrListMaybeAdjustScroll(m.effectivePlaylistVisible())
+				m.plMgrListMaybeAdjustScroll(m.effectiveQueueVisible())
 			} else {
-				m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+				m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 			}
 		}
 		return nil
@@ -313,7 +313,7 @@ func (m *Model) handlePlMgrTracksKey(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case "ctrl+h":
 		m.toggleAlbumHeadersManual()
-		m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 		return nil
 	case "/":
 		m.plManager.filtering = true
@@ -330,41 +330,41 @@ func (m *Model) handlePlMgrTracksKey(msg tea.KeyPressMsg) tea.Cmd {
 		} else if count > 0 {
 			m.plManager.cursor = count - 1
 		}
-		m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "down", "j":
 		if m.plManager.cursor < count-1 {
 			m.plManager.cursor++
 		} else if count > 0 {
 			m.plManager.cursor = 0
 		}
-		m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "[":
 		m.plMgrMoveTrack(-1)
 	case "]":
 		m.plMgrMoveTrack(1)
 	case "ctrl+x":
 		m.toggleExpandedView()
-		m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "pgup", "ctrl+u":
 		if m.plManager.cursor > 0 {
-			visible := m.effectivePlaylistVisible()
+			visible := m.effectiveQueueVisible()
 			m.plManager.cursor -= min(m.plManager.cursor, visible)
 			m.plMgrTracksMaybeAdjustScroll(visible)
 		}
 	case "pgdown", "ctrl+d":
 		if m.plManager.cursor < count-1 {
-			visible := m.effectivePlaylistVisible()
+			visible := m.effectiveQueueVisible()
 			m.plManager.cursor = min(count-1, m.plManager.cursor+visible)
 			m.plMgrTracksMaybeAdjustScroll(visible)
 		}
 	case "home", "g":
 		m.plManager.cursor = 0
-		m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "end", "G":
 		if count > 0 {
 			m.plManager.cursor = count - 1
 		}
-		m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "enter":
 		// Play the highlighted track; the rest of the playlist follows.
 		if len(m.plManager.tracks) > 0 {
@@ -387,7 +387,7 @@ func (m *Model) handlePlMgrTracksKey(msg tea.KeyPressMsg) tea.Cmd {
 		// marking, and unchecking stays on the row under review.
 		if !wasMarked && m.plManager.cursor < count-1 {
 			m.plManager.cursor++
-			m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+			m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 		}
 	case "a":
 		m.plMgrToggleMarkAll()
@@ -469,15 +469,15 @@ func (m *Model) plMgrLoadAndPlay(startIdx int) tea.Cmd {
 		localName = m.localProvider.Name()
 	}
 	m.setLoadedLocalPlaylist(localName, m.plManager.selPlaylist)
-	if startIdx < 0 || startIdx >= m.playlist.Len() {
+	if startIdx < 0 || startIdx >= m.queue.Len() {
 		startIdx = 0
 	}
-	m.plCursor = startIdx
-	m.playlist.SetIndex(startIdx)
+	m.queueCursor = startIdx
+	m.queue.SetIndex(startIdx)
 	m.adjustScroll()
 	m.plManager.visible = false
 	m.plMgrResetFilter()
-	m.focus = focusPlaylist
+	m.focus = focusQueue
 	return m.playCurrentTrack()
 }
 
@@ -520,34 +520,34 @@ func (m *Model) handlePlMgrDirsKey(msg tea.KeyPressMsg) tea.Cmd {
 		} else if count > 0 {
 			m.plManager.cursor = count - 1
 		}
-		m.plMgrDirsMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrDirsMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "down", "j":
 		if m.plManager.cursor < count-1 {
 			m.plManager.cursor++
 		} else if count > 0 {
 			m.plManager.cursor = 0
 		}
-		m.plMgrDirsMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrDirsMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "pgup", "ctrl+u":
 		if m.plManager.cursor > 0 {
-			visible := m.effectivePlaylistVisible()
+			visible := m.effectiveQueueVisible()
 			m.plManager.cursor -= min(m.plManager.cursor, visible)
 			m.plMgrDirsMaybeAdjustScroll(visible)
 		}
 	case "pgdown", "ctrl+d":
 		if m.plManager.cursor < count-1 {
-			visible := m.effectivePlaylistVisible()
+			visible := m.effectiveQueueVisible()
 			m.plManager.cursor = min(count-1, m.plManager.cursor+visible)
 			m.plMgrDirsMaybeAdjustScroll(visible)
 		}
 	case "home", "g":
 		m.plManager.cursor = 0
-		m.plMgrDirsMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrDirsMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "end", "G":
 		if count > 0 {
 			m.plManager.cursor = count - 1
 		}
-		m.plMgrDirsMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrDirsMaybeAdjustScroll(m.effectiveQueueVisible())
 	case "a":
 		// Open the file browser to pick a directory; the browser's D action
 		// adds the picked directory as a [[dir]] source to this playlist.
@@ -751,7 +751,7 @@ func (m *Model) plMgrFinishUndo(undo plManagerUndo) {
 		m.plMgrRestoreTracks(undo.tracks, undo.missingLocal)
 		m.plManager.marked = make(map[int]bool)
 		m.plMgrRecomputeFilter()
-		m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 	}
 	m.status.Showf(statusTTLDefault, "Restored %q", undo.name)
 }
@@ -908,7 +908,7 @@ func (m *Model) plMgrRemoveSelectedTracks() {
 	if m.plManager.cursor < 0 {
 		m.plManager.cursor = 0
 	}
-	m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+	m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 }
 
 func (m *Model) plMgrMoveTrack(delta int) {
@@ -927,7 +927,7 @@ func (m *Model) plMgrMoveTrack(delta int) {
 	m.plManager.cursor = to
 	m.plManager.marked = make(map[int]bool)
 	if m.plMgrSaveOrder(fmt.Sprintf("Reordered %q", m.plManager.selPlaylist)) {
-		m.plMgrTracksMaybeAdjustScroll(m.effectivePlaylistVisible())
+		m.plMgrTracksMaybeAdjustScroll(m.effectiveQueueVisible())
 	} else {
 		m.plMgrRestoreTracks(m.plManager.undo.tracks, m.plManager.undo.missingLocal)
 	}

@@ -22,9 +22,9 @@ func newQueueState(t *testing.T, state *StateProvider, ctrl *ControlProvider, pe
 
 func TestQueueReads(t *testing.T) {
 	state := &StateProvider{
-		PlaylistCount: func() int { return 3 },
-		CurrentIndex:  func() int { return 1 },
-		HasNext:       func() bool { return true },
+		QueueCount:   func() int { return 3 },
+		CurrentIndex: func() int { return 1 },
+		HasNext:      func() bool { return true },
 		QueueList: func() []QueueEntry {
 			return []QueueEntry{
 				{Track: Track{Title: "A", Artist: "X", Path: "/a.mp3"}, Index: 0, Queued: false},

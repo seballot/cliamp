@@ -59,15 +59,15 @@ func TestRadioFavoriteAfterBrowseLoadsPlaylist(t *testing.T) {
 			}
 			updated, _ := m.Update(navTracksLoadedMsg{tracks: tracks, gen: m.requests.nav})
 			m = updated.(Model)
-			if m.loadedPlaylist != "" || m.focus != focusPlaylist || m.navBrowser.visible {
+			if m.loadedPlaylist != "" || m.focus != focusQueue || m.navBrowser.visible {
 				t.Fatal("browse result did not enter the unsaved playback playlist")
 			}
 
 			// Playing and selected differ; current song metadata must not become
 			// the saved station name.
-			m.playlist.SetIndex(0)
+			m.queue.SetIndex(0)
 			m.player.(*playbackFakeEngine).playing = true
-			m.plCursor = 1
+			m.queueCursor = 1
 			if help := m.helpBar(commandModeMain); !strings.Contains(help, "Favorite") {
 				t.Fatalf("missing station action: %q", help)
 			}
@@ -91,19 +91,19 @@ func TestRadioFavoriteAfterBrowseLoadsPlaylist(t *testing.T) {
 					found = strings.Contains(list.Name, "Selected FM")
 				}
 			}
-			if !found || !m.playlistTrackFavorited(tracks[1]) {
+			if !found || !m.queueTrackFavorited(tracks[1]) {
 				t.Fatal("favorite missing from Radio pane or playback heart state")
 			}
-			if plain := ansi.Strip(m.renderPlaylist()); !strings.Contains(plain, "♥") || strings.Contains(plain, "★") {
+			if plain := ansi.Strip(m.renderQueue()); !strings.Contains(plain, "♥") || strings.Contains(plain, "★") {
 				t.Fatalf("station favorite did not render as a heart:\n%s", plain)
 			}
-			track, _ := m.playlist.Track(1)
+			track, _ := m.queue.Track(1)
 			if len(m.favSet) != 0 {
 				t.Fatal("radio favorite changed track favorites")
 			}
 
 			m.handleKey(tea.KeyPressMsg{Text: "f"})
-			if m.radioFavorites.Count() != 0 || m.playlistTrackFavorited(track) || radio.LoadFavorites().Count() != 0 {
+			if m.radioFavorites.Count() != 0 || m.queueTrackFavorited(track) || radio.LoadFavorites().Count() != 0 {
 				t.Fatal("second f did not remove the favorite")
 			}
 		})
@@ -113,7 +113,7 @@ func TestRadioFavoriteAfterBrowseLoadsPlaylist(t *testing.T) {
 func TestRadioFavoriteFollowsTrackAfterProviderSwitch(t *testing.T) {
 	m, p, tracks := radioFavoriteTestModel(t)
 	m.replacePlayerPlaylist(append(tracks, playlist.Track{Path: "/music/local.mp3", Title: "Local"}))
-	m.plCursor = 1
+	m.queueCursor = 1
 	// Change the provider pill without replacing the mixed playback queue.
 	other := commandsTestProvider{name: "Other"}
 	m.provider = other
@@ -125,12 +125,12 @@ func TestRadioFavoriteFollowsTrackAfterProviderSwitch(t *testing.T) {
 	if added, _, err := p.ToggleFavorite("c:1"); err != nil || added {
 		t.Fatalf("catalog toggle = %v, %v; want removal", added, err)
 	}
-	if m.playlistTrackFavorited(tracks[1]) {
+	if m.queueTrackFavorited(tracks[1]) {
 		t.Fatal("playback heart did not follow catalog removal")
 	}
 
-	m.plCursor = 2
-	if m.selectedPlaylistStarAction() != starUnavailable {
+	m.queueCursor = 2
+	if m.selectedQueueStarAction() != starUnavailable {
 		t.Fatal("ordinary mixed-queue track was treated as a radio station")
 	}
 	m.handleKey(tea.KeyPressMsg{Text: "f"})
@@ -189,7 +189,7 @@ func TestRadioRowFavoriteDispatch(t *testing.T) {
 			if got := hearts.IsFavorited(tracks[0].Path); got != tc.wantTrack {
 				t.Fatalf("track favorite = %v, want %v", got, tc.wantTrack)
 			}
-			if got := m.playlistTrackFavorited(tracks[0]); got != (tc.wantStation || tc.wantTrack) {
+			if got := m.queueTrackFavorited(tracks[0]); got != (tc.wantStation || tc.wantTrack) {
 				t.Fatalf("row heart = %v, want %v", got, tc.wantStation || tc.wantTrack)
 			}
 			if tc.fail && (m.status.kind != feedbackError || !strings.Contains(m.status.text, "Favorite failed")) {
@@ -200,7 +200,7 @@ func TestRadioRowFavoriteDispatch(t *testing.T) {
 			}
 
 			m.handleKey(tea.KeyPressMsg{Text: "f"})
-			if m.radioFavorites.Count() != 0 || hearts.Count() != 0 || m.playlistTrackFavorited(tracks[0]) {
+			if m.radioFavorites.Count() != 0 || hearts.Count() != 0 || m.queueTrackFavorited(tracks[0]) {
 				t.Fatal("second f did not remove the favorite")
 			}
 		})
@@ -263,7 +263,7 @@ func TestIPCBookmarkStationRowMatchesReportedBookmark(t *testing.T) {
 func TestRadioFavoriteWriteFailure(t *testing.T) {
 	m, _, tracks := radioFavoriteTestModel(t)
 	m.replacePlayerPlaylist(tracks)
-	before := m.renderPlaylist()
+	before := m.renderQueue()
 	// Prevent the atomic writer from replacing the target with a regular file.
 	if err := os.Mkdir(filepath.Join(os.Getenv("CLIAMP_CONFIG_DIR"), "radio_favorites.toml"), 0o755); err != nil {
 		t.Fatal(err)
@@ -271,10 +271,10 @@ func TestRadioFavoriteWriteFailure(t *testing.T) {
 	if cmd := m.handleKey(tea.KeyPressMsg{Text: "f"}); cmd != nil {
 		t.Fatal("failed write requested a list refresh")
 	}
-	if m.radioFavorites.Count() != 0 || m.playlistTrackFavorited(tracks[0]) {
+	if m.radioFavorites.Count() != 0 || m.queueTrackFavorited(tracks[0]) {
 		t.Fatal("failed write published favorite state")
 	}
-	if m.renderPlaylist() != before {
+	if m.renderQueue() != before {
 		t.Fatal("failed write changed the playlist rows")
 	}
 	if m.status.kind != feedbackError || !strings.Contains(m.status.text, "Favorite failed") {
@@ -327,7 +327,7 @@ func TestRadioWrapperFavoritesKeepStationIdentity(t *testing.T) {
 			}
 			updated, _ := m.Update(msg)
 			m = updated.(Model)
-			if m.selectedPlaylistStarAction() != starRadioFavorite {
+			if m.selectedQueueStarAction() != starRadioFavorite {
 				t.Fatal("resolved station lost the playback favorite action")
 			}
 			m.handleKey(tea.KeyPressMsg{Text: "f"})
@@ -336,7 +336,7 @@ func TestRadioWrapperFavoritesKeepStationIdentity(t *testing.T) {
 				t.Fatalf("saved %+v; want original wrapper station %+v", saved, station)
 			}
 			for _, track := range msg.tracks {
-				if !m.playlistTrackFavorited(track) {
+				if !m.queueTrackFavorited(track) {
 					t.Fatal("resolved endpoint did not show the station favorite")
 				}
 			}
@@ -474,7 +474,7 @@ func TestRadioProviderToggleRejectsDelayedPlaybackRefresh(t *testing.T) {
 	}
 	m.replaceProviderLists(lists)
 	m.replacePlayerPlaylist(tracks)
-	m.plCursor = 1
+	m.queueCursor = 1
 	m.handleKey(tea.KeyPressMsg{Text: "f"})
 	// A pending notification must not undo a newer provider-pane mutation.
 	delayed := fetchPlaylistsCmd(p, m.requests.provider)()
@@ -604,12 +604,12 @@ func TestRadioFavoriteHeartKeepsLayout(t *testing.T) {
 			if tc.saved {
 				m.loadedPlaylist = "Saved"
 			}
-			before := m.renderPlaylist()
+			before := m.renderQueue()
 			cols := m.markerColumns()
 			if _, _, err := p.ToggleFavorite("c:0"); err != nil {
 				t.Fatal(err)
 			}
-			after := m.renderPlaylist()
+			after := m.renderQueue()
 			if got := strings.Contains(ansi.Strip(after), "♥"); got != tc.want {
 				t.Errorf("heart shown = %v, want %v", got, tc.want)
 			}
@@ -631,7 +631,7 @@ func TestRadioFavoriteHeartKeepsLayout(t *testing.T) {
 			if _, _, err := p.ToggleFavorite("c:0"); err != nil {
 				t.Fatal(err)
 			}
-			if m.renderPlaylist() != before {
+			if m.renderQueue() != before {
 				t.Error("removing the favorite did not restore the rows")
 			}
 		})
@@ -737,7 +737,7 @@ func TestRadioPlaybackFavoritePreservesPendingTrackLoad(t *testing.T) {
 	trackGen := m.requests.tracks
 	// Leave the provider pane while its result is still pending.
 	m.handleKey(tea.KeyPressMsg{Code: tea.KeyEscape})
-	if m.focus != focusPlaylist {
+	if m.focus != focusQueue {
 		t.Fatal("did not return to playback")
 	}
 	updated, cmd := m.Update(tea.KeyPressMsg{Text: "f"})
@@ -757,7 +757,7 @@ func TestRadioPlaybackFavoritePreservesPendingTrackLoad(t *testing.T) {
 	}
 	updated, _ = m.Update(pending())
 	m = updated.(Model)
-	track, ok := m.playlist.Track(0)
+	track, ok := m.queue.Track(0)
 	if m.provPane.loading || !ok || track.Path != tracks[1].Path {
 		t.Fatal("original track load did not complete")
 	}
@@ -769,7 +769,7 @@ func TestTrackFavoriteHelpRequiresPlaylistFocus(t *testing.T) {
 		focus   focusArea
 		enabled bool
 	}{
-		{"playlist", focusPlaylist, true},
+		{"playlist", focusQueue, true},
 		{"provider", focusProvider, false},
 		{"volume", focusVolume, false},
 	} {
@@ -789,7 +789,7 @@ func TestTrackFavoriteHelpRequiresPlaylistFocus(t *testing.T) {
 			if found != tc.enabled {
 				t.Fatalf("track favorite keymap visibility = %v, want %v", found, tc.enabled)
 			}
-			if tc.focus == focusPlaylist {
+			if tc.focus == focusQueue {
 				m.handleKey(tea.KeyPressMsg{Text: "f"})
 				if !hearts.IsFavorited(local.Path) {
 					t.Fatal("track favorite handler disagrees with help")
@@ -848,12 +848,12 @@ func TestRadioFavoriteKeyFollowsDisplayedState(t *testing.T) {
 				if _, err := remote.Toggle(station); err != nil {
 					t.Fatal(err)
 				}
-				if m.playlistTrackFavorited(tracks[0]) != remove {
+				if m.queueTrackFavorited(tracks[0]) != remove {
 					t.Fatal("test requires the displayed state to remain stale")
 				}
 				updated, cmd := m.Update(tea.KeyPressMsg{Text: "f"})
 				m = updated.(Model)
-				if cmd != nil || m.playlistTrackFavorited(tracks[0]) == remove || radio.LoadFavorites().Contains(station.URL) == remove {
+				if cmd != nil || m.queueTrackFavorited(tracks[0]) == remove || radio.LoadFavorites().Contains(station.URL) == remove {
 					t.Fatal("f did not apply the displayed add/remove intent")
 				}
 				wantStatus := "Favorited"

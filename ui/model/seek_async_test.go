@@ -130,7 +130,7 @@ func TestYTDLSeekEntryPointsRunAsync(t *testing.T) {
 			pl := playlist.New()
 			pl.Add(track)
 			pl.SetIndex(0)
-			m := Model{player: eng, playlist: pl, playingTrack: track, playingTrackActive: true}
+			m := Model{player: eng, queue: pl, playingTrack: track, playingTrackActive: true}
 
 			cmd := tt.invoke(&m)
 			if len(eng.seekCalls) != 0 || len(eng.seekYTDLCalls) != 0 {
@@ -192,7 +192,7 @@ func TestYTDLRelativeSeeksAccumulate(t *testing.T) {
 			pl := playlist.New()
 			pl.Add(track)
 			pl.SetIndex(0)
-			m := Model{player: eng, playlist: pl, playingTrack: track, playingTrackActive: true}
+			m := Model{player: eng, queue: pl, playingTrack: track, playingTrackActive: true}
 
 			var cmd tea.Cmd
 			for _, seek := range tt.seeks {
@@ -252,7 +252,7 @@ func TestPreviousDuringRewindGoesBack(t *testing.T) {
 			pl := playlist.New()
 			pl.Add(first, video)
 			pl.SetIndex(1)
-			m := Model{player: eng, playlist: pl, playingTrack: video, playingTrackActive: true, playingTrackStarted: true}
+			m := Model{player: eng, queue: pl, playingTrack: video, playingTrackActive: true, playingTrackStarted: true}
 
 			tc.presses[0](t, &m)
 			if !m.seek.active || pl.Index() != 1 {

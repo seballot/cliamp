@@ -16,8 +16,8 @@ func (m *Model) updateSearch() {
 		return
 	}
 	type match struct{ idx, score int }
-	matches := make([]match, 0, m.playlist.Len())
-	for i, t := range m.playlist.Tracks() {
+	matches := make([]match, 0, m.queue.Len())
+	for i, t := range m.queue.Tracks() {
 		if score, ok := fuzzy.Match(m.search.query, t.DisplayName()); ok {
 			matches = append(matches, match{i, score})
 		}

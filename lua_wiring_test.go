@@ -179,7 +179,7 @@ func TestLuaStateProviderReadsPublishedState(t *testing.T) {
 		{"shuffle", sp.Shuffle(), true},
 		{"eq bands", sp.EQBands(), [10]float64{3}},
 		{"track", sp.CurrentTrack(), luaplugin.Track{Title: "B", Live: true}},
-		{"count", sp.PlaylistCount(), 2},
+		{"count", sp.QueueCount(), 2},
 		{"index", sp.CurrentIndex(), 1},
 		{"has next", sp.HasNext(), true},
 		{"queue", sp.QueueList(), queue},

@@ -60,7 +60,7 @@ func newCustomStreamModel(player *playbackFakeEngine) Model {
 	p.SetIndex(0)
 	m := Model{
 		player:    player,
-		playlist:  p,
+		queue:     p,
 		provider:  prov,
 		providers: []provider.Entry{{Key: "spotify", Name: "Spotify", Provider: prov}},
 		vis:       ui.NewVisualizer(float64(player.SampleRate())),
@@ -258,7 +258,7 @@ func TestPreloadNextWaitsForLeadTimeOnSourceResolverURI(t *testing.T) {
 				{Title: "Next", Path: "qobuz://track/2", DurationSecs: 60},
 			})
 			p.SetIndex(0)
-			m := Model{player: sourceResolverEngine{player, []string{"qobuz://track/"}}, playlist: p}
+			m := Model{player: sourceResolverEngine{player, []string{"qobuz://track/"}}, queue: p}
 
 			cmd := m.preloadNext()
 			if gotPreload := cmd != nil; gotPreload != tt.wantPreload {
@@ -274,7 +274,7 @@ func TestPreloadNextWaitsForLeadTimeOnSourceResolverURI(t *testing.T) {
 func TestStreamPlayedNeedsAuthAsksForSignIn(t *testing.T) {
 	player := &playbackFakeEngine{}
 	m := newCustomStreamModel(player)
-	track, _ := m.playlist.Current()
+	track, _ := m.queue.Current()
 	m.playTrack(track)
 
 	updated, _ := m.Update(streamPlayedMsg{
@@ -305,7 +305,7 @@ func TestRefusedSpotifyStartIsNotRetried(t *testing.T) {
 
 	refused := errors.New("custom streamer: spotify: Spotify refused the audio key for this track: failed retrieving audio key: failed retrieving aes key with code 1")
 	m := newCustomStreamModel(&playbackFakeEngine{playErr: refused, preloadErr: refused})
-	track, _ := m.playlist.Current()
+	track, _ := m.queue.Current()
 
 	starts := 0
 	pending := []tea.Cmd{m.playTrack(track)}
@@ -493,8 +493,8 @@ func TestReloadedResolverTracksStayOffUpdate(t *testing.T) {
 						player := &playbackFakeEngine{seekable: true, duration: 200 * time.Second}
 						m := newCustomStreamModel(player)
 						m.player = sourceResolverEngine{player, prefixes}
-						m.playlist.Replace([]playlist.Track{track})
-						m.playlist.SetIndex(0)
+						m.queue.Replace([]playlist.Track{track})
+						m.queue.SetIndex(0)
 						if action.resume {
 							m.SetResume(track.Path, 30)
 						}

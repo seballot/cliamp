@@ -60,7 +60,7 @@ p:on("playback.stop", function() p:publish("stopped", {}) end)`
 		pl := playlist.New()
 		pl.Add(playlist.Track{Path: "/music/first.flac"}, last)
 		pl.SetIndex(1)
-		m := Model{player: &playbackFakeEngine{playing: true}, playlist: pl, luaMgr: mgr}
+		m := Model{player: &playbackFakeEngine{playing: true}, queue: pl, luaMgr: mgr}
 		m.setPlaybackTrack(last)
 		return m
 	}
