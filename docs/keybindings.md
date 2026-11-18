@@ -30,7 +30,7 @@ entries, a status message tells you which key to press.
 
 | Key | Action |
 |---|---|
-| `Tab` | Cycle settings focus: Playlist / Source / Volume / EQ / Shuffle / Repeat / Speed / Playlist (help bar: **Cycle settings**) |
+| `Tab` | Cycle settings focus from Playlist through the visible settings in reading order, then back to Playlist (help bar: **Cycle settings**) |
 | `Shift+Tab` | Cycle the same controls in reverse |
 | `j` `k` / `Up` `Down` | Move playlist cursor (wraps); see focused settings below for control actions |
 | `PageUp` `PageDown` / `Ctrl+U` `Ctrl+D` | Scroll playlist/file browser by page (outside text input) |
@@ -40,22 +40,21 @@ entries, a status message tells you which key to press.
 | `h` `l` | Adjust the focused setting (EQ: select band) |
 | `Enter` | Play selected track |
 | `/` | Filter the playlist (navigate results with `↑` `↓` / `Ctrl+N` `Ctrl+P`; `Ctrl+U` clears the query; `Tab` toggles play next for the selected result) |
-| `Ctrl+X` | Expand/collapse queue panel |
+| `Ctrl+X` | Expand/collapse the frame to the full terminal size (remembered in `expanded`) |
 | `Ctrl+Z` | Undo last queue change |
 | `o` | File browser |
 | `b` `Esc` | Back to the active provider |
 
-In full and compact playback layouts, the first `Tab` from the playlist focuses
-Source (`SRC`); `Shift+Tab` starts at Speed when it is visible. Source is skipped
-when only one provider is available. Closing Settings skips EQ and Speed. A
-short sidebar can omit Shuffle and Repeat together, removing both Tab stops.
-Metadata is read-only and never a separate Tab stop.
+On the playback screen, the first `Tab` from the playlist focuses Source
+(`SRC`); `Shift+Tab` starts at the last visible setting: Speed in the pane,
+Volume on one stacked row, Repeat on two. Source is skipped when only one
+provider is available. A short sidebar puts Shuffle, Repeat, and Speed on one
+row, and a shorter one omits that row, removing its three Tab stops. Metadata is read-only and never a separate
+Tab stop.
 
-In the minimal (`40x10`) and simplified layouts, `Tab` and `Shift+Tab` keep
-playback focus on the playlist, even though simplified mode hides the list.
-`Esc` still opens the separate provider-list view. In the minimal layout, the
-help bar then shows the provider keys. Below `40x10`, only a resize message is
-shown.
+In the simplified layout, `Tab` and `Shift+Tab` keep playback focus on the
+playlist, even though simplified mode hides the list. `Esc` still opens the
+separate provider-list view. Below `40x10`, only a resize message is shown.
 
 ### Focused Settings
 

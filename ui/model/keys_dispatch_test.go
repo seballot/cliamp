@@ -165,7 +165,8 @@ func TestYouTubeShortcutCycles(t *testing.T) {
 	}{
 		{name: "full", width: 100, height: 30, pills: true},
 		{name: "simplified", width: 100, height: 30, simplified: true},
-		{name: "minimal", width: 40, height: 10},
+		{name: "narrow", width: 40, height: 16, pills: true},
+		{name: "short", width: 40, height: 10},
 	}
 	tests := []struct {
 		name       string

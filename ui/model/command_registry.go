@@ -346,7 +346,7 @@ var commandRegistry = []commandSpec{
 		Keys:     []string{"alt+e"},
 		KeyLabel: "Alt+E",
 		Label:    "Previous EQ preset",
-		Enabled:  func(m Model) bool { return !m.simplified && m.layout.tier != layoutMinimal },
+		Enabled:  func(m Model) bool { return !m.simplified },
 		Keymap:   true,
 	},
 	{
@@ -433,7 +433,7 @@ var commandRegistry = []commandSpec{
 		Mode:     commandModeMain,
 		Keys:     []string{"ctrl+x"},
 		KeyLabel: "Ctrl+x",
-		Label:    "Expand queue panel",
+		Label:    "Expand panel (use full terminal size)",
 		Enabled:  func(m Model) bool { return !m.simplified },
 		Keymap:   true,
 	},
@@ -457,7 +457,7 @@ var commandRegistry = []commandSpec{
 		KeyLabel: "Ctrl+b",
 		Label:    "Toggle the settings pane",
 		Enabled: func(m Model) bool {
-			return !m.simplified && m.layout.tier == layoutFull
+			return !m.simplified && m.layout.panelWidth >= twoColumnMinWidth
 		},
 		Keymap: true,
 	},

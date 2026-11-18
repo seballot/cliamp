@@ -70,11 +70,6 @@ func TestPreviousEQPresetRegistryEntry(t *testing.T) {
 			if !command.enabled(m) {
 				t.Fatal("previous EQ preset command is disabled in a full model")
 			}
-			m.layout.tier = layoutMinimal
-			if command.enabled(m) {
-				t.Fatal("previous EQ preset command is enabled in minimal layout")
-			}
-			m.layout.tier = layoutFull
 			m.simplified = true
 			if command.enabled(m) {
 				t.Fatal("previous EQ preset command is enabled in simplified mode")
