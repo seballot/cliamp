@@ -42,7 +42,7 @@ func armedModel() (Model, *playbackFakeEngine) {
 func TestUpdateDropsStalePreload(t *testing.T) {
 	// queueC puts c.mp3 in the play-next list, so c.mp3 is next and armed.
 	queueC := func(m *Model, _ *playbackFakeEngine) {
-		m.playlist.Queue(2)
+		m.playlist.AddPlayNext(2)
 		m.preloadFor = "c.mp3"
 	}
 	for _, tc := range []struct {
@@ -56,7 +56,7 @@ func TestUpdateDropsStalePreload(t *testing.T) {
 		{name: "IPC playnext.clear", setup: queueC, msg: v2Request(t, "playnext.clear", ipc.Request{}), wantNext: "b.mp3"},
 		{name: "IPC playnext.move", setup: func(m *Model, player *playbackFakeEngine) {
 			queueC(m, player)
-			m.playlist.Queue(1)
+			m.playlist.AddPlayNext(1)
 		}, msg: v2Request(t, "playnext.move", ipc.Request{Index: 0, To: 1}), wantNext: "b.mp3"},
 		{name: "IPC playnext.remove while paused", setup: func(m *Model, player *playbackFakeEngine) {
 			queueC(m, player)
@@ -64,7 +64,7 @@ func TestUpdateDropsStalePreload(t *testing.T) {
 		}, msg: v2Request(t, "playnext.remove", ipc.Request{Index: 0}), wantNext: "b.mp3"},
 		{name: "queue overlay remove", setup: func(m *Model, player *playbackFakeEngine) {
 			queueC(m, player)
-			m.queue.visible = true
+			m.playNext.visible = true
 		}, msg: tea.KeyPressMsg{Text: "d", Code: 'd'}, wantNext: "b.mp3"},
 		{name: "IPC repeat one", msg: v2Request(t, "repeat", ipc.Request{Name: "one"}), wantNext: "a.mp3"},
 		{name: "IPC enqueue a later track", msg: v2Request(t, "queue.enqueue", ipc.Request{Index: 2}), wantNext: "c.mp3"},

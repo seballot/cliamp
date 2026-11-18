@@ -387,7 +387,7 @@ var unlistedKeys = map[string][]string{
 	"handleProvPillKey":             {"left", "h", "right", "l", "space"},
 	"handleProvSearchKey":           {"ctrl+n", "ctrl+p"},
 	"handleProviderPaneKey":         {"y", "Y", "n", "space", "o", "ctrl+j", "ctrl+f", "S", "P", "J", "E", "B", "C", "X", "M", "Q", "T", "K", "U", "L", "R", "O"},
-	"handleQueueKey":                {"A"},
+	"handlePlayNextKey":             {"A"},
 	"handleSearchKey":               {"ctrl+n", "ctrl+p"},
 	"handleSpeedKey":                {"l", "h"},
 	"handleSearchOverlayResultsKey": {"ctrl+p", "ctrl+n", "a", "q"},

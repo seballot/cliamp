@@ -491,8 +491,8 @@ func TestNavTrackListQueueStartsQueuedTrackWhenStopped(t *testing.T) {
 	if m.plCursor != 2 {
 		t.Fatalf("plCursor = %d, want 2", m.plCursor)
 	}
-	if p.QueueLen() != 0 {
-		t.Fatalf("QueueLen() = %d, want 0 after starting queued track", p.QueueLen())
+	if p.PlayNextLen() != 0 {
+		t.Fatalf("PlayNextLen() = %d, want 0 after starting queued track", p.PlayNextLen())
 	}
 }
 
@@ -505,12 +505,12 @@ func TestTogglePlayPauseRestartsQueuedCurrentTrack(t *testing.T) {
 		{Title: "Queued", Path: "queued.mp3", DurationSecs: 180},
 	})
 	p.SetIndex(0)
-	p.Queue(2)
+	p.AddPlayNext(2)
 	if track, ok := p.Next(); !ok || track.Title != "Queued" {
 		t.Fatalf("Next() = (%q,%t), want (\"Queued\",true)", track.Title, ok)
 	}
-	if !p.CurrentIsQueued() {
-		t.Fatal("CurrentIsQueued() = false, want true")
+	if !p.CurrentIsPlayNext() {
+		t.Fatal("CurrentIsPlayNext() = false, want true")
 	}
 
 	m := Model{
@@ -680,7 +680,7 @@ func TestPlayCurrentTrackUnplayableUsesSelectionOrder(t *testing.T) {
 		{Title: "Replacement", Path: "https://example.com/replacement", Stream: true},
 	})
 	p.SetIndex(1)
-	p.Queue(0)
+	p.AddPlayNext(0)
 
 	m := Model{
 		player:   player,
@@ -706,8 +706,8 @@ func TestPlayCurrentTrackUnplayableUsesSelectionOrder(t *testing.T) {
 	if m.status.kind != feedbackWarning {
 		t.Fatalf("status.kind = %v, want %v", m.status.kind, feedbackWarning)
 	}
-	if p.QueueLen() != 1 {
-		t.Fatalf("QueueLen() = %d, want 1", p.QueueLen())
+	if p.PlayNextLen() != 1 {
+		t.Fatalf("PlayNextLen() = %d, want 1", p.PlayNextLen())
 	}
 }
 
@@ -1384,8 +1384,8 @@ func TestQueueToggleRearmsGaplessPreload(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("handleKey(a) = nil, want preload command")
 	}
-	if got := p.QueueLen(); got != 1 {
-		t.Fatalf("QueueLen() = %d, want 1", got)
+	if got := p.PlayNextLen(); got != 1 {
+		t.Fatalf("PlayNextLen() = %d, want 1", got)
 	}
 	if player.clearPreloadCalls != 1 {
 		t.Fatalf("ClearPreload calls = %d, want 1", player.clearPreloadCalls)
@@ -1610,7 +1610,7 @@ func TestNextKeyPlaysQueuedTrackOnce(t *testing.T) {
 			name:   "search result queued after the last row",
 			tracks: []playlist.Track{a, b},
 			start:  1,
-			queue:  func(m *Model) { m.queueTrackNext(x) },
+			queue:  func(m *Model) { m.playNextTrack(x) },
 			want:   []string{"x.mp3", ""},
 		},
 		{

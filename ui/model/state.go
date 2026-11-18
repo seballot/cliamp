@@ -177,8 +177,8 @@ type keymapOverlay struct {
 	entries []keymapEntry // core keys + plugin keys, rebuilt on openKeymap
 }
 
-// queueOverlay holds state for the queue manager overlay.
-type queueOverlay struct {
+// playNextOverlay holds state for the queue manager overlay.
+type playNextOverlay struct {
 	visible bool
 	cursor  int
 	scroll  int

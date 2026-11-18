@@ -664,7 +664,7 @@ func TestOverlayQCloses(t *testing.T) {
 		{name: "playlist manager list", setup: func(m *Model) {
 			m.plManager = plManagerState{visible: true, screen: plMgrScreenList}
 		}, isOpen: func(m *Model) bool { return m.plManager.visible }},
-		{name: "queue", setup: func(m *Model) { m.queue.visible = true }, isOpen: func(m *Model) bool { return m.queue.visible }},
+		{name: "queue", setup: func(m *Model) { m.playNext.visible = true }, isOpen: func(m *Model) bool { return m.playNext.visible }},
 		{name: "info", setup: func(m *Model) { m.info.visible = true }, isOpen: func(m *Model) bool { return m.info.visible }},
 		{name: "lyrics", setup: func(m *Model) { m.lyrics.visible = true }, isOpen: func(m *Model) bool { return m.lyrics.visible }},
 		{name: "device picker", setup: func(m *Model) { m.devicePicker.visible = true }, isOpen: func(m *Model) bool { return m.devicePicker.visible }},

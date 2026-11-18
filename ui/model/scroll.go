@@ -184,8 +184,8 @@ func (m *Model) clampActiveScrollState() {
 		} else if m.searchOverlay.screen == searchOverlayPlaylist {
 			m.searchOverlayPlaylistMaybeAdjustScroll(m.effectivePlaylistVisible())
 		}
-	case screenQueue:
-		m.normalizeQueueOverlay()
+	case screenPlayNext:
+		m.normalizePlayNextOverlay()
 	case screenInfo:
 		m.infoMaybeAdjustScroll()
 	case screenSearch:

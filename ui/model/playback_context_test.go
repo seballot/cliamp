@@ -104,7 +104,7 @@ func TestBrowserPlaybackContextSurvivesQueuedAlbum(t *testing.T) {
 
 			m.navBrowser.tracks = otherAlbum
 			m.handleNavBrowserKey(tea.KeyPressMsg{Text: "q"})
-			if m.playlist.QueueLen() != 1 {
+			if m.playlist.PlayNextLen() != 1 {
 				t.Fatal("browser q did not queue the interlude")
 			}
 			saved.check(t, album, 1)
@@ -241,14 +241,14 @@ func TestSetResumeSaverPreservesPlaylistState(t *testing.T) {
 	// Queue the last two tracks of the shuffled order, so that neither is
 	// next in order and the four Next calls below do not reach a reshuffle.
 	order, _ := pl.OrderWindow(0, 4)
-	pl.Queue(order[3])
-	pl.Queue(order[2])
+	pl.AddPlayNext(order[3])
+	pl.AddPlayNext(order[2])
 	pl.Next()
 	want := playlist.New()
 	want.Restore(pl.Snapshot())
 	m := Model{playlist: pl}
 	m.SetResumeSaver(func(playlist.Track, int, []playlist.Track, int) {})
-	if pl.Index() != want.Index() || !pl.CurrentIsQueued() || !pl.Shuffled() || pl.Repeat() != playlist.RepeatAll || pl.QueueLen() != 1 {
+	if pl.Index() != want.Index() || !pl.CurrentIsPlayNext() || !pl.Shuffled() || pl.Repeat() != playlist.RepeatAll || pl.PlayNextLen() != 1 {
 		t.Fatal("enabling context tracking changed playback state")
 	}
 	for range 4 {

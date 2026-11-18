@@ -184,7 +184,7 @@ func (m *Model) recomputeLayout() {
 	// screen only: the denser tiers and the list-focused layouts have no room
 	// for a column and draw their own controls.
 	screen := m.activeScreen()
-	if layout.tier == layoutFull && !contentFirst && !simplified && (screen == screenMain || screen == screenQueue) {
+	if layout.tier == layoutFull && !contentFirst && !simplified && (screen == screenMain || screen == screenPlayNext) {
 		if m.hideSettings {
 			layout.closedSettings = true
 		} else {

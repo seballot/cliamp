@@ -110,7 +110,7 @@ func TestPlayNextToggleContextHelpLabel(t *testing.T) {
 	if got := registryContextLabel(t, commandModeMain, "a", wantBase, m); got != "Mark play next" {
 		t.Fatalf("unmarked = %q", got)
 	}
-	m.playlist.Queue(1)
+	m.playlist.AddPlayNext(1)
 	if got := registryContextLabel(t, commandModeMain, "a", wantBase, m); got != "Unmark play next" {
 		t.Fatalf("marked = %q", got)
 	}

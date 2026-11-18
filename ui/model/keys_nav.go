@@ -573,9 +573,9 @@ func (m *Model) handleNavTrackListKey(msg tea.KeyPressMsg) tea.Cmd {
 		if index := m.navBrowser.cursor; index >= 0 && index < len(tracks) {
 			t := tracks[index]
 			newIdx := m.appendTracks(t)
-			m.playlist.Queue(newIdx)
-			m.normalizeQueueOverlay()
-			m.status.Showf(statusTTLMedium, "Queued: %s", t.DisplayName())
+			m.playlist.AddPlayNext(newIdx)
+			m.normalizePlayNextOverlay()
+			m.status.Showf(statusTTLMedium, "Play next: %s", t.DisplayName())
 			if !m.player.IsPlaying() {
 				return m.nextTrack()
 			}

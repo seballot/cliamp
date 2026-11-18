@@ -38,7 +38,7 @@ func (m *Model) replacePlaylistAt(tracks []playlist.Track, start int) {
 		tracks = playlist.WithPlaybackContext(tracks)
 	}
 	m.playlist.ReplaceAt(tracks, start)
-	m.normalizeQueueOverlay()
+	m.normalizePlayNextOverlay()
 }
 
 func trackIndexByPath(tracks []playlist.Track, path string) int {
@@ -140,7 +140,7 @@ func (m *Model) advanceToNext() (playlist.Track, bool) {
 	} else {
 		track, ok = m.playlist.Next()
 	}
-	m.normalizeQueueOverlay()
+	m.normalizePlayNextOverlay()
 	if !ok {
 		m.endQueue()
 		return playlist.Track{}, false
@@ -278,14 +278,14 @@ func (m *Model) appendAlbum(album playlist.Track, tracks []playlist.Track) tea.C
 	return nil
 }
 
-// queueAlbumNext queues a whole album to play after the current track, keeping
+// playNextAlbum queues a whole album to play after the current track, keeping
 // its running order.
-func (m *Model) queueAlbumNext(album playlist.Track, tracks []playlist.Track) tea.Cmd {
+func (m *Model) playNextAlbum(album playlist.Track, tracks []playlist.Track) tea.Cmd {
 	idx := m.appendTracks(tracks...)
 	for i := range tracks {
-		m.playlist.Queue(idx + i)
+		m.playlist.AddPlayNext(idx + i)
 	}
-	m.status.Showf(statusTTLMedium, "Queued album: %s (%d tracks)", album.Title, len(tracks))
+	m.status.Showf(statusTTLMedium, "Play next album: %s (%d tracks)", album.Title, len(tracks))
 	if !m.player.IsPlaying() {
 		return m.nextTrack()
 	}
@@ -331,12 +331,12 @@ func (m *Model) cancelSearchOverlayRequest() {
 	}
 }
 
-// queueTrackNext adds a track to the playlist and queues it to play next.
-func (m *Model) queueTrackNext(track playlist.Track) tea.Cmd {
+// playNextTrack adds a track to the playlist and queues it to play next.
+func (m *Model) playNextTrack(track playlist.Track) tea.Cmd {
 	idx := m.appendTracks(track)
-	m.playlist.Queue(idx)
-	m.normalizeQueueOverlay()
-	m.status.Showf(statusTTLMedium, "Queued: %s", track.DisplayName())
+	m.playlist.AddPlayNext(idx)
+	m.normalizePlayNextOverlay()
+	m.status.Showf(statusTTLMedium, "Play next: %s", track.DisplayName())
 	if !m.player.IsPlaying() {
 		return m.nextTrack()
 	}
@@ -385,7 +385,7 @@ func (m *Model) undoPlaylistMutation() tea.Cmd {
 		}
 	}
 	m.playlist.Restore(undo.snapshot)
-	m.normalizeQueueOverlay()
+	m.normalizePlayNextOverlay()
 	m.playlistUndo = playlistUndo{}
 	if m.plCursor >= m.playlist.Len() {
 		m.plCursor = max(0, m.playlist.Len()-1)
@@ -604,7 +604,7 @@ func (m *Model) togglePlayPause() tea.Cmd {
 		return nil
 	}
 	if !m.player.IsPlaying() {
-		if m.playlist.CurrentIsQueued() {
+		if m.playlist.CurrentIsPlayNext() {
 			return m.playCurrentLogicalTrack()
 		}
 		return m.playCurrentTrack()

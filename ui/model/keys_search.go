@@ -260,10 +260,10 @@ func (m *Model) handleSearchKey(msg tea.KeyPressMsg) tea.Cmd {
 		// Toggle queue for selected search result.
 		if len(m.search.results) > 0 && m.search.cursor < len(m.search.results) {
 			idx := m.search.results[m.search.cursor]
-			if !m.playlist.Dequeue(idx) {
-				m.playlist.Queue(idx)
+			if !m.playlist.RemovePlayNext(idx) {
+				m.playlist.AddPlayNext(idx)
 			}
-			m.normalizeQueueOverlay()
+			m.normalizePlayNextOverlay()
 			return m.rearmStalePreload()
 		}
 
@@ -376,7 +376,7 @@ func (m *Model) handleNetSearchResultsKey(msg tea.KeyPressMsg) tea.Cmd {
 		if count > 0 && !m.netSearch.loading {
 			track := m.netSearch.results[m.netSearch.cursor]
 			m.closeNetSearch()
-			return m.queueTrackNext(track)
+			return m.playNextTrack(track)
 		}
 	case "f":
 		if count > 0 && !m.netSearch.loading {

@@ -82,27 +82,27 @@ type ThemeInfo struct {
 
 // TrackInfo is the track metadata in a status response.
 type TrackInfo struct {
-	Title         string            `json:"title,omitempty"`
-	Artist        string            `json:"artist,omitempty"`
-	Album         string            `json:"album,omitempty"`
-	Genre         string            `json:"genre,omitempty"`
-	Path          string            `json:"path"`
-	AlbumArtURL   string            `json:"album_art_url,omitempty"`
-	Year          int               `json:"year,omitempty"`
-	TrackNumber   int               `json:"track_number,omitempty"`
-	DurationSecs  int               `json:"duration_secs,omitempty"`
-	Index         int               `json:"index,omitempty"`
-	QueuePosition int               `json:"queue_position,omitempty"`
-	Stream        bool              `json:"stream,omitempty"`
-	StreamTitle   string            `json:"stream_title,omitempty"`
-	Station       string            `json:"station,omitempty"`
-	Realtime      bool              `json:"realtime,omitempty"`
-	Restricted    bool              `json:"restricted,omitempty"`
-	Feed          bool              `json:"feed,omitempty"`
-	Bookmark      bool              `json:"bookmark,omitempty"`
-	Unplayable    bool              `json:"unplayable,omitempty"`
-	DirSourced    bool              `json:"dir_sourced,omitempty"`
-	ProviderMeta  map[string]string `json:"provider_meta,omitempty"`
+	Title            string            `json:"title,omitempty"`
+	Artist           string            `json:"artist,omitempty"`
+	Album            string            `json:"album,omitempty"`
+	Genre            string            `json:"genre,omitempty"`
+	Path             string            `json:"path"`
+	AlbumArtURL      string            `json:"album_art_url,omitempty"`
+	Year             int               `json:"year,omitempty"`
+	TrackNumber      int               `json:"track_number,omitempty"`
+	DurationSecs     int               `json:"duration_secs,omitempty"`
+	Index            int               `json:"index,omitempty"`
+	PlayNextPosition int               `json:"queue_position,omitempty"`
+	Stream           bool              `json:"stream,omitempty"`
+	StreamTitle      string            `json:"stream_title,omitempty"`
+	Station          string            `json:"station,omitempty"`
+	Realtime         bool              `json:"realtime,omitempty"`
+	Restricted       bool              `json:"restricted,omitempty"`
+	Feed             bool              `json:"feed,omitempty"`
+	Bookmark         bool              `json:"bookmark,omitempty"`
+	Unplayable       bool              `json:"unplayable,omitempty"`
+	DirSourced       bool              `json:"dir_sourced,omitempty"`
+	ProviderMeta     map[string]string `json:"provider_meta,omitempty"`
 }
 
 type PlaylistInfo struct {

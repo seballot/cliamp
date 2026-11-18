@@ -24,7 +24,7 @@ func TestRevisionIncrementsForStateChanges(t *testing.T) {
 			name: "activate selected queued track",
 			setup: func(p *Playlist) func() {
 				p.Add(Track{Title: "A"}, Track{Title: "B"}, Track{Title: "C"})
-				p.Queue(2)
+				p.AddPlayNext(2)
 				p.Next()
 				return func() { p.ActivateSelected() }
 			},
@@ -40,7 +40,7 @@ func TestRevisionIncrementsForStateChanges(t *testing.T) {
 			name: "next clears unavailable queue",
 			setup: func(p *Playlist) func() {
 				p.Add(Track{Title: "A"}, Track{Title: "B", Unplayable: true})
-				p.Queue(1)
+				p.AddPlayNext(1)
 				return func() { p.Next() }
 			},
 		},
@@ -63,40 +63,40 @@ func TestRevisionIncrementsForStateChanges(t *testing.T) {
 			name: "queue",
 			setup: func(p *Playlist) func() {
 				p.Add(Track{Title: "A"})
-				return func() { p.Queue(0) }
+				return func() { p.AddPlayNext(0) }
 			},
 		},
 		{
 			name: "dequeue",
 			setup: func(p *Playlist) func() {
 				p.Add(Track{Title: "A"})
-				p.Queue(0)
-				return func() { p.Dequeue(0) }
+				p.AddPlayNext(0)
+				return func() { p.RemovePlayNext(0) }
 			},
 		},
 		{
 			name: "remove queue entry",
 			setup: func(p *Playlist) func() {
 				p.Add(Track{Title: "A"})
-				p.Queue(0)
-				return func() { p.RemoveQueueAt(0) }
+				p.AddPlayNext(0)
+				return func() { p.RemovePlayNextAt(0) }
 			},
 		},
 		{
 			name: "move queue entry",
 			setup: func(p *Playlist) func() {
 				p.Add(Track{Title: "A"}, Track{Title: "B"})
-				p.Queue(0)
-				p.Queue(1)
-				return func() { p.MoveQueue(0, 1) }
+				p.AddPlayNext(0)
+				p.AddPlayNext(1)
+				return func() { p.MovePlayNext(0, 1) }
 			},
 		},
 		{
 			name: "clear queue",
 			setup: func(p *Playlist) func() {
 				p.Add(Track{Title: "A"})
-				p.Queue(0)
-				return p.ClearQueue
+				p.AddPlayNext(0)
+				return p.ClearPlayNext
 			},
 		},
 		{
@@ -236,34 +236,34 @@ func TestRevisionUnchangedByNoopMutations(t *testing.T) {
 		{
 			name: "queue invalid index",
 			setup: func(p *Playlist) func() {
-				return func() { p.Queue(0) }
+				return func() { p.AddPlayNext(0) }
 			},
 		},
 		{
 			name: "dequeue missing track",
 			setup: func(p *Playlist) func() {
 				p.Add(Track{Title: "A"})
-				return func() { p.Dequeue(0) }
+				return func() { p.RemovePlayNext(0) }
 			},
 		},
 		{
 			name: "remove invalid queue entry",
 			setup: func(p *Playlist) func() {
-				return func() { p.RemoveQueueAt(0) }
+				return func() { p.RemovePlayNextAt(0) }
 			},
 		},
 		{
 			name: "move queue entry to itself",
 			setup: func(p *Playlist) func() {
 				p.Add(Track{Title: "A"})
-				p.Queue(0)
-				return func() { p.MoveQueue(0, 0) }
+				p.AddPlayNext(0)
+				return func() { p.MovePlayNext(0, 0) }
 			},
 		},
 		{
 			name: "clear empty queue",
 			setup: func(p *Playlist) func() {
-				return p.ClearQueue
+				return p.ClearPlayNext
 			},
 		},
 		{
@@ -327,7 +327,7 @@ func TestRevisionUnchangedByNoopMutations(t *testing.T) {
 func TestRevisionUnchangedByReadOnlyCalls(t *testing.T) {
 	p := New()
 	p.Add(Track{Title: "A"}, Track{Title: "B"})
-	p.Queue(1)
+	p.AddPlayNext(1)
 	before := p.Revision()
 
 	reads := []func(){
@@ -335,12 +335,12 @@ func TestRevisionUnchangedByReadOnlyCalls(t *testing.T) {
 		func() { p.Len() },
 		func() { p.Current() },
 		func() { p.Index() },
-		func() { p.CurrentIsQueued() },
+		func() { p.CurrentIsPlayNext() },
 		func() { p.PeekNext() },
-		func() { p.QueuePosition(1) },
-		func() { p.QueueLen() },
-		func() { p.QueueTracks() },
-		func() { p.QueueWindow(0, 1) },
+		func() { p.PlayNextPosition(1) },
+		func() { p.PlayNextLen() },
+		func() { p.PlayNextTracks() },
+		func() { p.PlayNextWindow(0, 1) },
 		func() { p.Snapshot() },
 		func() { p.Tracks() },
 		func() { p.Track(0) },

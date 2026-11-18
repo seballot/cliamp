@@ -245,25 +245,25 @@ func (m Model) renderDeviceBody() string {
 
 // — queue —
 
-// renderQueueBody lists the queued tracks the way the playlist pane lists its
+// renderPlayNextBody lists the queued tracks the way the playlist pane lists its
 // own: grouped under a show or album header, with played markers and durations.
 // The queue holds the same tracks, so reading it should not feel like reading a
 // different kind of list.
-func (m Model) renderQueueBody() string {
+func (m Model) renderPlayNextBody() string {
 	budget := m.effectivePlaylistVisible()
 	if budget <= 0 {
 		return ""
 	}
-	total := m.playlist.QueueLen()
+	total := m.playlist.PlayNextLen()
 	if total == 0 {
-		lines := []string{dimStyle.Render("  The queue is empty.")}
+		lines := []string{dimStyle.Render("  Play next is empty.")}
 		if command, ok := m.findCommand(commandModeMain, "a"); ok {
 			lines = append(lines, fitHelpLine(dimStyle.Render("  Press ")+helpKeyStyle.Render(" "+command.KeyLabel+" ")+dimStyle.Render(" on a playlist track to play it next."), m.layout.panelWidth))
 		}
 		return bodyLines(lines, budget)
 	}
-	if m.queue.confirmClear {
-		return bodyMessage(fmt.Sprintf("%d tracks will be removed from the queue. c confirms; Esc cancels.", total), budget)
+	if m.playNext.confirmClear {
+		return bodyMessage(fmt.Sprintf("%d tracks will be removed from play next. c confirms; Esc cancels.", total), budget)
 	}
 
 	var stateReporters []provider.PlaybackStateReporter
@@ -271,13 +271,13 @@ func (m Model) renderQueueBody() string {
 		stateReporters = m.playbackStateReporters()
 	}
 	numWidth := len(fmt.Sprintf("%d", total))
-	scroll := clampedScroll(m.queue.scroll, m.queue.cursor, total, budget)
+	scroll := clampedScroll(m.playNext.scroll, m.playNext.cursor, total, budget)
 	// The window only needs the tracks around the cursor, so a long queue is
 	// not cloned on every frame.
 	windowStart := max(0, scroll-1)
-	tracks := m.playlist.QueueWindow(windowStart, 2*budget+2)
+	tracks := m.playlist.PlayNextWindow(windowStart, 2*budget+2)
 	// clampedScroll counts tracks, but album headers take rows too.
-	localScroll := m.fitHeaderScroll(tracks, scroll-windowStart, m.queue.cursor-windowStart, budget, m.showAlbumHeaders)
+	localScroll := m.fitHeaderScroll(tracks, scroll-windowStart, m.playNext.cursor-windowStart, budget, m.showAlbumHeaders)
 
 	lines := make([]string, 0, budget)
 	for row := range m.playlistRows(tracks, localScroll, m.showAlbumHeaders) {
@@ -292,16 +292,16 @@ func (m Model) renderQueueBody() string {
 			}
 			continue
 		}
-		lines = append(lines, m.queueRow(row.Track, windowStart+row.Index, numWidth, stateReporters))
+		lines = append(lines, m.playNextRow(row.Track, windowStart+row.Index, numWidth, stateReporters))
 	}
 	return strings.Join(padLines(lines, budget, len(lines)), "\n")
 }
 
-// queueRow renders one queued track: cursor, played marker, position, title,
+// playNextRow renders one queued track: cursor, played marker, position, title,
 // and a right-aligned duration.
-func (m Model) queueRow(t playlist.Track, idx, numWidth int, reporters []provider.PlaybackStateReporter) string {
+func (m Model) playNextRow(t playlist.Track, idx, numWidth int, reporters []provider.PlaybackStateReporter) string {
 	style := playlistItemStyle
-	selected := idx == m.queue.cursor
+	selected := idx == m.playNext.cursor
 	if selected {
 		style = playlistSelectedStyle
 	}

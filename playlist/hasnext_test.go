@@ -25,7 +25,7 @@ func TestHasNext(t *testing.T) {
 		{name: "play-next queued after the last track", setup: func(pl *Playlist) {
 			pl.Add(a, b)
 			pl.SetIndex(1)
-			pl.Queue(0)
+			pl.AddPlayNext(0)
 		}, want: true},
 		{name: "only unplayable tracks follow", setup: func(pl *Playlist) { pl.Add(a, dead); pl.SetIndex(0) }, want: false},
 		{name: "repeat all over unplayable tracks only", setup: func(pl *Playlist) {

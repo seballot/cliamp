@@ -86,7 +86,7 @@ func TestPluginStateReportsThePlayingTrack(t *testing.T) {
 				m := newPluginStateModel(&playbackFakeEngine{},
 					playlist.Track{Title: "A", Path: "a.mp3", Year: 2001, TrackNumber: 3},
 					playlist.Track{Title: "B", Path: "b.mp3"})
-				m.playlist.Queue(1)
+				m.playlist.AddPlayNext(1)
 				updated, _ := m.Update(pluginStateTestMsg{})
 				return updated.(Model)
 			},

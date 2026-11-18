@@ -42,7 +42,7 @@ func TestTwoColumnLayoutTiers(t *testing.T) {
 		{name: "overlay", width: 80, height: 24, want: false, setup: func(m *Model) { m.fileBrowser.visible = true }},
 		// The queue is a view of the playlist, so it keeps the split and the
 		// settings pane rather than taking the frame.
-		{name: "queue", width: 80, height: 24, want: true, setup: func(m *Model) { m.queue.visible = true }},
+		{name: "queue", width: 80, height: 24, want: true, setup: func(m *Model) { m.playNext.visible = true }},
 		{name: "full screen visualizer", width: 80, height: 24, want: false, setup: func(m *Model) { m.fullVis = true }},
 	}
 
@@ -249,8 +249,8 @@ func TestMarkerColumnsReserveOnlyWhatIsUsed(t *testing.T) {
 		{name: "plain playlist", setup: func(*Model) {}, want: markerColumns{favorite: true}},
 		{
 			name:  "queued track",
-			setup: func(m *Model) { m.playlist.Queue(1) },
-			want:  markerColumns{queue: true, favorite: true},
+			setup: func(m *Model) { m.playlist.AddPlayNext(1) },
+			want:  markerColumns{playNext: true, favorite: true},
 		},
 		{
 			name: "legacy bookmark reserves nothing",
@@ -269,10 +269,10 @@ func TestMarkerColumnsReserveOnlyWhatIsUsed(t *testing.T) {
 		{
 			name: "queue and favorite",
 			setup: func(m *Model) {
-				m.playlist.Queue(1)
+				m.playlist.AddPlayNext(1)
 				m.favSet = map[string]struct{}{"/tmp/track-3.mp3": {}}
 			},
-			want: markerColumns{queue: true, favorite: true},
+			want: markerColumns{playNext: true, favorite: true},
 		},
 	}
 
@@ -322,7 +322,7 @@ func TestPlaylistTitleColumnTightensWhenUnused(t *testing.T) {
 	plain := titleColumn(newLayoutTestModel(100, 30))
 
 	full := newLayoutTestModel(100, 30)
-	full.playlist.Queue(1)
+	full.playlist.AddPlayNext(1)
 	full.favSet = map[string]struct{}{"/tmp/track-3.mp3": {}}
 	used := titleColumn(full)
 
@@ -371,7 +371,7 @@ func TestPlaylistHeaderDropsBadgesThatDoNotFit(t *testing.T) {
 	}
 	withBadges := func(width, height int) Model {
 		m := newColumnTestModel(width, height)
-		m.playlist.Queue(1)
+		m.playlist.AddPlayNext(1)
 		m.favSet = favSet
 		return m
 	}

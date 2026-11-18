@@ -9,7 +9,7 @@ import (
 func appendTestModel() *Model {
 	m := &Model{playlist: playlist.New()}
 	m.playlist.Replace([]playlist.Track{{Path: "/playing.mp3", Title: "Playing"}})
-	m.playlist.Queue(0)
+	m.playlist.AddPlayNext(0)
 	return m
 }
 
@@ -24,7 +24,7 @@ func TestAppendTracksToPlaylistKeepsExistingListAndQueue(t *testing.T) {
 	if got := m.playlist.Len(); got != 3 {
 		t.Errorf("playlist length = %d, want 3", got)
 	}
-	if got := m.playlist.QueueLen(); got != 1 {
+	if got := m.playlist.PlayNextLen(); got != 1 {
 		t.Errorf("queue length = %d, want the existing entry to survive", got)
 	}
 	first, _ := m.playlist.Track(0)

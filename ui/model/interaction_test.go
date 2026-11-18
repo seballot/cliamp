@@ -869,29 +869,29 @@ func TestLyricsRetryStartsNewRequest(t *testing.T) {
 func TestUndoRestoresClearedQueue(t *testing.T) {
 	p := playlist.New()
 	p.Add(playlist.Track{Title: "One"}, playlist.Track{Title: "Two"})
-	p.Queue(0)
-	p.Queue(1)
+	p.AddPlayNext(0)
+	p.AddPlayNext(1)
 	m := Model{
 		player:    &playbackFakeEngine{},
 		playlist:  p,
 		plVisible: 1,
-		queue:     queueOverlay{visible: true, cursor: 1, scroll: 1},
+		playNext:  playNextOverlay{visible: true, cursor: 1, scroll: 1},
 	}
 
-	m.handleQueueKey(tea.KeyPressMsg{Text: "c"})
-	m.handleQueueKey(tea.KeyPressMsg{Text: "c"})
-	if got := p.QueueLen(); got != 0 {
+	m.handlePlayNextKey(tea.KeyPressMsg{Text: "c"})
+	m.handlePlayNextKey(tea.KeyPressMsg{Text: "c"})
+	if got := p.PlayNextLen(); got != 0 {
 		t.Fatalf("queue length after clear = %d, want 0", got)
 	}
-	if m.queue.cursor != 0 || m.queue.scroll != 0 {
-		t.Fatalf("queue state after clear = cursor %d, scroll %d; want 0, 0", m.queue.cursor, m.queue.scroll)
+	if m.playNext.cursor != 0 || m.playNext.scroll != 0 {
+		t.Fatalf("queue state after clear = cursor %d, scroll %d; want 0, 0", m.playNext.cursor, m.playNext.scroll)
 	}
 	m.handleKey(tea.KeyPressMsg{Code: 'z', Mod: tea.ModCtrl})
-	if got := p.QueueTracks(); len(got) != 2 || got[0].Title != "One" || got[1].Title != "Two" {
+	if got := p.PlayNextTracks(); len(got) != 2 || got[0].Title != "One" || got[1].Title != "Two" {
 		t.Fatalf("queue after undo = %#v, want original queue", got)
 	}
-	if m.queue.cursor != 0 || m.queue.scroll != 0 {
-		t.Fatalf("queue state after undo = cursor %d, scroll %d; want 0, 0", m.queue.cursor, m.queue.scroll)
+	if m.playNext.cursor != 0 || m.playNext.scroll != 0 {
+		t.Fatalf("queue state after undo = cursor %d, scroll %d; want 0, 0", m.playNext.cursor, m.playNext.scroll)
 	}
 }
 
@@ -903,73 +903,73 @@ func TestQueueClearNeedsConfirm(t *testing.T) {
 		p := playlist.New()
 		p.Add(tracks...)
 		for i := range tracks {
-			p.Queue(i)
+			p.AddPlayNext(i)
 		}
 		m := &Model{
 			player:    &playbackFakeEngine{},
 			playlist:  p,
 			plVisible: 1,
-			queue:     queueOverlay{visible: true},
+			playNext:  playNextOverlay{visible: true},
 		}
 		return p, m
 	}
 
 	t.Run("single track clears at once and stays open", func(t *testing.T) {
 		p, m := newQueueModel(playlist.Track{Title: "One"})
-		m.handleQueueKey(tea.KeyPressMsg{Text: "c"})
-		if got := p.QueueLen(); got != 0 {
+		m.handlePlayNextKey(tea.KeyPressMsg{Text: "c"})
+		if got := p.PlayNextLen(); got != 0 {
 			t.Fatalf("queue length after clear = %d, want 0", got)
 		}
-		if !m.queue.visible {
+		if !m.playNext.visible {
 			t.Fatal("queue overlay closed after clear; want it to stay open")
 		}
 	})
 
 	t.Run("first c only arms", func(t *testing.T) {
 		p, m := newQueueModel(playlist.Track{Title: "One"}, playlist.Track{Title: "Two"})
-		m.handleQueueKey(tea.KeyPressMsg{Text: "c"})
-		if got := p.QueueLen(); got != 2 {
+		m.handlePlayNextKey(tea.KeyPressMsg{Text: "c"})
+		if got := p.PlayNextLen(); got != 2 {
 			t.Fatalf("queue length after first c = %d, want 2 (confirm first)", got)
 		}
-		if !m.queue.confirmClear {
+		if !m.playNext.confirmClear {
 			t.Fatal("confirmClear = false after first c, want true")
 		}
-		if !m.queue.visible {
+		if !m.playNext.visible {
 			t.Fatal("queue overlay closed while confirming; want it open")
 		}
 	})
 
 	t.Run("second c clears and stays open", func(t *testing.T) {
 		p, m := newQueueModel(playlist.Track{Title: "One"}, playlist.Track{Title: "Two"})
-		m.handleQueueKey(tea.KeyPressMsg{Text: "c"})
-		m.handleQueueKey(tea.KeyPressMsg{Text: "c"})
-		if got := p.QueueLen(); got != 0 {
+		m.handlePlayNextKey(tea.KeyPressMsg{Text: "c"})
+		m.handlePlayNextKey(tea.KeyPressMsg{Text: "c"})
+		if got := p.PlayNextLen(); got != 0 {
 			t.Fatalf("queue length after second c = %d, want 0", got)
 		}
-		if !m.queue.visible {
+		if !m.playNext.visible {
 			t.Fatal("queue overlay closed after clear; want it to stay open")
 		}
 	})
 
 	t.Run("esc cancels and closes", func(t *testing.T) {
 		p, m := newQueueModel(playlist.Track{Title: "One"}, playlist.Track{Title: "Two"})
-		m.handleQueueKey(tea.KeyPressMsg{Text: "c"})
-		m.handleQueueKey(tea.KeyPressMsg{Code: tea.KeyEscape})
-		if got := p.QueueLen(); got != 2 {
+		m.handlePlayNextKey(tea.KeyPressMsg{Text: "c"})
+		m.handlePlayNextKey(tea.KeyPressMsg{Code: tea.KeyEscape})
+		if got := p.PlayNextLen(); got != 2 {
 			t.Fatalf("queue length after esc = %d, want 2", got)
 		}
-		if m.queue.confirmClear {
+		if m.playNext.confirmClear {
 			t.Fatal("confirmClear still armed after esc")
 		}
-		if m.queue.visible {
+		if m.playNext.visible {
 			t.Fatal("queue overlay still open after esc; want it closed")
 		}
 	})
 
 	t.Run("empty queue warns", func(t *testing.T) {
 		p, m := newQueueModel()
-		m.handleQueueKey(tea.KeyPressMsg{Text: "c"})
-		if got := p.QueueLen(); got != 0 {
+		m.handlePlayNextKey(tea.KeyPressMsg{Text: "c"})
+		if got := p.PlayNextLen(); got != 0 {
 			t.Fatalf("queue length = %d, want 0", got)
 		}
 		if m.status.text == "" {
@@ -986,24 +986,24 @@ func TestNextTrackNormalizesQueueAfterSkippingUnavailableEntry(t *testing.T) {
 		{Title: "Next", Path: "next.mp3"},
 		{Title: "Remaining", Path: "remaining.mp3"},
 	})
-	p.Queue(1)
-	p.Queue(2)
-	p.Queue(3)
+	p.AddPlayNext(1)
+	p.AddPlayNext(2)
+	p.AddPlayNext(3)
 	m := Model{
 		player:    &playbackFakeEngine{},
 		playlist:  p,
 		layout:    frameLayout{panelWidth: 80},
 		plVisible: 2,
-		queue:     queueOverlay{visible: true, cursor: 2, scroll: 2},
+		playNext:  playNextOverlay{visible: true, cursor: 2, scroll: 2},
 	}
 
 	m.nextTrack()
 
-	if got := p.QueueLen(); got != 1 {
-		t.Fatalf("QueueLen() = %d after Next, want 1", got)
+	if got := p.PlayNextLen(); got != 1 {
+		t.Fatalf("PlayNextLen() = %d after Next, want 1", got)
 	}
-	if m.queue.cursor != 0 || m.queue.scroll != 0 {
-		t.Fatalf("queue state after Next = cursor %d, scroll %d; want 0, 0", m.queue.cursor, m.queue.scroll)
+	if m.playNext.cursor != 0 || m.playNext.scroll != 0 {
+		t.Fatalf("queue state after Next = cursor %d, scroll %d; want 0, 0", m.playNext.cursor, m.playNext.scroll)
 	}
 	view, ok := m.activeOverlay()
 	if !ok {
@@ -1018,30 +1018,30 @@ func TestNextTrackNormalizesQueueAfterSkippingUnavailableEntry(t *testing.T) {
 func TestIPCQueueMutationNormalizesOverlay(t *testing.T) {
 	p := playlist.New()
 	p.Replace([]playlist.Track{{Title: "A"}, {Title: "B"}, {Title: "C"}})
-	p.Queue(0)
-	p.Queue(1)
-	p.Queue(2)
+	p.AddPlayNext(0)
+	p.AddPlayNext(1)
+	p.AddPlayNext(2)
 	m := Model{
 		player:    &playbackFakeEngine{},
 		playlist:  p,
 		plVisible: 2,
 		plCursor:  2,
 		plScroll:  1,
-		queue:     queueOverlay{visible: true, cursor: 2, scroll: 2},
+		playNext:  playNextOverlay{visible: true, cursor: 2, scroll: 2},
 	}
 
 	if response := runV2(t, &m, "queue.remove", ipc.Request{Index: 2}); !response.OK {
 		t.Fatalf("queue.remove response = %+v", response)
 	}
-	if m.queue.cursor != 1 || m.queue.scroll != 0 {
-		t.Fatalf("queue state after IPC remove = cursor %d, scroll %d; want 1, 0", m.queue.cursor, m.queue.scroll)
+	if m.playNext.cursor != 1 || m.playNext.scroll != 0 {
+		t.Fatalf("queue state after IPC remove = cursor %d, scroll %d; want 1, 0", m.playNext.cursor, m.playNext.scroll)
 	}
 
 	if response := runV2(t, &m, "queue.clear", ipc.Request{}); !response.OK {
 		t.Fatalf("queue.clear response = %+v", response)
 	}
-	if m.queue.cursor != 0 || m.queue.scroll != 0 {
-		t.Fatalf("queue state after IPC clear = cursor %d, scroll %d; want 0, 0", m.queue.cursor, m.queue.scroll)
+	if m.playNext.cursor != 0 || m.playNext.scroll != 0 {
+		t.Fatalf("queue state after IPC clear = cursor %d, scroll %d; want 0, 0", m.playNext.cursor, m.playNext.scroll)
 	}
 	if m.plCursor != 0 || m.plScroll != 0 {
 		t.Fatalf("playlist state after IPC clear = cursor %d, scroll %d; want 0, 0", m.plCursor, m.plScroll)

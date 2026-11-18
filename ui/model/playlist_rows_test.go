@@ -109,8 +109,8 @@ func TestPlaylistCursorActionsFollowShuffleOrder(t *testing.T) {
 			name: "a queues the track under the cursor",
 			keys: []tea.KeyPressMsg{{Code: tea.KeyDown}, {Code: 'a', Text: "a"}},
 			check: func(t *testing.T, m Model, order []int, _ []playlist.Track) {
-				if got := m.playlist.QueuePosition(order[1]); got != 1 || m.playlist.QueueLen() != 1 {
-					t.Fatalf("QueuePosition(%d) = %d with queue length %d, want 1 and 1", order[1], got, m.playlist.QueueLen())
+				if got := m.playlist.PlayNextPosition(order[1]); got != 1 || m.playlist.PlayNextLen() != 1 {
+					t.Fatalf("PlayNextPosition(%d) = %d with queue length %d, want 1 and 1", order[1], got, m.playlist.PlayNextLen())
 				}
 			},
 		},

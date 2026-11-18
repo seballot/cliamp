@@ -60,8 +60,8 @@ func TestNextRepeatOne(t *testing.T) {
 
 func TestNextWithQueue(t *testing.T) {
 	p := makePlaylist(4, false) // A B C D
-	p.Queue(2)                  // Queue C
-	p.Queue(3)                  // Queue D
+	p.AddPlayNext(2)            // Queue C
+	p.AddPlayNext(3)            // Queue D
 
 	// Queue should be played first
 	track, ok := p.Next()
@@ -101,7 +101,7 @@ func TestNextPlaysQueuedNextTrackOnce(t *testing.T) {
 			p := makePlaylist(4, false) // A B C D
 			p.SetRepeat(tt.repeat)
 			for _, idx := range tt.queue {
-				p.Queue(idx)
+				p.AddPlayNext(idx)
 			}
 			var got strings.Builder
 			for range len(tt.want) {
@@ -122,7 +122,7 @@ func TestNextPlaysQueuedNextTrackOnce(t *testing.T) {
 func TestNextRepeatOneResumesOrderAfterQueuedTrack(t *testing.T) {
 	p := makePlaylist(2, false) // A B
 	p.SetRepeat(RepeatOne)
-	p.Queue(1)
+	p.AddPlayNext(1)
 
 	track, ok := p.Next()
 	if !ok || track.Title != "B" {
@@ -221,7 +221,7 @@ func TestPeekNextRepeatOne(t *testing.T) {
 
 func TestPeekNextWithQueue(t *testing.T) {
 	p := makePlaylist(3, false)
-	p.Queue(2) // Queue C
+	p.AddPlayNext(2) // Queue C
 
 	track, ok := p.PeekNext()
 	if !ok || track.Title != "C" {
@@ -232,7 +232,7 @@ func TestPeekNextWithQueue(t *testing.T) {
 func TestPeekNextRepeatOneUsesOrderAfterQueuedTrack(t *testing.T) {
 	p := makePlaylist(2, false) // A B
 	p.SetRepeat(RepeatOne)
-	p.Queue(1)
+	p.AddPlayNext(1)
 
 	if track, ok := p.Next(); !ok || track.Title != "B" {
 		t.Fatalf("Next() from queue = (%q, %v), want (B, true)", track.Title, ok)
@@ -334,7 +334,7 @@ func TestReplaceAt(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := makePlaylist(3, tt.shuffle)
 			p.SetIndex(1)
-			p.Queue(0)
+			p.AddPlayNext(0)
 
 			tt.replace(p)
 
@@ -342,8 +342,8 @@ func TestReplaceAt(t *testing.T) {
 			if idx != tt.want || cur.Title != tracks[tt.want].Title {
 				t.Fatalf("Current() = (%q, %d), want (%q, %d)", cur.Title, idx, tracks[tt.want].Title, tt.want)
 			}
-			if p.QueueLen() != 0 || p.CurrentIsQueued() {
-				t.Fatalf("queue = %d queued=%v, want cleared", p.QueueLen(), p.CurrentIsQueued())
+			if p.PlayNextLen() != 0 || p.CurrentIsPlayNext() {
+				t.Fatalf("queue = %d queued=%v, want cleared", p.PlayNextLen(), p.CurrentIsPlayNext())
 			}
 			played := []int{idx}
 			for {

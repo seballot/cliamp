@@ -52,7 +52,7 @@ func (m *Model) emitPluginEvents() {
 		pe.eqBands = m.player.EQBands()
 		pe.plCount = m.playlist.Len()
 		pe.plIndex = m.playlist.Index()
-		pe.queueLen = m.playlist.QueueLen()
+		pe.queueLen = m.playlist.PlayNextLen()
 		pe.ready = true
 		return
 	}
@@ -87,7 +87,7 @@ func (m *Model) emitPluginEvents() {
 	}
 
 	if m.luaMgr.HasHook(luaplugin.EventQueueChange) {
-		count, index, qlen := m.playlist.Len(), m.playlist.Index(), m.playlist.QueueLen()
+		count, index, qlen := m.playlist.Len(), m.playlist.Index(), m.playlist.PlayNextLen()
 		if count != pe.plCount || index != pe.plIndex || qlen != pe.queueLen {
 			pe.plCount, pe.plIndex, pe.queueLen = count, index, qlen
 			m.emitPlugin(luaplugin.EventQueueChange, map[string]any{

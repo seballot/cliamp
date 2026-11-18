@@ -632,7 +632,7 @@ func TestInlineOverlaysFitResponsiveTerminal(t *testing.T) {
 		{name: "provider search", set: func(m *Model) { m.searchOverlay.visible = true }},
 		{name: "navigation", set: func(m *Model) { m.navBrowser.visible = true }},
 		{name: "playlist manager", set: func(m *Model) { m.plManager.visible = true }},
-		{name: "queue", set: func(m *Model) { m.queue.visible = true }},
+		{name: "queue", set: func(m *Model) { m.playNext.visible = true }},
 		{name: "info", set: func(m *Model) { m.info.visible = true }},
 		{name: "lyrics", set: func(m *Model) { m.lyrics.visible = true }},
 		{name: "jump", set: func(m *Model) { m.jump.active = true }},

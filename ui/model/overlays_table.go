@@ -209,17 +209,17 @@ func init() {
 			view: overlayView{(*Model).plMgrHeaderLine, (*Model).renderPlMgrBody},
 		},
 		{
-			screen:  screenQueue,
-			key:     (*Model).handleQueueKey,
-			context: fixedContext(commandModeQueue, "Play next"),
+			screen:  screenPlayNext,
+			key:     (*Model).handlePlayNextKey,
+			context: fixedContext(commandModePlayNext, "Play next"),
 			view: overlayView{
 				func(m *Model) string {
-					if m.queue.confirmClear {
+					if m.playNext.confirmClear {
 						return sepHeader("Clear queue?", m.layout.panelWidth)
 					}
-					return sepHeaderN("Play next", m.queue.cursor+1, m.playlist.QueueLen(), m.layout.panelWidth)
+					return sepHeaderN("Play next", m.playNext.cursor+1, m.playlist.PlayNextLen(), m.layout.panelWidth)
 				},
-				(*Model).renderQueueBody},
+				(*Model).renderPlayNextBody},
 		},
 		{
 			screen: screenSubs,
@@ -324,8 +324,8 @@ func (m *Model) overlayOpen(screen topLevelScreen) bool {
 		return m.visPicker.visible
 	case screenPlaylistManager:
 		return m.plManager.visible
-	case screenQueue:
-		return m.queue.visible
+	case screenPlayNext:
+		return m.playNext.visible
 	case screenSubs:
 		return m.subs.visible
 	case screenInfo:

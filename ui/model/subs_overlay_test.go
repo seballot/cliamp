@@ -205,11 +205,11 @@ func TestAddSubscriptionEpisodesModes(t *testing.T) {
 			if got := m.playlist.Len(); got != tt.wantPlaylist {
 				t.Errorf("playlist length = %d, want %d", got, tt.wantPlaylist)
 			}
-			if got := m.playlist.QueueLen(); got != tt.wantQueue {
+			if got := m.playlist.PlayNextLen(); got != tt.wantQueue {
 				t.Errorf("queue length = %d, want %d", got, tt.wantQueue)
 			}
 			if tt.wantQueueHead != "" {
-				head := m.playlist.QueueWindow(0, 1)
+				head := m.playlist.PlayNextWindow(0, 1)
 				if len(head) != 1 || head[0].Title != tt.wantQueueHead {
 					t.Errorf("queue head = %v, want %q", head, tt.wantQueueHead)
 				}
@@ -234,11 +234,11 @@ func TestAddSubscriptionEpisodesAccumulates(t *testing.T) {
 	if got := m.playlist.Len(); got != 3 {
 		t.Errorf("playlist length = %d, want 3", got)
 	}
-	if got := m.playlist.QueueLen(); got != 3 {
+	if got := m.playlist.PlayNextLen(); got != 3 {
 		t.Errorf("queue length = %d, want 3", got)
 	}
 	titles := make([]string, 0, 3)
-	for _, tr := range m.playlist.QueueWindow(0, 3) {
+	for _, tr := range m.playlist.PlayNextWindow(0, 3) {
 		titles = append(titles, tr.Title)
 	}
 	want := []string{"a1", "a2", "b1"}
@@ -331,7 +331,7 @@ func TestHandleSubsLatestAllAppendsWithoutQueueing(t *testing.T) {
 	if got := m.playlist.Len(); got != 2 {
 		t.Errorf("playlist length = %d, want 2", got)
 	}
-	if got := m.playlist.QueueLen(); got != 0 {
+	if got := m.playlist.PlayNextLen(); got != 0 {
 		t.Errorf("queue length = %d, want 0; the sweep builds a list, it does not queue", got)
 	}
 }
@@ -418,7 +418,7 @@ func TestLoadLatestFromProviderListQueuesNewest(t *testing.T) {
 	if got := m.playlist.Len(); got != 1 {
 		t.Errorf("playlist length = %d, want 1", got)
 	}
-	if got := m.playlist.QueueLen(); got != 1 {
+	if got := m.playlist.PlayNextLen(); got != 1 {
 		t.Errorf("queue length = %d, want 1", got)
 	}
 }
@@ -473,7 +473,7 @@ func TestAppendShowFromProviderListAppendsEverything(t *testing.T) {
 		provPane: providerPane{lists: []playlist.PlaylistInfo{{ID: "f:feed-a", Name: "Show"}}},
 	}
 	m.playlist.Add(playlist.Track{Path: "/already-here.mp3"})
-	m.playlist.Queue(0)
+	m.playlist.AddPlayNext(0)
 
 	cmd := m.appendShowFromProviderList()
 	if cmd == nil {
@@ -488,7 +488,7 @@ func TestAppendShowFromProviderListAppendsEverything(t *testing.T) {
 	if got := m.playlist.Len(); got != 3 {
 		t.Errorf("playlist length = %d, want 3; the existing track must survive", got)
 	}
-	if got := m.playlist.QueueLen(); got != 1 {
+	if got := m.playlist.PlayNextLen(); got != 1 {
 		t.Errorf("queue length = %d, want the existing queue entry to survive", got)
 	}
 	first, _ := m.playlist.Track(0)

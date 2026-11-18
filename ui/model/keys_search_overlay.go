@@ -109,7 +109,7 @@ func (m *Model) handleSearchOverlayResultsKey(msg tea.KeyPressMsg) tea.Cmd {
 				return m.expandSearchOverlayAlbum(track, searchOverlayAlbumQueueNext)
 			}
 			m.closeSearchOverlay()
-			return m.queueTrackNext(track)
+			return m.playNextTrack(track)
 		}
 	case "p":
 		if count > 0 && !m.searchOverlayBusy() {

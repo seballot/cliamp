@@ -149,16 +149,16 @@ func TestMovePreservesPlaybackOrder_NoShuffle(t *testing.T) {
 
 func TestMoveWithQueue(t *testing.T) {
 	p := makePlaylist(4, false) // A B C D
-	p.Queue(2)                  // queue C (index 2)
+	p.AddPlayNext(2)            // queue C (index 2)
 
 	// Move C (2) up to (1): A C B D, queue should now reference index 1
 	p.Move(2, 1)
 
-	if pos := p.QueuePosition(1); pos != 1 {
-		t.Errorf("QueuePosition(1) = %d, want 1", pos)
+	if pos := p.PlayNextPosition(1); pos != 1 {
+		t.Errorf("PlayNextPosition(1) = %d, want 1", pos)
 	}
-	if pos := p.QueuePosition(2); pos != 0 {
-		t.Errorf("QueuePosition(2) = %d, want 0 (not queued)", pos)
+	if pos := p.PlayNextPosition(2); pos != 0 {
+		t.Errorf("PlayNextPosition(2) = %d, want 0 (not queued)", pos)
 	}
 }
 
@@ -268,17 +268,17 @@ func TestAddDoesNotShuffleWhenShuffleDisabled(t *testing.T) {
 
 func TestMoveQueue(t *testing.T) {
 	p := makePlaylist(5, false) // A B C D E
-	p.Queue(3)                  // D
-	p.Queue(1)                  // B
-	p.Queue(4)                  // E
+	p.AddPlayNext(3)            // D
+	p.AddPlayNext(1)            // B
+	p.AddPlayNext(4)            // E
 	// Queue order: D, B, E
 
 	// Move B (pos 1) up to pos 0
-	if !p.MoveQueue(1, 0) {
-		t.Fatal("MoveQueue returned false")
+	if !p.MovePlayNext(1, 0) {
+		t.Fatal("MovePlayNext returned false")
 	}
 	// Queue order should be: B, D, E
-	qt := p.QueueTracks()
+	qt := p.PlayNextTracks()
 	if len(qt) != 3 {
 		t.Fatalf("queue len = %d, want 3", len(qt))
 	}
@@ -287,11 +287,11 @@ func TestMoveQueue(t *testing.T) {
 	}
 
 	// Move B (pos 0) down to pos 1
-	if !p.MoveQueue(0, 1) {
-		t.Fatal("MoveQueue returned false")
+	if !p.MovePlayNext(0, 1) {
+		t.Fatal("MovePlayNext returned false")
 	}
 	// Queue order should be: D, B, E
-	qt = p.QueueTracks()
+	qt = p.PlayNextTracks()
 	if qt[0].Title != "D" || qt[1].Title != "B" || qt[2].Title != "E" {
 		t.Errorf("queue = [%s %s %s], want [D B E]", qt[0].Title, qt[1].Title, qt[2].Title)
 	}
@@ -300,7 +300,7 @@ func TestMoveQueue(t *testing.T) {
 func TestRemoveShiftsHigherIndices(t *testing.T) {
 	p := makePlaylist(5, false) // A B C D E
 	p.SetIndex(3)               // playing D
-	p.Queue(4)                  // queue E
+	p.AddPlayNext(4)            // queue E
 
 	if !p.Remove(1) { // remove B
 		t.Fatal("Remove returned false")
@@ -317,7 +317,7 @@ func TestRemoveShiftsHigherIndices(t *testing.T) {
 		t.Errorf("current = (%s, %d), want (D, 2)", cur.Title, idx)
 	}
 
-	qt := p.QueueTracks()
+	qt := p.PlayNextTracks()
 	if len(qt) != 1 || qt[0].Title != "E" {
 		t.Errorf("queue = %v, want [E]", qt)
 	}
@@ -376,18 +376,18 @@ func TestRemoveOutOfBounds(t *testing.T) {
 
 func TestMoveQueueBoundary(t *testing.T) {
 	p := makePlaylist(3, false)
-	p.Queue(0)
-	p.Queue(1)
+	p.AddPlayNext(0)
+	p.AddPlayNext(1)
 
 	// Can't move beyond bounds
-	if p.MoveQueue(0, -1) {
-		t.Error("MoveQueue(0, -1) should return false")
+	if p.MovePlayNext(0, -1) {
+		t.Error("MovePlayNext(0, -1) should return false")
 	}
-	if p.MoveQueue(1, 2) {
-		t.Error("MoveQueue(1, 2) should return false")
+	if p.MovePlayNext(1, 2) {
+		t.Error("MovePlayNext(1, 2) should return false")
 	}
-	if p.MoveQueue(0, 0) {
-		t.Error("MoveQueue(0, 0) should return false")
+	if p.MovePlayNext(0, 0) {
+		t.Error("MovePlayNext(0, 0) should return false")
 	}
 }
 
@@ -437,8 +437,8 @@ func TestPeekNextMatchesNext(t *testing.T) {
 		{Title: "C"},
 	})
 	p.SetIndex(0)
-	p.Queue(1)
-	p.Queue(2)
+	p.AddPlayNext(1)
+	p.AddPlayNext(2)
 
 	peek, ok := p.PeekNext()
 	if !ok {
@@ -451,8 +451,8 @@ func TestPeekNextMatchesNext(t *testing.T) {
 	if cur.Title != "A" || idx != 0 {
 		t.Fatalf("current after peek = (%q,%d), want (\"A\",0)", cur.Title, idx)
 	}
-	if p.QueueLen() != 2 {
-		t.Fatalf("QueueLen() after peek = %d, want 2", p.QueueLen())
+	if p.PlayNextLen() != 2 {
+		t.Fatalf("PlayNextLen() after peek = %d, want 2", p.PlayNextLen())
 	}
 
 	next, ok := p.Next()
@@ -471,7 +471,7 @@ func TestNextConsumesUnplayableQueuedItemsOnFailure(t *testing.T) {
 		{Title: "B", Unplayable: true},
 	})
 	p.SetIndex(0)
-	p.Queue(1)
+	p.AddPlayNext(1)
 
 	if _, ok := p.Next(); ok {
 		t.Fatal("Next() = true, want false")
@@ -480,8 +480,8 @@ func TestNextConsumesUnplayableQueuedItemsOnFailure(t *testing.T) {
 	if cur.Title != "A" || idx != 0 {
 		t.Fatalf("current = (%q,%d), want (\"A\",0)", cur.Title, idx)
 	}
-	if p.QueueLen() != 0 {
-		t.Fatalf("QueueLen() = %d, want 0", p.QueueLen())
+	if p.PlayNextLen() != 0 {
+		t.Fatalf("PlayNextLen() = %d, want 0", p.PlayNextLen())
 	}
 }
 
@@ -492,7 +492,7 @@ func TestNextFailurePreservesQueuedCurrentTrack(t *testing.T) {
 		{Title: "B"},
 	})
 	p.SetIndex(1)
-	p.Queue(0)
+	p.AddPlayNext(0)
 
 	track, ok := p.Next()
 	if !ok || track.Title != "A" {
@@ -583,7 +583,7 @@ func TestActivateSelectedUsesSelectedOrderEvenWhenQueueChangesCurrent(t *testing
 		{
 			name: "pending queued track",
 			prepare: func(_ *testing.T, p *Playlist) {
-				p.Queue(0)
+				p.AddPlayNext(0)
 			},
 			wantQueueLen:   1,
 			wantQueueTrack: 0,
@@ -591,7 +591,7 @@ func TestActivateSelectedUsesSelectedOrderEvenWhenQueueChangesCurrent(t *testing
 		{
 			name: "active queued current",
 			prepare: func(t *testing.T, p *Playlist) {
-				p.Queue(0)
+				p.AddPlayNext(0)
 				if track, ok := p.Next(); !ok || track.Title != "Queued" {
 					t.Fatalf("Next() = (%q,%t), want (\"Queued\",true)", track.Title, ok)
 				}
@@ -620,11 +620,11 @@ func TestActivateSelectedUsesSelectedOrderEvenWhenQueueChangesCurrent(t *testing
 			if current, idx := p.Current(); current.Title != "Replacement" || idx != 2 {
 				t.Fatalf("current = (%q,%d), want (\"Replacement\",2)", current.Title, idx)
 			}
-			if p.QueueLen() != tt.wantQueueLen {
-				t.Fatalf("QueueLen() = %d, want %d", p.QueueLen(), tt.wantQueueLen)
+			if p.PlayNextLen() != tt.wantQueueLen {
+				t.Fatalf("PlayNextLen() = %d, want %d", p.PlayNextLen(), tt.wantQueueLen)
 			}
-			if tt.wantQueueLen > 0 && p.QueuePosition(tt.wantQueueTrack) != 1 {
-				t.Fatalf("QueuePosition(%d) = %d, want 1", tt.wantQueueTrack, p.QueuePosition(tt.wantQueueTrack))
+			if tt.wantQueueLen > 0 && p.PlayNextPosition(tt.wantQueueTrack) != 1 {
+				t.Fatalf("PlayNextPosition(%d) = %d, want 1", tt.wantQueueTrack, p.PlayNextPosition(tt.wantQueueTrack))
 			}
 		})
 	}
@@ -696,8 +696,8 @@ func TestActivateSelectedFailureKeepsQueuedCurrentTrack(t *testing.T) {
 		{Title: "Still Missing", Unplayable: true},
 	})
 	p.SetIndex(1)
-	p.Queue(0)
-	p.Queue(2)
+	p.AddPlayNext(0)
+	p.AddPlayNext(2)
 	if track, ok := p.Next(); !ok || track.Title != "Queued" {
 		t.Fatalf("Next() = (%q,%t), want (\"Queued\",true)", track.Title, ok)
 	}
@@ -708,11 +708,11 @@ func TestActivateSelectedFailureKeepsQueuedCurrentTrack(t *testing.T) {
 	if current, idx := p.Current(); current.Title != "Queued" || idx != 0 {
 		t.Fatalf("current = (%q,%d), want (\"Queued\",0)", current.Title, idx)
 	}
-	if p.QueueLen() != 1 {
-		t.Fatalf("QueueLen() = %d, want 1", p.QueueLen())
+	if p.PlayNextLen() != 1 {
+		t.Fatalf("PlayNextLen() = %d, want 1", p.PlayNextLen())
 	}
-	if p.QueuePosition(2) != 1 {
-		t.Fatalf("QueuePosition(2) = %d, want 1", p.QueuePosition(2))
+	if p.PlayNextPosition(2) != 1 {
+		t.Fatalf("PlayNextPosition(2) = %d, want 1", p.PlayNextPosition(2))
 	}
 }
 
@@ -733,7 +733,7 @@ func TestTotalDurationSecs(t *testing.T) {
 func TestReverseKeepsCurrentAndQueue(t *testing.T) {
 	p := makePlaylist(4, false) // A B C D
 	p.SetIndex(1)               // playing B
-	p.Queue(3)                  // D plays next
+	p.AddPlayNext(3)            // D plays next
 
 	p.Reverse()
 
@@ -743,7 +743,7 @@ func TestReverseKeepsCurrentAndQueue(t *testing.T) {
 	if cur, idx := p.Current(); cur.Title != "B" || idx != 2 {
 		t.Errorf("current = %s at %d, want B at 2", cur.Title, idx)
 	}
-	if q := p.QueueTracks(); len(q) != 1 || q[0].Title != "D" {
+	if q := p.PlayNextTracks(); len(q) != 1 || q[0].Title != "D" {
 		t.Errorf("queue = %v, want [D]", q)
 	}
 	if next, ok := p.Next(); !ok || next.Title != "D" {

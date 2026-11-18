@@ -61,7 +61,7 @@ func (m *Model) moveTrack(from, to int) (tea.Cmd, error) {
 		m.plCursor = from
 	}
 	m.recountHeaderState(tracks)
-	m.normalizeQueueOverlay()
+	m.normalizePlayNextOverlay()
 	m.adjustScroll()
 	return m.rearmStalePreload(), nil
 }
@@ -103,7 +103,7 @@ func (m *Model) reverseTracks() (tea.Cmd, error) {
 		m.status.Show("Reversed playlist order", statusTTLDefault)
 	}
 	m.recountHeaderState(tracks)
-	m.normalizeQueueOverlay()
+	m.normalizePlayNextOverlay()
 	m.adjustScroll()
 	return m.rearmStalePreload(), nil
 }
@@ -158,7 +158,7 @@ func (m *Model) removeTrack(idx int, recordUndo bool) (tea.Cmd, error) {
 	if !m.playlist.Remove(idx) {
 		return nil, errQueueIndex
 	}
-	m.normalizeQueueOverlay()
+	m.normalizePlayNextOverlay()
 	undoHint := ""
 	if recordUndo {
 		m.recordPlaylistUndo(playlistUndo{snapshot: snapshot, persisted: persisted, removed: removed, savedIdx: savedIdx})

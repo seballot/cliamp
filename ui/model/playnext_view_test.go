@@ -46,7 +46,7 @@ func queueViewModel(t *testing.T) *Model {
 		{Path: "https://cdn/fresh.mp3", Title: "Untouched", Album: "Wading Through AI", DurationSecs: 60},
 	})
 	for i := range 3 {
-		m.playlist.Queue(i)
+		m.playlist.AddPlayNext(i)
 	}
 	return m
 }
@@ -54,7 +54,7 @@ func queueViewModel(t *testing.T) *Model {
 func TestRenderQueueBodyMatchesPlaylistPresentation(t *testing.T) {
 	m := queueViewModel(t)
 
-	body := stripAnsi(m.renderQueueBody())
+	body := stripAnsi(m.renderPlayNextBody())
 
 	for _, want := range []string{
 		"Part Of The Problem", // show header
@@ -74,7 +74,7 @@ func TestRenderQueueBodyMatchesPlaylistPresentation(t *testing.T) {
 func TestRenderQueueBodyNumbersByQueuePosition(t *testing.T) {
 	m := queueViewModel(t)
 
-	body := stripAnsi(m.renderQueueBody())
+	body := stripAnsi(m.renderPlayNextBody())
 
 	for _, want := range []string{"1. Finished One", "2. Half Heard", "3. Untouched"} {
 		if !strings.Contains(body, want) {
@@ -86,8 +86,8 @@ func TestRenderQueueBodyNumbersByQueuePosition(t *testing.T) {
 func TestRenderQueueBodyEmpty(t *testing.T) {
 	m := &Model{layout: frameLayout{panelWidth: 80}, playlist: playlist.New(), plVisible: 12}
 
-	got := stripAnsi(m.renderQueueBody())
-	for _, want := range []string{"The queue is empty.", "Press  a  on a playlist track to play it next."} {
+	got := stripAnsi(m.renderPlayNextBody())
+	for _, want := range []string{"Play next is empty.", "Press  a  on a playlist track to play it next."} {
 		if !strings.Contains(got, want) {
 			t.Errorf("empty queue body = %q, want %q", got, want)
 		}
@@ -102,7 +102,7 @@ func TestQueueKeepsTheNormalLayout(t *testing.T) {
 		setup            func(*Model)
 		wantContentFirst bool
 	}{
-		{"queue open", func(m *Model) { m.queue.visible = true }, false},
+		{"queue open", func(m *Model) { m.playNext.visible = true }, false},
 		{"file browser open", func(m *Model) { m.fileBrowser.visible = true }, true},
 	}
 	for _, tt := range tests {
@@ -123,9 +123,9 @@ func TestQueueKeepsTheNormalLayout(t *testing.T) {
 func TestRenderQueueBodyOneRowShowsTheTrackNotTheHeader(t *testing.T) {
 	m := &Model{layout: frameLayout{panelWidth: 80}, playlist: playlist.New(), plVisible: 1, showAlbumHeaders: true}
 	m.playlist.Replace([]playlist.Track{{Path: "/t0.mp3", Title: "Track 0", Album: "One Album"}})
-	m.playlist.Queue(0)
+	m.playlist.AddPlayNext(0)
 
-	body := stripAnsi(m.renderQueueBody())
+	body := stripAnsi(m.renderPlayNextBody())
 
 	if got := strings.Count(body, "\n") + 1; got != 1 {
 		t.Fatalf("rows = %d, want 1:\n%s", got, body)
@@ -143,11 +143,11 @@ func TestRenderQueueBodyScrollsALongQueue(t *testing.T) {
 	}
 	m.playlist.Replace(tracks)
 	for i := range tracks {
-		m.playlist.Queue(i)
+		m.playlist.AddPlayNext(i)
 	}
-	m.queue.cursor = 999
+	m.playNext.cursor = 999
 
-	body := stripAnsi(m.renderQueueBody())
+	body := stripAnsi(m.renderPlayNextBody())
 
 	if !strings.Contains(body, "1000. Track 999") {
 		t.Errorf("track under the cursor is missing:\n%s", body)
@@ -165,13 +165,13 @@ func TestRenderQueueBodyKeepsCursorVisiblePastHeaders(t *testing.T) {
 	}
 	m.playlist.Replace(tracks)
 	for i := range tracks {
-		m.playlist.Queue(i)
+		m.playlist.AddPlayNext(i)
 	}
 	// Five rows of budget: one header plus four tracks. The cursor on track 4
 	// would be the fifth track row, off the bottom unless the view scrolls.
-	m.queue.cursor, m.queue.scroll = 4, 0
+	m.playNext.cursor, m.playNext.scroll = 4, 0
 
-	body := stripAnsi(m.renderQueueBody())
+	body := stripAnsi(m.renderPlayNextBody())
 
 	if !strings.Contains(body, "> ") {
 		t.Errorf("cursor row not rendered:\n%s", body)

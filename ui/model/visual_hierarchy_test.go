@@ -17,7 +17,7 @@ func TestPlaylistStateMarkersStayVisibleWithoutColor(t *testing.T) {
 		playlist.Track{Path: "/playing.mp3", Title: "Playing"},
 		playlist.Track{Title: "Unavailable", Unplayable: true},
 	)
-	p.Queue(0)
+	p.AddPlayNext(0)
 	fake := &playbackFakeEngine{playing: true}
 	m := Model{
 		layout:    frameLayout{panelWidth: 80},

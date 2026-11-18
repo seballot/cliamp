@@ -21,7 +21,7 @@ const (
 	commandModeRepeat
 	commandModeSpeed
 	commandModeProviderPill
-	commandModeQueue
+	commandModePlayNext
 	commandModeSearch
 	commandModeNetSearch
 	commandModeSearchOverlay
@@ -500,7 +500,7 @@ var commandRegistry = []commandSpec{
 		Label:    "Toggle play next (selected track will be played just after current)",
 		LabelFor: func(m Model) string {
 			if m.playlist != nil && m.plCursor >= 0 && m.plCursor < m.playlist.Len() {
-				if m.playlist.QueuePosition(m.plCursor) > 0 {
+				if m.playlist.PlayNextPosition(m.plCursor) > 0 {
 					return "Unmark play next"
 				}
 			}
@@ -715,28 +715,28 @@ var commandRegistry = []commandSpec{
 		Label:    "Open",
 	},
 	{
-		Mode:     commandModePlaylistManager | commandModeQueue,
+		Mode:     commandModePlaylistManager | commandModePlayNext,
 		Keys:     []string{"esc", "q"},
 		KeyLabel: "Esc",
 		Label:    "Back",
 	},
 	{
-		Mode:        commandModeQueue,
+		Mode:        commandModePlayNext,
 		Keys:        []string{"d"},
 		KeyLabel:    "d",
 		Label:       "Remove",
 		Destructive: true,
-		Enabled:     func(m Model) bool { return m.playlist != nil && m.playlist.QueueLen() > 0 },
+		Enabled:     func(m Model) bool { return m.playlist != nil && m.playlist.PlayNextLen() > 0 },
 	},
 	{
-		Mode:        commandModeQueue,
+		Mode:        commandModePlayNext,
 		Keys:        []string{"c"},
 		KeyLabel:    "c",
 		Label:       "Clear",
 		Destructive: true,
 	},
 	{
-		Mode:     commandModeQueue,
+		Mode:     commandModePlayNext,
 		Keys:     []string{"shift+up", "shift+down"},
 		KeyLabel: "Shift+↑↓",
 		Label:    "Move",
@@ -1583,7 +1583,7 @@ var helpBarKeyOrder = map[commandMode][]string{
 	commandModePlaylistManagerDirs:  {"esc", "a", "d", "r"},
 	commandModePlaylistPicker:       {"esc", "enter", "p"},
 	commandModePlaylistPickerInput:  {"esc", "enter"},
-	commandModeQueue:                {"esc", "d", "c", "shift+up"},
+	commandModePlayNext:             {"esc", "d", "c", "shift+up"},
 	commandModeSearch:               {"esc", "enter", "tab"},
 	commandModeNetSearch:            {"esc", "enter", "f"},
 	commandModeSearchOverlay:        {"esc", "enter", "f", "p"},

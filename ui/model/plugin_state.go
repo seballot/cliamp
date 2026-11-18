@@ -87,7 +87,7 @@ func (m *Model) publishPluginState() {
 
 // pluginQueue returns pl as cliamp.queue.list reports it.
 func pluginQueue(pl *playlist.Playlist) []luaplugin.QueueEntry {
-	tracks, playNext := pl.TracksAndQueue()
+	tracks, playNext := pl.TracksAndPlayNext()
 	queued := make(map[int]bool, len(playNext))
 	for _, index := range playNext {
 		queued[index] = true

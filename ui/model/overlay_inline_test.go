@@ -57,7 +57,7 @@ func TestInlineOverlaysFitTerminal(t *testing.T) {
 	}{
 		{"themePicker", func(m *Model) { m.themePicker.visible = true }},
 		{"devicePicker", func(m *Model) { m.devicePicker.visible = true }},
-		{"queue", func(m *Model) { m.queue.visible = true }},
+		{"queue", func(m *Model) { m.playNext.visible = true }},
 		{"info", func(m *Model) { m.info.visible = true }},
 		{"search", func(m *Model) { m.search.active = true }},
 		{"keymap", func(m *Model) { m.keymap.visible = true; m.keymap.entries = m.buildKeymapEntries() }},

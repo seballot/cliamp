@@ -134,7 +134,7 @@ func TestKeymapEnterRunsSelectedCommand(t *testing.T) {
 		{
 			name: "play next overlay from the playlist",
 			key:  "A", action: "Open play next list",
-			check: func(m *Model) bool { return m.queue.visible },
+			check: func(m *Model) bool { return m.playNext.visible },
 		},
 		{
 			name: "refresh from the provider pane",

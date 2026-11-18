@@ -962,7 +962,7 @@ func (m Model) renderPlaybackHeader() string {
 		}
 	}
 
-	if qLen := m.playlist.QueueLen(); qLen > 0 {
+	if qLen := m.playlist.PlayNextLen(); qLen > 0 {
 		badges = append(badges, activeToggle.Render(fmt.Sprintf("[Next: %d]", qLen)))
 	}
 	// Render from the cached favSet: the render path must not hit disk.
@@ -1291,8 +1291,8 @@ func (m Model) renderPlaylist() string {
 		markers := cursorMarker + stateMarker
 		styledMarkers := dimStyle.Render(cursorMarker) + stateStyle.Render(stateMarker)
 
-		queuePosition := m.playlist.QueuePosition(i)
-		if cols.queue {
+		queuePosition := m.playlist.PlayNextPosition(i)
+		if cols.playNext {
 			mark := " "
 			if queuePosition > 0 {
 				mark = "N"

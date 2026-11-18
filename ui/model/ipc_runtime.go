@@ -250,7 +250,7 @@ func (m *Model) handleV2QueueRequest(ctx context.Context, jobs *ipc.JobStore, jo
 			m.completeV2Job(jobs, jobID, m.v2PlaylistResponse())
 			return cmd
 		}
-		cmd := m.queueTrackNext(track)
+		cmd := m.playNextTrack(track)
 		m.completeV2Job(jobs, jobID, m.v2PlaylistResponse())
 		return cmd
 	}
@@ -269,8 +269,8 @@ func (m *Model) handleV2QueueRequest(ctx context.Context, jobs *ipc.JobStore, jo
 			m.failV2Job(jobs, jobID, v2InvalidParamsError())
 			return nil
 		}
-		m.playlist.Queue(request.Index)
-		m.normalizeQueueOverlay()
+		m.playlist.AddPlayNext(request.Index)
+		m.normalizePlayNextOverlay()
 		m.completeV2Job(jobs, jobID, m.v2PlaylistResponse())
 		return m.rearmStalePreload()
 	case "queue.remove", "queue.move":
@@ -305,20 +305,20 @@ func (m *Model) handleV2PlayNext(jobs *ipc.JobStore, jobID string, request ipc.R
 		m.completeV2Job(jobs, jobID, m.v2PlayNextResponsePage(request.Offset, request.Limit))
 		return nil
 	case "playnext.remove":
-		if request.Index < 0 || request.Index >= m.playlist.QueueLen() {
+		if request.Index < 0 || request.Index >= m.playlist.PlayNextLen() {
 			m.failV2Job(jobs, jobID, v2InvalidParamsError())
 			return nil
 		}
-		m.playlist.RemoveQueueAt(request.Index)
+		m.playlist.RemovePlayNextAt(request.Index)
 	case "playnext.move":
-		if !m.playlist.MoveQueue(request.Index, request.To) {
+		if !m.playlist.MovePlayNext(request.Index, request.To) {
 			m.failV2Job(jobs, jobID, v2InvalidParamsError())
 			return nil
 		}
 	case "playnext.clear":
-		m.playlist.ClearQueue()
+		m.playlist.ClearPlayNext()
 	}
-	m.normalizeQueueOverlay()
+	m.normalizePlayNextOverlay()
 	m.completeV2Job(jobs, jobID, m.v2PlayNextResponse())
 	return m.rearmStalePreload()
 }
@@ -631,12 +631,12 @@ func (m *Model) runtimeSnapshot() ipc.RuntimeSnapshot {
 		snapshot.PlaylistRevision = m.playlist.Revision()
 		snapshot.Index = m.playlist.Index()
 		snapshot.Total = m.playlist.Len()
-		snapshot.PlayNextTotal = m.playlist.QueueLen()
+		snapshot.PlayNextTotal = m.playlist.PlayNextLen()
 		shuffled := m.playlist.Shuffled()
 		snapshot.Shuffle = &shuffled
 		snapshot.Repeat = m.playlist.Repeat().String()
 		if track, index := m.playlist.Current(); index >= 0 {
-			info := ipcTrackInfo(track, index, m.playlist.QueuePosition(index), m.playlistTrackFavorited(track))
+			info := ipcTrackInfo(track, index, m.playlist.PlayNextPosition(index), m.playlistTrackFavorited(track))
 			snapshot.LogicalTrack = &info
 		}
 	}
@@ -655,7 +655,7 @@ func (m *Model) runtimeSnapshot() ipc.RuntimeSnapshot {
 		index := snapshot.Index
 		queuePosition := 0
 		if m.playlist != nil && index >= 0 {
-			queuePosition = m.playlist.QueuePosition(index)
+			queuePosition = m.playlist.PlayNextPosition(index)
 		}
 		info := ipcTrackInfo(track, index, queuePosition, m.playlistTrackFavorited(track))
 		artist, title := m.resolveTrackDisplay(track)
@@ -723,7 +723,7 @@ func (m *Model) runtimeFingerprint() ipcRuntimeFingerprint {
 	fingerprint.playlistRevision = m.playlist.Revision()
 	fingerprint.index = m.playlist.Index()
 	fingerprint.total = m.playlist.Len()
-	fingerprint.playNextTotal = m.playlist.QueueLen()
+	fingerprint.playNextTotal = m.playlist.PlayNextLen()
 	fingerprint.shuffle = m.playlist.Shuffled()
 	fingerprint.repeat = m.playlist.Repeat().String()
 	fingerprint.volume = m.player.Volume()
@@ -792,7 +792,7 @@ func (m *Model) v2PlaylistResponsePage(offset, limit int) ipc.Response {
 	items := make([]ipc.TrackInfo, end-offset)
 	for i, track := range tracks[offset:end] {
 		index := offset + i
-		items[i] = ipcTrackInfo(track, index, m.playlist.QueuePosition(index), m.playlistTrackFavorited(track))
+		items[i] = ipcTrackInfo(track, index, m.playlist.PlayNextPosition(index), m.playlistTrackFavorited(track))
 	}
 	return ipc.Response{OK: true, Tracks: items, Index: m.playlist.Index(), Total: total}
 }
@@ -802,7 +802,7 @@ func (m *Model) v2PlayNextResponse() ipc.Response {
 }
 
 func (m *Model) v2PlayNextResponsePage(offset, limit int) ipc.Response {
-	entries := m.playlist.QueueEntries()
+	entries := m.playlist.PlayNextEntries()
 	total := len(entries)
 	if offset < 0 || offset >= total {
 		return ipc.Response{OK: true, Total: total}

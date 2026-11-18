@@ -84,8 +84,8 @@ func TestPlaybackContextSurvivesPlaylistMutations(t *testing.T) {
 	p := New()
 	p.Add(WithPlaybackContext(source)...)
 	p.SetIndex(2)
-	p.Queue(3)
-	p.Queue(2)
+	p.AddPlayNext(3)
+	p.AddPlayNext(2)
 	snapshot := p.Snapshot()
 	check := func(track Track, wantIndex int) {
 		t.Helper()
@@ -99,12 +99,12 @@ func TestPlaybackContextSurvivesPlaylistMutations(t *testing.T) {
 	}
 	track, _ := p.Current()
 	check(track, 2)
-	entries := p.QueueEntries()
+	entries := p.PlayNextEntries()
 	check(entries[0].Track, 3)
 	check(entries[1].Track, 2)
 	p.Restore(snapshot)
 	track, index := p.Current()
-	if index != 2 || p.QueueLen() != 2 {
+	if index != 2 || p.PlayNextLen() != 2 {
 		t.Fatal("undo did not restore selection and queue")
 	}
 	check(track, 2)

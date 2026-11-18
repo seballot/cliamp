@@ -67,7 +67,7 @@ func (m *Model) handleSearchOverlayAlbumTracks(msg searchOverlayAlbumTracksMsg) 
 	case searchOverlayAlbumAppend:
 		return m.appendAlbum(album, tracks)
 	case searchOverlayAlbumQueueNext:
-		return m.queueAlbumNext(album, tracks)
+		return m.playNextAlbum(album, tracks)
 	default:
 		return m.playAlbumImmediate(album, tracks)
 	}

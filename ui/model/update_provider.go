@@ -93,7 +93,7 @@ func (m *Model) handleTracksLoaded(msg tracksLoadedMsg) tea.Cmd {
 	}
 	if msg.offset > 0 {
 		m.playlist.Add(msg.tracks...)
-		m.normalizeQueueOverlay()
+		m.normalizePlayNextOverlay()
 		m.addToHeaderState(msg.tracks)
 		// Add mixes the page into the upcoming shuffle order, so an armed
 		// preload may no longer be the next track. The gapless swap runs on

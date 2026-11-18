@@ -190,12 +190,12 @@ func (m *Model) addSubscriptionEpisodes(tracks []playlist.Track, mode subsLoadMo
 	switch mode {
 	case subsLoadQueue:
 		for i := range tracks {
-			m.playlist.Queue(start + i)
+			m.playlist.AddPlayNext(start + i)
 		}
-		m.status.Showf(statusTTLDefault, "Queued %d episode(s) from %s", len(tracks), showName)
+		m.status.Showf(statusTTLDefault, "Play next: %d episodes from %s", len(tracks), showName)
 	case subsLoadLatest:
-		m.playlist.Queue(start)
-		m.status.Showf(statusTTLDefault, "Queued %s", tracks[0].DisplayName())
+		m.playlist.AddPlayNext(start)
+		m.status.Showf(statusTTLDefault, "Play next: %s", tracks[0].DisplayName())
 	default:
 		m.status.Showf(statusTTLDefault, "Added %d episode(s) from %s", len(tracks), showName)
 	}
@@ -216,7 +216,7 @@ func (m *Model) appendSubscriptionTracks(tracks []playlist.Track, mode subsLoadM
 		m.adjustScroll()
 		return m.playCurrentTrack()
 	}
-	m.normalizeQueueOverlay()
+	m.normalizePlayNextOverlay()
 	return m.rearmStalePreload()
 }
 

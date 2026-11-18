@@ -88,7 +88,7 @@ func TestHeadlessStateSnapshot(t *testing.T) {
 		playlist.Track{Path: "https://example.com/one", Title: "One", Stream: true},
 		playlist.Track{Path: "https://example.com/two", Title: "Two", Stream: true},
 	)
-	m.playlist.Queue(1)
+	m.playlist.AddPlayNext(1)
 	m.SetIPCBroker(ipc.NewBroker())
 	m.publishIPCRuntimeState()
 
@@ -130,14 +130,14 @@ func TestHeadlessVolumeJobCarriesSnapshot(t *testing.T) {
 func TestHeadlessQueueAndPlayNextAreSeparate(t *testing.T) {
 	m := newHeadlessModel(t, &headlessEngine{}, nil)
 
-	if response := runV2(t, &m, "queue", ipc.Request{Path: "https://example.com/queued"}); !response.OK || m.playlist.Len() != 1 || m.playlist.QueueLen() != 0 {
-		t.Fatalf("queue = %+v, playlist %d, play-next %d", response, m.playlist.Len(), m.playlist.QueueLen())
+	if response := runV2(t, &m, "queue", ipc.Request{Path: "https://example.com/queued"}); !response.OK || m.playlist.Len() != 1 || m.playlist.PlayNextLen() != 0 {
+		t.Fatalf("queue = %+v, playlist %d, play-next %d", response, m.playlist.Len(), m.playlist.PlayNextLen())
 	}
-	if response := runV2(t, &m, "queue.enqueue", ipc.Request{Index: 0}); !response.OK || m.playlist.Len() != 1 || m.playlist.QueueLen() != 1 {
-		t.Fatalf("queue.enqueue = %+v, playlist %d, play-next %d", response, m.playlist.Len(), m.playlist.QueueLen())
+	if response := runV2(t, &m, "queue.enqueue", ipc.Request{Index: 0}); !response.OK || m.playlist.Len() != 1 || m.playlist.PlayNextLen() != 1 {
+		t.Fatalf("queue.enqueue = %+v, playlist %d, play-next %d", response, m.playlist.Len(), m.playlist.PlayNextLen())
 	}
 	playNext := runV2(t, &m, "playnext.list", ipc.Request{})
-	if len(playNext.Tracks) != 1 || playNext.Total != 1 || playNext.Tracks[0].QueuePosition != 1 {
+	if len(playNext.Tracks) != 1 || playNext.Total != 1 || playNext.Tracks[0].PlayNextPosition != 1 {
 		t.Fatalf("playnext.list = %+v", playNext)
 	}
 	live := runV2(t, &m, "queue.list", ipc.Request{})
@@ -172,10 +172,10 @@ func TestHeadlessQueueListIncludesMetadata(t *testing.T) {
 		playlist.Track{Path: "/one.flac", Title: "One", Album: "Album", DurationSecs: 60},
 		playlist.Track{Path: "/two.flac", Title: "Two"},
 	)
-	m.playlist.Queue(1)
+	m.playlist.AddPlayNext(1)
 
 	response := runV2(t, &m, "queue.list", ipc.Request{})
-	if len(response.Tracks) != 2 || response.Tracks[0].Album != "Album" || response.Tracks[0].DurationSecs != 60 || response.Tracks[1].QueuePosition != 1 {
+	if len(response.Tracks) != 2 || response.Tracks[0].Album != "Album" || response.Tracks[0].DurationSecs != 60 || response.Tracks[1].PlayNextPosition != 1 {
 		t.Fatalf("queue.list = %+v", response.Tracks)
 	}
 }
@@ -520,7 +520,7 @@ func TestIPCTrackInfoConversion(t *testing.T) {
 	track := playlist.Track{Path: "https://example.com/stream", Title: "Stream", Artist: "Artist", Realtime: true, Restricted: true}
 	info := ipcTrackInfo(track, 3, 2, false)
 	converted := ipcTrackFromInfo(info)
-	if info.Index != 3 || info.QueuePosition != 2 || !info.Restricted || converted.Path != track.Path || !converted.Stream || !converted.Realtime || !converted.Restricted {
+	if info.Index != 3 || info.PlayNextPosition != 2 || !info.Restricted || converted.Path != track.Path || !converted.Stream || !converted.Realtime || !converted.Restricted {
 		t.Fatalf("conversion lost metadata: info=%+v converted=%+v", info, converted)
 	}
 }

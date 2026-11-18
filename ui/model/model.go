@@ -210,7 +210,7 @@ const (
 	screenNavBrowser
 	screenPlaylistManager
 	screenSearchOverlay
-	screenQueue
+	screenPlayNext
 	screenSubs
 	screenInfo
 	screenSearch
@@ -244,7 +244,7 @@ func (s topLevelScreen) label() string {
 		return "Playlists"
 	case screenSearchOverlay, screenNetSearch:
 		return "Search"
-	case screenQueue:
+	case screenPlayNext:
 		return "Play next"
 	case screenSubs:
 		return "Subscriptions"
@@ -382,7 +382,7 @@ type Model struct {
 	visPicker      visPickerState
 	lyrics         lyricsState
 	keymap         keymapOverlay
-	queue          queueOverlay
+	playNext       playNextOverlay
 	subs           subsOverlay
 	plManager      plManagerState
 	plPicker       playlistPickerState

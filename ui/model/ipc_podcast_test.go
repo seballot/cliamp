@@ -31,8 +31,8 @@ func ipcPodcastTestModel() (Model, *playbackFakeEngine) {
 		playlist.Track{Path: "/music/one.flac", Title: "One"},
 		playlist.Track{Path: "/music/two.flac", Title: "Two"},
 	)
-	pl.Queue(2)
-	pl.Queue(1)
+	pl.AddPlayNext(2)
+	pl.AddPlayNext(1)
 	return Model{player: engine, playlist: pl, loadedPlaylist: "Saved"}, engine
 }
 
@@ -68,7 +68,7 @@ func TestIPCPodcastTrackActions(t *testing.T) {
 				m, engine := ipcPodcastTestModel()
 				before, revision, engineBefore := m.playlist.Snapshot(), m.playlist.Revision(), *engine
 				original := m.playlist.Tracks()
-				queued := m.playlist.QueueTracks()
+				queued := m.playlist.PlayNextTracks()
 				msg := v2Request(t, op, ipc.Request{Track: &info})
 				updated, cmd := m.Update(msg)
 				m = updated.(Model)
@@ -129,8 +129,8 @@ func TestIPCPodcastTrackActions(t *testing.T) {
 				} else {
 					wantIndex = len(original)
 				}
-				if !reflect.DeepEqual(m.playlist.Tracks(), wantTracks) || !reflect.DeepEqual(m.playlist.QueueTracks(), queued) || m.playlist.Index() != wantIndex {
-					t.Fatalf("playlist = %+v, queue = %+v, index = %d; want original tracks/queue plus feed-order episodes at index %d", m.playlist.Tracks(), m.playlist.QueueTracks(), m.playlist.Index(), wantIndex)
+				if !reflect.DeepEqual(m.playlist.Tracks(), wantTracks) || !reflect.DeepEqual(m.playlist.PlayNextTracks(), queued) || m.playlist.Index() != wantIndex {
+					t.Fatalf("playlist = %+v, queue = %+v, index = %d; want original tracks/queue plus feed-order episodes at index %d", m.playlist.Tracks(), m.playlist.PlayNextTracks(), m.playlist.Index(), wantIndex)
 				}
 				for _, track := range response.Tracks {
 					if track.Feed || track.Path == feedURL || track.ProviderMeta["kind"] == "album" {
@@ -148,7 +148,7 @@ func TestIPCPodcastTrackActions(t *testing.T) {
 				if op == "track.play" && !reflect.DeepEqual(engine.playCalls, []string{wantEpisodes[0].Path}) {
 					t.Fatalf("played = %v, want first episode", engine.playCalls)
 				}
-				if m.feedLoading || !reflect.DeepEqual(m.playlist.Tracks(), wantTracks) || !reflect.DeepEqual(m.playlist.QueueTracks(), queued) {
+				if m.feedLoading || !reflect.DeepEqual(m.playlist.Tracks(), wantTracks) || !reflect.DeepEqual(m.playlist.PlayNextTracks(), queued) {
 					t.Fatal("episode playback changed the existing playlist or queue")
 				}
 				if op == "track.queue" {
@@ -161,7 +161,7 @@ func TestIPCPodcastTrackActions(t *testing.T) {
 							t.Fatalf("played = %v, want next queued track %q", engine.playCalls, track.Path)
 						}
 					}
-					if m.feedLoading || !reflect.DeepEqual(m.playlist.Tracks(), wantTracks) || m.playlist.QueueLen() != 0 {
+					if m.feedLoading || !reflect.DeepEqual(m.playlist.Tracks(), wantTracks) || m.playlist.PlayNextLen() != 0 {
 						t.Fatal("playing queued episodes replaced the playlist or lost queue order")
 					}
 				}
@@ -219,7 +219,7 @@ func TestIPCPodcastV2FeedCommit(t *testing.T) {
 				case "playlist":
 					m.playlist.Add(playlist.Track{Path: "/music/added.flac", Title: "Added while fetching"})
 				case "queue":
-					m.playlist.Queue(0)
+					m.playlist.AddPlayNext(0)
 				}
 				before, revision, engineBefore := m.playlist.Snapshot(), m.playlist.Revision(), *engine
 				tracks := m.playlist.Tracks()
@@ -441,7 +441,7 @@ func TestIPCTrackActionsNonFeed(t *testing.T) {
 		} {
 			t.Run(op+"/"+info.Title, func(t *testing.T) {
 				m, _ := ipcPodcastTestModel()
-				original, queued := m.playlist.Tracks(), m.playlist.QueueTracks()
+				original, queued := m.playlist.Tracks(), m.playlist.PlayNextTracks()
 				msg := v2Request(t, op, ipc.Request{Track: &info})
 				updated, _ := m.Update(msg)
 				m = updated.(Model)
@@ -454,7 +454,7 @@ func TestIPCTrackActionsNonFeed(t *testing.T) {
 					queued = append(queued, track)
 					wantIndex = 0
 				}
-				if !reflect.DeepEqual(m.playlist.Tracks(), append(original, track)) || !reflect.DeepEqual(m.playlist.QueueTracks(), queued) || m.playlist.Index() != wantIndex {
+				if !reflect.DeepEqual(m.playlist.Tracks(), append(original, track)) || !reflect.DeepEqual(m.playlist.PlayNextTracks(), queued) || m.playlist.Index() != wantIndex {
 					t.Fatal("non-feed single-track behavior changed")
 				}
 			})

@@ -205,7 +205,7 @@ func (m *Model) handleIPCFeedLoad(result ipcFeedLoadResult) tea.Cmd {
 	if result.op == "track.play" {
 		cmd = m.playAlbumImmediate(result.feed, result.tracks)
 	} else {
-		cmd = m.queueAlbumNext(result.feed, result.tracks)
+		cmd = m.playNextAlbum(result.feed, result.tracks)
 	}
 	// Capture completion with this mutation, not in a later waiter update.
 	m.completeV2Job(result.jobs, result.jobID, m.v2PlaylistResponse())
@@ -744,7 +744,7 @@ func ipcTrackInfo(track playlist.Track, index, queuePosition int, favorite bool)
 		Title: track.Title, Artist: track.Artist, Album: track.Album, Genre: track.Genre,
 		Path: track.Path, AlbumArtURL: track.AlbumArtURL, Year: track.Year,
 		TrackNumber: track.TrackNumber, DurationSecs: track.DurationSecs, Index: index,
-		QueuePosition: queuePosition, Stream: track.Stream, Realtime: track.Realtime,
+		PlayNextPosition: queuePosition, Stream: track.Stream, Realtime: track.Realtime,
 		Restricted: track.Restricted, Feed: track.Feed, Bookmark: favorite, Unplayable: track.Unplayable,
 		DirSourced: track.DirSourced, ProviderMeta: maps.Clone(track.ProviderMeta),
 	}

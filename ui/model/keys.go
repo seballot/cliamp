@@ -692,10 +692,10 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 
 	case "a":
 		if m.focus == focusPlaylist {
-			if !m.playlist.Dequeue(m.plCursor) {
-				m.playlist.Queue(m.plCursor)
+			if !m.playlist.RemovePlayNext(m.plCursor) {
+				m.playlist.AddPlayNext(m.plCursor)
 			}
-			m.normalizeQueueOverlay()
+			m.normalizePlayNextOverlay()
 			return m.rearmStalePreload()
 		}
 
@@ -708,10 +708,10 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 
 	case "A":
 		if m.focus == focusPlaylist {
-			m.queue.visible = true
-			m.queue.cursor = 0
-			m.queue.scroll = 0
-			m.queue.confirmClear = false
+			m.playNext.visible = true
+			m.playNext.cursor = 0
+			m.playNext.scroll = 0
+			m.playNext.confirmClear = false
 		}
 
 	case "F":

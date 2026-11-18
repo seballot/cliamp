@@ -14,19 +14,19 @@ func TestRenderQueueBodyPreservesVisibleQueuePositions(t *testing.T) {
 	p := playlist.New()
 	for i := range 10 {
 		p.Add(playlist.Track{Title: fmt.Sprintf("Track %d", i+1)})
-		p.Queue(i)
+		p.AddPlayNext(i)
 	}
 	m := Model{
 		playlist:  p,
 		layout:    frameLayout{panelWidth: 74},
 		plVisible: 3,
-		queue: queueOverlay{
+		playNext: playNextOverlay{
 			cursor: 5,
 			scroll: 4,
 		},
 	}
 
-	got := strings.Split(stripAnsi(m.renderQueueBody()), "\n")
+	got := strings.Split(stripAnsi(m.renderPlayNextBody()), "\n")
 	// The rows reserve a cursor column and a state column, matching how the
 	// playlist pane renders the same tracks.
 	want := []string{
@@ -35,11 +35,11 @@ func TestRenderQueueBodyPreservesVisibleQueuePositions(t *testing.T) {
 		"    7. Track 7",
 	}
 	if len(got) != len(want) {
-		t.Fatalf("renderQueueBody() rows = %d, want %d: %q", len(got), len(want), got)
+		t.Fatalf("renderPlayNextBody() rows = %d, want %d: %q", len(got), len(want), got)
 	}
 	for i := range want {
 		if got[i] != want[i] {
-			t.Errorf("renderQueueBody() row %d = %q, want %q", i, got[i], want[i])
+			t.Errorf("renderPlayNextBody() row %d = %q, want %q", i, got[i], want[i])
 		}
 	}
 }

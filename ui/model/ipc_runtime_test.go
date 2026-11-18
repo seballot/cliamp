@@ -164,8 +164,8 @@ func TestV2QueueAndPlayNextUseSeparateIndexes(t *testing.T) {
 	})
 	m = updated.(Model)
 	completed, ok := jobs.Get(job.ID)
-	if !ok || completed.State != ipc.JobSucceeded || pl.QueueLen() != 1 || pl.Len() != 2 {
-		t.Fatalf("queue job=%#v queue=%d playlist=%d", completed, pl.QueueLen(), pl.Len())
+	if !ok || completed.State != ipc.JobSucceeded || pl.PlayNextLen() != 1 || pl.Len() != 2 {
+		t.Fatalf("queue job=%#v queue=%d playlist=%d", completed, pl.PlayNextLen(), pl.Len())
 	}
 
 	job, err = jobs.Create("playnext.remove")
@@ -178,8 +178,8 @@ func TestV2QueueAndPlayNextUseSeparateIndexes(t *testing.T) {
 		JobID:   job.ID,
 	})
 	completed, ok = jobs.Get(job.ID)
-	if !ok || completed.State != ipc.JobSucceeded || pl.QueueLen() != 0 || pl.Len() != 2 {
-		t.Fatalf("play-next job=%#v queue=%d playlist=%d", completed, pl.QueueLen(), pl.Len())
+	if !ok || completed.State != ipc.JobSucceeded || pl.PlayNextLen() != 0 || pl.Len() != 2 {
+		t.Fatalf("play-next job=%#v queue=%d playlist=%d", completed, pl.PlayNextLen(), pl.Len())
 	}
 }
 

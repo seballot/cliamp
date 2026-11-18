@@ -33,51 +33,51 @@ func (r RepeatMode) String() string {
 // All exported methods are safe for concurrent use: the Bubbletea UI loop
 // mutates the playlist while Lua plugin goroutines read state through it.
 type Playlist struct {
-	mu             sync.Mutex
-	revision       uint64
-	tracks         []Track
-	order          []int // indices into tracks, shuffled or sequential
-	pos            int   // current position in order
-	shuffle        bool
-	repeat         RepeatMode
-	queue          []int       // track indices queued to play next
-	queuePositions map[int]int // first 1-based queue position by track index
-	queuedIdx      int         // track index currently playing from queue, -1 if none
+	mu                sync.Mutex
+	revision          uint64
+	tracks            []Track
+	order             []int // indices into tracks, shuffled or sequential
+	pos               int   // current position in order
+	shuffle           bool
+	repeat            RepeatMode
+	playNext          []int       // track indices queued to play next
+	playNextPositions map[int]int // first 1-based queue position by track index
+	playNextIdx       int         // track index currently playing from queue, -1 if none
 }
 
 // Snapshot preserves the complete mutable playback state for later restoration.
 // Its fields are intentionally private so callers can only return it to Restore.
 type Snapshot struct {
-	tracks    []Track
-	order     []int
-	pos       int
-	shuffle   bool
-	repeat    RepeatMode
-	queue     []int
-	queuedIdx int
+	tracks      []Track
+	order       []int
+	pos         int
+	shuffle     bool
+	repeat      RepeatMode
+	playNext    []int
+	playNextIdx int
 }
 
-// QueueEntry identifies one play-next entry and the live playlist track it
+// PlayNextEntry identifies one play-next entry and the live playlist track it
 // references. Queue indexes are stable only until the next playlist revision.
-type QueueEntry struct {
+type PlayNextEntry struct {
 	TrackIndex int
 	Track      Track
 }
 
 // New creates an empty Playlist.
 func New() *Playlist {
-	return &Playlist{queuedIdx: -1}
+	return &Playlist{playNextIdx: -1}
 }
 
-func (p *Playlist) rebuildQueuePositions() {
-	if len(p.queue) == 0 {
-		p.queuePositions = nil
+func (p *Playlist) rebuildPlayNextPositions() {
+	if len(p.playNext) == 0 {
+		p.playNextPositions = nil
 		return
 	}
-	p.queuePositions = make(map[int]int, len(p.queue))
-	for i, idx := range p.queue {
-		if _, exists := p.queuePositions[idx]; !exists {
-			p.queuePositions[idx] = i + 1
+	p.playNextPositions = make(map[int]int, len(p.playNext))
+	for i, idx := range p.playNext {
+		if _, exists := p.playNextPositions[idx]; !exists {
+			p.playNextPositions[idx] = i + 1
 		}
 	}
 }
@@ -157,9 +157,9 @@ func (p *Playlist) ReplaceAt(tracks []Track, start int) {
 		start = 0
 	}
 	p.pos = start
-	p.queue = nil
-	p.queuePositions = nil
-	p.queuedIdx = -1
+	p.playNext = nil
+	p.playNextPositions = nil
+	p.playNextIdx = -1
 	if p.shuffle && len(tracks) > 0 {
 		p.doShuffle()
 	}
@@ -228,8 +228,8 @@ func (p *Playlist) currentTrackIndex() int {
 	if len(p.order) == 0 {
 		return -1
 	}
-	if p.queuedIdx >= 0 {
-		return p.queuedIdx
+	if p.playNextIdx >= 0 {
+		return p.playNextIdx
 	}
 	return p.currentOrderTrackIndex()
 }
@@ -268,10 +268,10 @@ func (p *Playlist) lastPlayableOrderSlot(from int) (orderPos int, trackIdx int, 
 	return -1, -1, false
 }
 
-func (p *Playlist) nextPlayableQueued() (trackIdx int, remaining []int, ok bool) {
-	for i, idx := range p.queue {
+func (p *Playlist) nextPlayableFromPlayNext() (trackIdx int, remaining []int, ok bool) {
+	for i, idx := range p.playNext {
 		if p.isPlayable(idx) {
-			return idx, p.queue[i+1:], true
+			return idx, p.playNext[i+1:], true
 		}
 	}
 	return -1, nil, false
@@ -339,14 +339,14 @@ func (p *Playlist) Index() int {
 	return p.currentTrackIndex()
 }
 
-func (p *Playlist) CurrentIsQueued() bool {
+func (p *Playlist) CurrentIsPlayNext() bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	return p.queuedIdx >= 0
+	return p.playNextIdx >= 0
 }
 
 func (p *Playlist) atShuffleWrap() bool {
-	return p.repeat == RepeatAll && p.shuffle && len(p.queue) == 0 && p.queuedIdx == -1 && p.pos+1 >= len(p.order)
+	return p.repeat == RepeatAll && p.shuffle && len(p.playNext) == 0 && p.playNextIdx == -1 && p.pos+1 >= len(p.order)
 }
 
 // SelectionActivation describes the playable track activated from the selected row.
@@ -375,15 +375,15 @@ func (p *Playlist) ActivateSelected() (SelectionActivation, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	origPos := p.pos
-	origQueuedIdx := p.queuedIdx
+	origQueuedIdx := p.playNextIdx
 	selectedPos := p.pos
 	orderPos, idx, ok := p.resolveSelectedPlayablePos()
 	if !ok {
 		return SelectionActivation{}, false
 	}
 	p.pos = orderPos
-	p.queuedIdx = -1
-	if p.pos != origPos || p.queuedIdx != origQueuedIdx {
+	p.playNextIdx = -1
+	if p.pos != origPos || p.playNextIdx != origQueuedIdx {
 		p.revision++
 	}
 	return SelectionActivation{
@@ -404,41 +404,41 @@ func (p *Playlist) Next() (Track, bool) {
 		return Track{}, false
 	}
 	origPos := p.pos
-	origQueuedIdx := p.queuedIdx
+	origQueuedIdx := p.playNextIdx
 
-	if idx, remaining, ok := p.nextPlayableQueued(); ok {
-		p.queue = remaining
-		p.rebuildQueuePositions()
-		p.queuedIdx = idx
+	if idx, remaining, ok := p.nextPlayableFromPlayNext(); ok {
+		p.playNext = remaining
+		p.rebuildPlayNextPositions()
+		p.playNextIdx = idx
 		// The play order resumes after the queue. Without this, it plays the
 		// queued track again when that track was next in the order. With
-		// queuedIdx set, advanceFromOrder does not reshuffle.
+		// playNextIdx set, advanceFromOrder does not reshuffle.
 		if p.repeat != RepeatOne {
 			if orderPos, next, ok := p.advanceFromOrder(); ok && next == idx {
 				p.pos = orderPos
-				p.queuedIdx = -1
+				p.playNextIdx = -1
 			}
 		}
 		p.revision++
 		return cloneTrack(p.tracks[idx]), true
 	}
 	queueCleared := false
-	if len(p.queue) > 0 {
-		p.queue = nil
-		p.queuePositions = nil
+	if len(p.playNext) > 0 {
+		p.playNext = nil
+		p.playNextPositions = nil
 		queueCleared = true
 	}
 	if p.repeat == RepeatOne {
 		idx := p.currentOrderTrackIndex()
 		if p.isPlayable(idx) {
-			p.queuedIdx = -1
+			p.playNextIdx = -1
 			if queueCleared || origQueuedIdx != -1 {
 				p.revision++
 			}
 			return cloneTrack(p.tracks[idx]), true
 		}
 		p.pos = origPos
-		p.queuedIdx = origQueuedIdx
+		p.playNextIdx = origQueuedIdx
 		if queueCleared {
 			p.revision++
 		}
@@ -453,13 +453,13 @@ func (p *Playlist) Next() (Track, bool) {
 	orderPos, idx, ok := p.advanceFromOrder()
 	if !ok {
 		p.pos = origPos
-		p.queuedIdx = origQueuedIdx
+		p.playNextIdx = origQueuedIdx
 		if queueCleared {
 			p.revision++
 		}
 		return Track{}, false
 	}
-	p.queuedIdx = -1
+	p.playNextIdx = -1
 	p.pos = orderPos
 	if queueCleared || origQueuedIdx != -1 || origPos != orderPos || (shuffleWrap && !slices.Equal(p.order, origOrder)) {
 		p.revision++
@@ -478,7 +478,7 @@ func (p *Playlist) HasNext() bool {
 	if len(p.tracks) == 0 {
 		return false
 	}
-	if _, _, ok := p.nextPlayableQueued(); ok {
+	if _, _, ok := p.nextPlayableFromPlayNext(); ok {
 		return true
 	}
 	if p.repeat == RepeatOne {
@@ -502,7 +502,7 @@ func (p *Playlist) PeekNext() (Track, bool) {
 	if len(p.tracks) == 0 {
 		return Track{}, false
 	}
-	if idx, _, ok := p.nextPlayableQueued(); ok {
+	if idx, _, ok := p.nextPlayableFromPlayNext(); ok {
 		return cloneTrack(p.tracks[idx]), true
 	}
 	if p.repeat == RepeatOne {
@@ -531,12 +531,12 @@ func (p *Playlist) Prev() (Track, bool) {
 		return Track{}, false
 	}
 	origPos := p.pos
-	origQueuedIdx := p.queuedIdx
-	p.queuedIdx = -1
+	origQueuedIdx := p.playNextIdx
+	p.playNextIdx = -1
 
 	if orderPos, idx, ok := p.lastPlayableOrderSlot(p.pos - 1); ok {
 		p.pos = orderPos
-		if p.pos != origPos || p.queuedIdx != origQueuedIdx {
+		if p.pos != origPos || p.playNextIdx != origQueuedIdx {
 			p.revision++
 		}
 		return cloneTrack(p.tracks[idx]), true
@@ -544,14 +544,14 @@ func (p *Playlist) Prev() (Track, bool) {
 	if p.repeat == RepeatAll {
 		if orderPos, idx, ok := p.lastPlayableOrderSlot(len(p.order) - 1); ok {
 			p.pos = orderPos
-			if p.pos != origPos || p.queuedIdx != origQueuedIdx {
+			if p.pos != origPos || p.playNextIdx != origQueuedIdx {
 				p.revision++
 			}
 			return cloneTrack(p.tracks[idx]), true
 		}
 	}
 	p.pos = origPos
-	p.queuedIdx = origQueuedIdx
+	p.playNextIdx = origQueuedIdx
 	if origQueuedIdx >= 0 {
 		return cloneTrack(p.tracks[origQueuedIdx]), false
 	}
@@ -563,44 +563,44 @@ func (p *Playlist) SetIndex(i int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	origPos := p.pos
-	origQueuedIdx := p.queuedIdx
-	p.queuedIdx = -1
+	origQueuedIdx := p.playNextIdx
+	p.playNextIdx = -1
 	for pos, idx := range p.order {
 		if idx == i {
 			p.pos = pos
 			break
 		}
 	}
-	if p.pos != origPos || p.queuedIdx != origQueuedIdx {
+	if p.pos != origPos || p.playNextIdx != origQueuedIdx {
 		p.revision++
 	}
 }
 
-// Queue adds a track to the play-next queue by its index.
-func (p *Playlist) Queue(trackIdx int) {
+// AddPlayNext adds a track to play next by its index.
+func (p *Playlist) AddPlayNext(trackIdx int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if trackIdx < 0 || trackIdx >= len(p.tracks) {
 		return
 	}
-	p.queue = append(p.queue, trackIdx)
-	if _, exists := p.queuePositions[trackIdx]; !exists {
-		if p.queuePositions == nil {
-			p.queuePositions = make(map[int]int)
+	p.playNext = append(p.playNext, trackIdx)
+	if _, exists := p.playNextPositions[trackIdx]; !exists {
+		if p.playNextPositions == nil {
+			p.playNextPositions = make(map[int]int)
 		}
-		p.queuePositions[trackIdx] = len(p.queue)
+		p.playNextPositions[trackIdx] = len(p.playNext)
 	}
 	p.revision++
 }
 
-// Dequeue removes a track from the queue. Returns true if it was found.
-func (p *Playlist) Dequeue(trackIdx int) bool {
+// RemovePlayNext removes a track from the queue. Returns true if it was found.
+func (p *Playlist) RemovePlayNext(trackIdx int) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	for i, idx := range p.queue {
+	for i, idx := range p.playNext {
 		if idx == trackIdx {
-			p.queue = slices.Delete(p.queue, i, i+1)
-			p.rebuildQueuePositions()
+			p.playNext = slices.Delete(p.playNext, i, i+1)
+			p.rebuildPlayNextPositions()
 			p.revision++
 			return true
 		}
@@ -608,59 +608,59 @@ func (p *Playlist) Dequeue(trackIdx int) bool {
 	return false
 }
 
-// QueuePosition returns the 1-based position of a track in the queue,
+// PlayNextPosition returns the 1-based position of a track in the queue,
 // or 0 if the track is not queued.
-func (p *Playlist) QueuePosition(trackIdx int) int {
+func (p *Playlist) PlayNextPosition(trackIdx int) int {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	return p.queuePositions[trackIdx]
+	return p.playNextPositions[trackIdx]
 }
 
-// QueueLen returns the number of tracks in the queue.
-func (p *Playlist) QueueLen() int {
+// PlayNextLen returns the number of tracks in the queue.
+func (p *Playlist) PlayNextLen() int {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	return len(p.queue)
+	return len(p.playNext)
 }
 
-// QueueTracks returns copies of the tracks in queue order.
-func (p *Playlist) QueueTracks() []Track {
+// PlayNextTracks returns copies of the tracks in queue order.
+func (p *Playlist) PlayNextTracks() []Track {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	return p.cloneTracksAt(p.queue)
+	return p.cloneTracksAt(p.playNext)
 }
 
-// QueueEntries returns copies of play-next entries in their playback order.
-func (p *Playlist) QueueEntries() []QueueEntry {
+// PlayNextEntries returns copies of play-next entries in their playback order.
+func (p *Playlist) PlayNextEntries() []PlayNextEntry {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	entries := make([]QueueEntry, len(p.queue))
-	for i, index := range p.queue {
-		entries[i] = QueueEntry{TrackIndex: index, Track: cloneTrack(p.tracks[index])}
+	entries := make([]PlayNextEntry, len(p.playNext))
+	for i, index := range p.playNext {
+		entries[i] = PlayNextEntry{TrackIndex: index, Track: cloneTrack(p.tracks[index])}
 	}
 	return entries
 }
 
-// QueueWindow returns copies of at most limit queued tracks starting at start.
-func (p *Playlist) QueueWindow(start, limit int) []Track {
+// PlayNextWindow returns copies of at most limit queued tracks starting at start.
+func (p *Playlist) PlayNextWindow(start, limit int) []Track {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	start, end := windowBounds(len(p.queue), start, limit)
+	start, end := windowBounds(len(p.playNext), start, limit)
 	if start == end {
 		return nil
 	}
-	return p.cloneTracksAt(p.queue[start:end])
+	return p.cloneTracksAt(p.playNext[start:end])
 }
 
-// ClearQueue removes all entries from the play-next queue.
-func (p *Playlist) ClearQueue() {
+// ClearPlayNext removes all entries from the play-next queue.
+func (p *Playlist) ClearPlayNext() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if len(p.queue) == 0 && p.queuePositions == nil {
+	if len(p.playNext) == 0 && p.playNextPositions == nil {
 		return
 	}
-	p.queue = nil
-	p.queuePositions = nil
+	p.playNext = nil
+	p.playNextPositions = nil
 	p.revision++
 }
 
@@ -673,13 +673,13 @@ func (p *Playlist) Snapshot() Snapshot {
 
 func (p *Playlist) snapshot() Snapshot {
 	return Snapshot{
-		tracks:    cloneTracks(p.tracks),
-		order:     slices.Clone(p.order),
-		pos:       p.pos,
-		shuffle:   p.shuffle,
-		repeat:    p.repeat,
-		queue:     slices.Clone(p.queue),
-		queuedIdx: p.queuedIdx,
+		tracks:      cloneTracks(p.tracks),
+		order:       slices.Clone(p.order),
+		pos:         p.pos,
+		shuffle:     p.shuffle,
+		repeat:      p.repeat,
+		playNext:    slices.Clone(p.playNext),
+		playNextIdx: p.playNextIdx,
 	}
 }
 
@@ -689,8 +689,8 @@ func (p *Playlist) matches(snapshot Snapshot) bool {
 		p.pos == snapshot.pos &&
 		p.shuffle == snapshot.shuffle &&
 		p.repeat == snapshot.repeat &&
-		equalIndices(p.queue, snapshot.queue) &&
-		p.queuedIdx == snapshot.queuedIdx
+		equalIndices(p.playNext, snapshot.playNext) &&
+		p.playNextIdx == snapshot.playNextIdx
 }
 
 // Restore replaces the playlist's mutable state with a prior Snapshot.
@@ -703,34 +703,34 @@ func (p *Playlist) Restore(snapshot Snapshot) {
 	p.pos = snapshot.pos
 	p.shuffle = snapshot.shuffle
 	p.repeat = snapshot.repeat
-	p.queue = slices.Clone(snapshot.queue)
-	p.queuedIdx = snapshot.queuedIdx
-	p.rebuildQueuePositions()
+	p.playNext = slices.Clone(snapshot.playNext)
+	p.playNextIdx = snapshot.playNextIdx
+	p.rebuildPlayNextPositions()
 	if !p.matches(before) {
 		p.revision++
 	}
 }
 
-// RemoveQueueAt removes the entry at the given 0-based queue position.
-func (p *Playlist) RemoveQueueAt(pos int) {
+// RemovePlayNextAt removes the entry at the given 0-based queue position.
+func (p *Playlist) RemovePlayNextAt(pos int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if pos >= 0 && pos < len(p.queue) {
-		p.queue = slices.Delete(p.queue, pos, pos+1)
-		p.rebuildQueuePositions()
+	if pos >= 0 && pos < len(p.playNext) {
+		p.playNext = slices.Delete(p.playNext, pos, pos+1)
+		p.rebuildPlayNextPositions()
 		p.revision++
 	}
 }
 
-// MoveQueue swaps the two entries at the given positions in the play-next queue.
-func (p *Playlist) MoveQueue(from, to int) bool {
+// MovePlayNext swaps the two entries at the given positions in the play-next queue.
+func (p *Playlist) MovePlayNext(from, to int) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if from < 0 || from >= len(p.queue) || to < 0 || to >= len(p.queue) || from == to {
+	if from < 0 || from >= len(p.playNext) || to < 0 || to >= len(p.playNext) || from == to {
 		return false
 	}
-	p.queue[from], p.queue[to] = p.queue[to], p.queue[from]
-	p.rebuildQueuePositions()
+	p.playNext[from], p.playNext[to] = p.playNext[to], p.playNext[from]
+	p.rebuildPlayNextPositions()
 	p.revision++
 	return true
 }
@@ -758,18 +758,18 @@ func (p *Playlist) Move(from, to int) bool {
 	}
 
 	// Queue also references track indices.
-	for i, idx := range p.queue {
+	for i, idx := range p.playNext {
 		if idx == from {
-			p.queue[i] = to
+			p.playNext[i] = to
 		} else if idx == to {
-			p.queue[i] = from
+			p.playNext[i] = from
 		}
 	}
-	p.rebuildQueuePositions()
-	if p.queuedIdx == from {
-		p.queuedIdx = to
-	} else if p.queuedIdx == to {
-		p.queuedIdx = from
+	p.rebuildPlayNextPositions()
+	if p.playNextIdx == from {
+		p.playNextIdx = to
+	} else if p.playNextIdx == to {
+		p.playNextIdx = from
 	}
 
 	// When shuffle is off, reset order to [0,1,...,n] so playback follows
@@ -800,12 +800,12 @@ func (p *Playlist) Reverse() {
 	for i, idx := range p.order {
 		p.order[i] = n - 1 - idx
 	}
-	for i, idx := range p.queue {
-		p.queue[i] = n - 1 - idx
+	for i, idx := range p.playNext {
+		p.playNext[i] = n - 1 - idx
 	}
-	p.rebuildQueuePositions()
-	if p.queuedIdx >= 0 {
-		p.queuedIdx = n - 1 - p.queuedIdx
+	p.rebuildPlayNextPositions()
+	if p.playNextIdx >= 0 {
+		p.playNextIdx = n - 1 - p.playNextIdx
 	}
 	if !p.shuffle {
 		cur := p.order[p.pos]
@@ -854,8 +854,8 @@ func (p *Playlist) Remove(idx int) bool {
 		p.pos = 0
 	}
 
-	newQueue := p.queue[:0]
-	for _, q := range p.queue {
+	newQueue := p.playNext[:0]
+	for _, q := range p.playNext {
 		if q == idx {
 			continue
 		}
@@ -864,14 +864,14 @@ func (p *Playlist) Remove(idx int) bool {
 		}
 		newQueue = append(newQueue, q)
 	}
-	p.queue = newQueue
-	p.rebuildQueuePositions()
+	p.playNext = newQueue
+	p.rebuildPlayNextPositions()
 
 	switch {
-	case p.queuedIdx == idx:
-		p.queuedIdx = -1
-	case p.queuedIdx > idx:
-		p.queuedIdx--
+	case p.playNextIdx == idx:
+		p.playNextIdx = -1
+	case p.playNextIdx > idx:
+		p.playNextIdx--
 	}
 
 	p.revision++
@@ -900,13 +900,13 @@ func (p *Playlist) Tracks() []Track {
 	return cloneTracks(p.tracks)
 }
 
-// TracksAndQueue returns an independent snapshot of all tracks and the track
+// TracksAndPlayNext returns an independent snapshot of all tracks and the track
 // indices of the play-next queue in queue order. It reads both under one
 // lock, so the indices always refer to the returned tracks.
-func (p *Playlist) TracksAndQueue() ([]Track, []int) {
+func (p *Playlist) TracksAndPlayNext() ([]Track, []int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	return cloneTracks(p.tracks), slices.Clone(p.queue)
+	return cloneTracks(p.tracks), slices.Clone(p.playNext)
 }
 
 // Track returns an independent copy of the track at index.

@@ -197,7 +197,7 @@ func wrapText(s string, maxW int) []string {
 // reserved: toggling the first/last favorite would otherwise shift every title
 // by one cell.
 type markerColumns struct {
-	queue    bool
+	playNext bool
 	favorite bool
 	played   bool
 }
@@ -209,7 +209,7 @@ type markerColumns struct {
 // never moves the titles.
 func (m Model) markerColumns() markerColumns {
 	return markerColumns{
-		queue:    m.playlist.QueueLen() > 0,
+		playNext: m.playlist.PlayNextLen() > 0,
 		favorite: true,
 		played:   m.hasPlaybackState(),
 	}
