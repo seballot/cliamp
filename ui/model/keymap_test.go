@@ -137,19 +137,23 @@ func TestKeymapEnterRunsSelectedCommand(t *testing.T) {
 			check: func(m *Model) bool { return m.queue.visible },
 		},
 		{
-			name: "back from the provider pane",
+			name: "refresh from the provider pane",
 			setup: func(m *Model) {
 				m.playlist.Add(playlist.Track{Title: "Song"})
 				m.focus = focusProvider
 			},
-			key: "Esc", action: "Back",
-			check: func(m *Model) bool { return m.focus == focusPlaylist },
+			key: "Ctrl+R", action: "Refresh provider",
+			check: func(m *Model) bool { return m.focus == focusProvider },
 		},
 		{
-			name:  "cancel an open playlist search",
-			setup: func(m *Model) { m.search.active = true; m.focus = focusSearch },
-			key:   "Esc", action: "Cancel",
-			check: func(m *Model) bool { return !m.search.active },
+			name: "toggle queue while filtering the playlist",
+			setup: func(m *Model) {
+				m.playlist.Add(playlist.Track{Title: "Song"})
+				m.search.active = true
+				m.focus = focusSearch
+			},
+			key: "Tab", action: "Toggle queue for result",
+			check: func(m *Model) bool { return m.search.active },
 		},
 	}
 	for _, tt := range tests {
@@ -227,12 +231,11 @@ func TestKeymapContextFollowsPlaylistManagerScreen(t *testing.T) {
 		wantMissing []string
 	}{
 		{name: "list", screen: plMgrScreenList, wantMode: commandModePlaylistManager, wantLabel: "Playlist", wantRuns: []string{"Select"}},
-		{name: "tracks", screen: plMgrScreenTracks, wantMode: commandModePlaylistManager, wantLabel: "Playlist", wantRuns: []string{"Play"}},
+		{name: "tracks", screen: plMgrScreenTracks, wantMode: commandModePlaylistManager, wantLabel: "Playlist", wantRuns: []string{"Add files"}},
 		{
 			name: "dirs", screen: plMgrScreenDirs,
 			wantMode: commandModePlaylistManagerDirs, wantLabel: "Directory Sources",
-			wantRuns:    []string{"Add dir", "Remove", "Toggle recursive"},
-			wantMissing: []string{"Select", "Add to the current playlist"},
+			wantMissing: []string{"Select", "Add to the current playlist", "Add files"},
 		},
 		{name: "new name", screen: plMgrScreenNewName, wantMode: commandModePlaylistManagerInput, wantLabel: "Playlist Name"},
 		{name: "rename", screen: plMgrScreenRename, wantMode: commandModePlaylistManagerInput, wantLabel: "Playlist Name"},

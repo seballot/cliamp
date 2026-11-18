@@ -35,7 +35,7 @@ func TestMixcloudShortcutRegistryEntry(t *testing.T) {
 func TestPreviousEQPresetRegistryEntry(t *testing.T) {
 	for _, command := range commandRegistry {
 		if len(command.Keys) == 1 && command.Keys[0] == "alt+e" && command.Mode&commandModeMain != 0 {
-			if command.KeyLabel != "Alt+E" || command.Label != "Previous EQ preset" || !command.Keymap {
+			if command.KeyLabel != "Alt+E" || command.Label != "Previous EQ preset" || command.Keymap {
 				t.Fatalf("previous EQ preset command = %+v", command)
 			}
 			m := keybindingTestModel()
