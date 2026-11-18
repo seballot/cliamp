@@ -175,7 +175,7 @@ func (m *Model) SetSimplified(v bool) {
 	m.normalizeMainFocus()
 }
 
-// SetHideHelpBar hides the key-binding hint bar and gives the row back to the
+// SetHideHelpBar hides the key-binding help bar and gives the row back to the
 // body. The full keymap stays reachable with "?".
 func (m *Model) SetHideHelpBar(v bool) {
 	m.hideHelpBar = v

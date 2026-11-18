@@ -97,7 +97,10 @@ func (m Model) renderProviderEmptyState(budget int) string {
 		if m.provSearch.query != "" {
 			found = fmt.Sprintf("  No results for %q.", m.provSearch.query)
 		}
-		lines := []string{dimStyle.Render(found), "", m.pressKeyHint(commandModeProvider, "esc", "to clear the search.")}
+		lines := []string{dimStyle.Render(found), ""}
+		if command, ok := m.findCommand(commandModeProvider, "esc"); ok {
+			lines = append(lines, fitHelpLine(dimStyle.Render("  Press ")+helpKeyStyle.Render(" "+command.KeyLabel+" ")+dimStyle.Render(" to clear the search."), m.layout.panelWidth))
+		}
 		return strings.Join(fitLines(lines, budget), "\n")
 	}
 	lines := []string{
@@ -409,13 +412,13 @@ func (m Model) mainSections(playlist string, includeTransient, contentFirst bool
 		sections = append(sections, playlist)
 	}
 	if !m.layout.twoColumn && m.layout.tier != layoutCompact {
-		// The two-column body needs no spacer above the hint bar: the settings
+		// The two-column body needs no spacer above the help bar: the settings
 		// pane's own blank tail already separates the footer from the columns.
 		// Compact chrome also omits it so the speed row stays on-screen.
 		sections = append(sections, "")
 	}
 	if !m.hideHelpBar {
-		sections = append(sections, m.renderHelp())
+		sections = append(sections, m.renderHelpBar())
 	}
 	// The two-column pane carries speed and the download counters, and the
 	// closed layout deliberately shows neither.
@@ -1219,8 +1222,8 @@ func (m Model) renderPlaylist() string {
 		} else {
 			lines = append(lines, dimStyle.Render("  No tracks loaded."), dimStyle.Render("  To add music, press one of these keys:"), "")
 			for _, key := range []string{"esc", "o", "p", "u", "ctrl+f"} {
-				if hint := m.commandHint(commandModeMain, key); hint != "" {
-					lines = append(lines, hint)
+				if command, ok := m.findCommand(commandModeMain, key); ok {
+					lines = append(lines, fitHelpLine("  "+helpKey(command.KeyLabel, command.label(m)), m.layout.panelWidth))
 				}
 			}
 		}
@@ -1373,10 +1376,10 @@ func (m Model) renderPlaylist() string {
 	return strings.Join(padLines(lines, budget, len(lines)), "\n")
 }
 
-// renderHelp renders the key hints of what owns the keys.
-func (m Model) renderHelp() string {
+// renderHelpBar renders the key-binding help bar for what owns the keys.
+func (m Model) renderHelpBar() string {
 	mode, _ := m.commandContext()
-	return m.commandHelp(mode)
+	return m.helpBar(mode)
 }
 
 // renderBottomStatus renders the bottom status line: speed (left) and

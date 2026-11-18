@@ -146,7 +146,7 @@ func (m Model) keymapContext() (commandMode, string) {
 
 // commandContext returns the command mode and the screen name of what owns
 // the keys: the top overlay, or else the focused control of the main screen.
-// The help line and the keymap both use it.
+// The help bar and the keymap both use it.
 func (m Model) commandContext() (commandMode, string) {
 	if spec, ok := m.topOverlay(); ok && spec.context != nil {
 		return spec.context(&m)

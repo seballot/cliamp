@@ -41,7 +41,7 @@ func TestKeymapStartsWithCurrentScreenCommands(t *testing.T) {
 		playerAt = 2
 	}
 	if playerAt >= len(entries) || !entries[playerAt].divider || entries[playerAt].action != "— player & library —" {
-		t.Fatalf("keymap after browse context = %+v, want player and library section", entries)
+		t.Fatalf("keymap after browse context = %+v, want player & library section", entries)
 	}
 }
 

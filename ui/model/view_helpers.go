@@ -282,7 +282,7 @@ func (m *Model) toggleAlbumHeadersManual() {
 	m.headerManual = true
 }
 
-// toggleHelpBar shows or hides the key-binding hint bar and persists the
+// toggleHelpBar shows or hides the key-binding help bar and persists the
 // choice to the hide_help_bar config key, so the bar comes back the way the
 // listener left it on the next launch.
 func (m *Model) toggleHelpBar() {
