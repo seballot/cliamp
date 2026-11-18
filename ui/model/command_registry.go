@@ -1180,6 +1180,9 @@ var commandRegistry = []commandSpec{
 		Label:       "Replace queue",
 		Destructive: true,
 		ContextHelp: true,
+		Enabled: func(m Model) bool {
+			return m.fileBrowser.targetPlaylist == "" && len(m.fileBrowser.selected) > 0
+		},
 	},
 	{
 		Mode:        commandModeFileBrowser,
@@ -1188,6 +1191,9 @@ var commandRegistry = []commandSpec{
 		Label:       "Save to playlist",
 		Keymap:      true,
 		ContextHelp: true,
+		Enabled: func(m Model) bool {
+			return m.fileBrowser.targetPlaylist == "" && len(m.fileBrowser.selected) > 0
+		},
 	},
 	{
 		Mode:        commandModeFileBrowser,
