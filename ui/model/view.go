@@ -1218,7 +1218,7 @@ func (m Model) renderPlaylist() string {
 			lines = append(lines, loadingLine("Loading feed…"))
 		} else {
 			lines = append(lines, dimStyle.Render("  No tracks loaded."), dimStyle.Render("  To add music, press one of these keys:"), "")
-			for _, key := range []string{"esc", "o", "u", "ctrl+f"} {
+			for _, key := range []string{"esc", "o", "p", "u", "ctrl+f"} {
 				if hint := m.commandHint(commandModeMain, key); hint != "" {
 					lines = append(lines, hint)
 				}
