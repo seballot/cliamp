@@ -68,7 +68,7 @@ func TestRadioFavoriteAfterBrowseLoadsPlaylist(t *testing.T) {
 			m.playlist.SetIndex(0)
 			m.player.(*playbackFakeEngine).playing = true
 			m.plCursor = 1
-			if help := m.commandHelp(commandModeMain); !strings.Contains(help, "Favorite station") {
+			if help := m.helpBar(commandModeMain); !strings.Contains(help, "Favorite") {
 				t.Fatalf("missing station action: %q", help)
 			}
 			cmd := m.handleKey(tea.KeyPressMsg{Text: "f"})
@@ -162,9 +162,9 @@ func TestRadioRowFavoriteDispatch(t *testing.T) {
 		wantStation bool
 		wantTrack   bool
 	}{
-		{name: "unsaved playlist", wantHelp: "Favorite station", wantStation: true},
-		{name: "saved playlist", saved: true, wantHelp: "Favorite track", wantTrack: true},
-		{name: "saved playlist write failure", saved: true, fail: true, wantHelp: "Favorite track"},
+		{name: "unsaved playlist", wantHelp: "Favorite", wantStation: true},
+		{name: "saved playlist", saved: true, wantHelp: "Favorite", wantTrack: true},
+		{name: "saved playlist write failure", saved: true, fail: true, wantHelp: "Favorite"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m, _, tracks := radioFavoriteTestModel(t)
@@ -178,7 +178,7 @@ func TestRadioRowFavoriteDispatch(t *testing.T) {
 				local.favs = failingFavorites(t)
 			}
 			m.localProvider, m.favStore = local, local.favs
-			if help := m.commandHelp(commandModeMain); !strings.Contains(help, tc.wantHelp) {
+			if help := m.helpBar(commandModeMain); !strings.Contains(help, tc.wantHelp) {
 				t.Fatalf("help = %q, want %q", help, tc.wantHelp)
 			}
 
@@ -784,7 +784,7 @@ func TestTrackFavoriteHelpRequiresPlaylistFocus(t *testing.T) {
 			m.layout.tier = layoutMinimal
 			found := false
 			for _, entry := range m.buildKeymapEntries() {
-				found = found || entry.action == "Favorite track"
+				found = found || entry.action == "Favorite"
 			}
 			if found != tc.enabled {
 				t.Fatalf("track favorite keymap visibility = %v, want %v", found, tc.enabled)

@@ -211,13 +211,13 @@ func init() {
 		{
 			screen:  screenQueue,
 			key:     (*Model).handleQueueKey,
-			context: fixedContext(commandModeQueue, "Queue"),
+			context: fixedContext(commandModeQueue, "Play next"),
 			view: overlayView{
 				func(m *Model) string {
 					if m.queue.confirmClear {
 						return sepHeader("Clear queue?", m.layout.panelWidth)
 					}
-					return sepHeaderN("Queue", m.queue.cursor+1, m.playlist.QueueLen(), m.layout.panelWidth)
+					return sepHeaderN("Play next", m.queue.cursor+1, m.playlist.QueueLen(), m.layout.panelWidth)
 				},
 				(*Model).renderQueueBody},
 		},
