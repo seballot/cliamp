@@ -284,6 +284,14 @@ var commandRegistry = []commandSpec{
 		Keymap:      true,
 	},
 	{
+		Mode:        commandModeMain,
+		Keys:        []string{"c"},
+		KeyLabel:    "c",
+		Label:       "Clear",
+		Destructive: true,
+		Keymap:      true,
+	},
+	{
 		Mode:     commandModeMain,
 		Keys:     []string{"f"},
 		KeyLabel: "f",

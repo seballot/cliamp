@@ -528,6 +528,9 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 		// keeps its ID across Refresh.
 		return m.refreshActiveProvider(true)
 	case "esc", "backspace", "b":
+		if m.confirmClearPlaylist {
+			m.confirmClearPlaylist = false
+		}
 		if m.focus == focusPlaylist {
 			// Keep current expanded/collapsed height mode when switching focus.
 			m.focus = focusProvider
@@ -814,6 +817,11 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 			var cmd tea.Cmd
 			m.keepPlCursorRow(func() { cmd, _ = m.removeTrack(m.plCursor, true) })
 			return cmd
+		}
+
+	case "c":
+		if m.focus == focusPlaylist {
+			return m.clearLivePlaylist(true)
 		}
 
 	case "d":

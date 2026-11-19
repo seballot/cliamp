@@ -168,6 +168,7 @@ preference remains saved for a wider layout. See
 | `d` | In the play next overlay: remove the highlighted track |
 | `Shift+Up` `Shift+Down` / `[` `]` | In the play next overlay: move the highlighted track |
 | `F` | Subscribed shows overlay (any provider that keeps subscriptions) |
+| `c` | Clear the playback queue (press again to confirm when more than one track) |
 | `x` | Remove the highlighted track from the current playlist |
 | `p` | Playlists |
 | `r` | Cycle repeat mode (Off / All / One) |
