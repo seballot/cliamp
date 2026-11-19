@@ -125,9 +125,14 @@ func TestBackToProviderContextHelpLabel(t *testing.T) {
 	m.provider = local
 	m.localProvider = local
 	m.providers = []provider.Entry{{Key: providerKeyLocal, Name: "Local", Provider: local}}
-	if got := labelFor(); got != "Back to playlists" {
-		t.Fatalf("local playlists view = %q, want Back to playlists", got)
+	if got := labelFor(); got != "Back to Local" {
+		t.Fatalf("local provider = %q, want Back to Local", got)
 	}
+	m.fileBrowser.resumeLocal = true
+	if got := labelFor(); got != "Back to files" {
+		t.Fatalf("file browser return = %q, want Back to files", got)
+	}
+	m.fileBrowser.resumeLocal = false
 	m.provider = nil
 	if got := labelFor(); got != "Back to provider" {
 		t.Fatalf("no provider = %q, want Back to provider", got)
@@ -231,7 +236,7 @@ func TestPlaylistManagerHelpBar(t *testing.T) {
 	m.plMgrLoadTracks([]playlist.Track{{Path: "/a.mp3", Title: "A"}})
 
 	help := m.helpBar(commandModePlaylistManager)
-	for _, want := range []string{"Esc", "Enter", "Play", "Space", "Select", "Add to queue", "[ ]", "d", "Remove", "o", "Add files", "/", "Filter", "?"} {
+	for _, want := range []string{"Esc", "Enter", "Play", "Space", "Select", "Add to queue", "Shift+↑↓", "d", "Remove", "o", "Add files", "/", "Filter", "?"} {
 		if !strings.Contains(help, want) {
 			t.Fatalf("tracks help %q missing %q", help, want)
 		}
@@ -246,7 +251,7 @@ func TestPlaylistManagerHelpBar(t *testing.T) {
 	enter := strings.Index(help, "Enter")
 	space := strings.Index(help, "Space")
 	addQueue := strings.Index(help, "Add to queue")
-	bracket := strings.Index(help, "[ ]")
+	bracket := strings.Index(help, "Shift+↑↓")
 	d := strings.Index(help, " d ")
 	if d < 0 {
 		d = strings.Index(help, "d  Remove")
@@ -317,6 +322,9 @@ func TestFileBrowserHelpOrder(t *testing.T) {
 	m.fileBrowser.selected = nil
 	m.fileBrowser.cursor = 2
 	help = m.helpBar(commandModeFileBrowser)
+	if !strings.Contains(help, "Add to queue") {
+		t.Fatalf("audio row without selection should say Add to queue: %q", help)
+	}
 	for _, key := range []string{"Esc", "Space", "Enter", "?"} {
 		if !strings.Contains(help, key) {
 			t.Fatalf("file browser help %q missing %q", help, key)
