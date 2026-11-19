@@ -751,7 +751,7 @@ var commandRegistry = []commandSpec{
 	},
 	{
 		Mode:     commandModeQueue,
-		Keys:     []string{"shift+up", "shift+down"},
+		Keys:     []string{"shift+up", "shift+down", "[", "]"},
 		KeyLabel: "Shift+↑↓",
 		Label:    "Move",
 		Keymap:   true,
@@ -1268,9 +1268,9 @@ var commandRegistry = []commandSpec{
 	},
 	{
 		Mode:     commandModePlaylistManager,
-		Keys:     []string{"[", "]"},
-		KeyLabel: "[ ]",
-		Label:    "Reorder",
+		Keys:     []string{"shift+up", "shift+down", "[", "]"},
+		KeyLabel: "Shift+↑↓",
+		Label:    "Move",
 		Enabled: func(m Model) bool {
 			return m.plManager.visible && m.plManager.screen == plMgrScreenTracks
 		},
@@ -1662,7 +1662,7 @@ var helpBarKeyOrder = map[commandMode][]string{
 	commandModeFileBrowserSearch:    {"esc", "enter"},
 	commandModeNavBrowser:           {"esc", "enter", "f", "s", "R", "/"},
 	commandModeNavSearch:            {"esc", "enter"},
-	commandModePlaylistManager:      {"esc", "enter", "space", "A", "[", "d", "o", "/"},
+	commandModePlaylistManager:      {"esc", "enter", "space", "A", "shift+up", "d", "o", "/"},
 	commandModePlaylistManagerInput: {"esc", "enter"},
 	commandModePlaylistManagerDirs:  {"esc", "a", "d", "r"},
 	commandModePlaylistPicker:       {"esc", "enter", "p"},
