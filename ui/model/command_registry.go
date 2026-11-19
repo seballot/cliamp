@@ -1045,11 +1045,18 @@ var commandRegistry = []commandSpec{
 		Keymap: true,
 	},
 	{
-		Mode:     commandModeNavBrowser | commandModePlaylistPicker | commandModeDevicePicker,
+		Mode:     commandModeNavBrowser | commandModeDevicePicker,
 		Keys:     []string{"enter"},
 		KeyLabel: "Enter",
 		Label:    "Select",
 		Keymap: true,
+	},
+	{
+		Mode:     commandModePlaylistPicker,
+		Keys:     []string{"enter"},
+		KeyLabel: "Enter",
+		Label:    "Add",
+		Keymap:   true,
 	},
 	{
 		Mode:     commandModeNavBrowser,
