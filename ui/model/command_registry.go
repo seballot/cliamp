@@ -103,30 +103,22 @@ var commandRegistry = []commandSpec{
 
 	{
 		Mode:     commandModeAny,
-		Keys:     []string{"ctrl+k"},
-		KeyLabel: "Ctrl+k",
-		Label:    "Help",
-		Keymap:   true,
-	},
-	{
-		Mode:     commandModeAny,
-		Keys:     []string{"?"},
+		Keys:     []string{"ctrl+k", "?"},
 		KeyLabel: "?",
 		Label:    "Help",
-		Keymap:   true,
 	},
 	{
 		Mode:     commandModeAny,
 		Keys:     []string{"ctrl+c"},
 		KeyLabel: "Ctrl+c",
 		Label:    "Quit",
-		Keymap:   true,
 	},
 	{
 		Mode:     commandModeAny,
 		Keys:     []string{"ctrl+z"},
 		KeyLabel: "Ctrl+z",
 		Label:    "Undo last queue change",
+		Keymap:   true,
 	},
 	{
 		Mode:     commandModeMain,
@@ -324,6 +316,12 @@ var commandRegistry = []commandSpec{
 		Keys:     []string{"tab", "shift+tab"},
 		KeyLabel: "Tab",
 		Label:    "Cycle settings",
+	},
+	{
+		Mode:     commandModeMain | commandModeProvider | commandModeProviderPill | commandModeVolume | commandModeEQ | commandModeShuffle | commandModeRepeat | commandModeSpeed,
+		Keys:     []string{"tab", "shift+tab"},
+		KeyLabel: "Tab Shift+Tab",
+		Label:    "Cycle player settings (EQ, volume, shuffle, repeat, speed)",
 		Keymap:   true,
 	},
 	{
