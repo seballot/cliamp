@@ -89,7 +89,7 @@ Radio and Podcasts, `/` sends the query to the provider when you press
 `Enter`.
 
 While a search or filter input is open, its line starts with a badge that
-names the mode and the source, such as `[Filter: Playlist]`, `[Filter: Files]`,
+names the mode and the source, such as `[Filter: Queue]`, `[Filter: Files]`,
 `[Search: Files]`, `[Search: Spotify]` or `[Search: Radio]`. The line ends with `Esc Exit`. Press
 `Esc` to leave the input. On a narrow panel, the hint bar still shows `Esc`.
 
