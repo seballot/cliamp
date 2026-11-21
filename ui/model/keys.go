@@ -1052,6 +1052,7 @@ func (m *Model) handleJumpKey(msg tea.KeyPressMsg) tea.Cmd {
 // full terminal height and width.
 func (m *Model) toggleExpandedView() {
 	m.heightExpanded = !m.heightExpanded
+	_ = m.saveConfigBool("expanded", m.heightExpanded)
 	m.applyHeightMode()
 	m.adjustScroll()
 }

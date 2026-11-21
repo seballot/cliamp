@@ -369,6 +369,9 @@ func configureModel(m *model.Model, cfg config.Config, headless, visualizer60FPS
 	if cfg.Expanded {
 		m.SetExpanded(true)
 	}
+	if cfg.ShowAlbumHeadersSet {
+		m.SetAlbumHeadersPreference(cfg.ShowAlbumHeaders)
+	}
 }
 
 // startIPC serves the socket and sends its requests to the program through
