@@ -77,6 +77,12 @@ func (c commandSpec) enabled(m Model) bool {
 	return c.Enabled == nil || c.Enabled(m)
 }
 
+// mainPlaylistEscHelp reports whether the main-screen help bar should list Esc
+// as the way back into the provider playlist pane.
+func (m Model) mainPlaylistEscHelp() bool {
+	return m.provider != nil && m.providerPaneSeen
+}
+
 // runKey returns the key that the keymap sends to run the command. It
 // returns "" when one key press cannot run the command.
 func (c commandSpec) runKey() string {
@@ -128,6 +134,7 @@ var commandRegistry = []commandSpec{
 		Label:    "Back to provider",
 		LabelFor: func(m Model) string { return m.mainEscBackLabel() },
 		Keymap:   true,
+		Enabled:  func(m Model) bool { return m.mainPlaylistEscHelp() },
 	},
 	// q quits only from the player and its focused controls. Overlays use it
 	// to close or to queue, so the keymap must not run it as quit there.
