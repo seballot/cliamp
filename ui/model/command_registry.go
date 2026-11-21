@@ -136,8 +136,7 @@ var commandRegistry = []commandSpec{
 		Keys:     []string{"esc", "backspace", "b"},
 		KeyLabel: "Esc",
 		RunKey:   "esc",
-		Label:    "Back to provider",
-		LabelFor: func(m Model) string { return m.mainEscBackLabel() },
+		Label:    "Back",
 		Keymap:   true,
 		Enabled:  func(m Model) bool { return m.mainPlaylistEscHelp() },
 	},
@@ -333,7 +332,7 @@ var commandRegistry = []commandSpec{
 		Mode:     commandModeMain | commandModeProvider | commandModeProviderPill | commandModeVolume | commandModeEQ | commandModeShuffle | commandModeRepeat | commandModeSpeed,
 		Keys:     []string{"tab", "shift+tab"},
 		KeyLabel: "Tab",
-		Label:    "Cycle settings",
+		Label:    "Settings",
 	},
 	{
 		Mode:     commandModeMain | commandModeProvider | commandModeProviderPill | commandModeVolume | commandModeEQ | commandModeShuffle | commandModeRepeat | commandModeSpeed,

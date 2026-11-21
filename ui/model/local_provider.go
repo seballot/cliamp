@@ -95,17 +95,6 @@ func (m Model) localBrowseKeyLabel() string {
 	return "Browse provider"
 }
 
-// mainEscBackLabel names the Esc action from the queue for the keymap.
-func (m Model) mainEscBackLabel() string {
-	if m.showingLocalProvider() && m.fileBrowser.resumeLocal {
-		return "Back to files"
-	}
-	if m.provider != nil {
-		return "Back to " + m.provider.Name()
-	}
-	return "Back to provider"
-}
-
 // providerEnterLabel names Enter on the provider pane list for the keymap.
 func (m Model) providerEnterLabel() string {
 	switch m.selectedLocalPaneAction() {

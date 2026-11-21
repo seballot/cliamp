@@ -30,7 +30,7 @@ entries, a status message tells you which key to press.
 
 | Key | Action |
 |---|---|
-| `Tab` | Cycle settings focus from Playlist through the visible settings in reading order, then back to Playlist (help bar: **Cycle settings**) |
+| `Tab` | Cycle settings focus from Playlist through the visible settings in reading order, then back to Playlist (help bar: **Settings**) |
 | `Shift+Tab` | Cycle the same controls in reverse |
 | `j` `k` / `Up` `Down` | Move playlist cursor (wraps); see focused settings below for control actions |
 | `PageUp` `PageDown` / `Ctrl+U` `Ctrl+D` | Scroll playlist/file browser by page (outside text input) |

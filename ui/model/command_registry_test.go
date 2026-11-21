@@ -111,34 +111,6 @@ func TestPlayNextToggleContextHelpLabel(t *testing.T) {
 	}
 }
 
-func TestBackToProviderContextHelpLabel(t *testing.T) {
-	spotify := commandsTestProvider{name: "Spotify"}
-	m := keybindingTestModel()
-	m.provider = spotify
-	labelFor := func() string {
-		return registryContextLabel(t, commandModeMain, "esc", "Back to provider", m)
-	}
-	if got := labelFor(); got != "Back to Spotify" {
-		t.Fatalf("provider = %q, want Back to Spotify", got)
-	}
-	local := commandsTestProvider{name: "Local"}
-	m.provider = local
-	m.localProvider = local
-	m.providers = []provider.Entry{{Key: providerKeyLocal, Name: "Local", Provider: local}}
-	if got := labelFor(); got != "Back to Local" {
-		t.Fatalf("local provider = %q, want Back to Local", got)
-	}
-	m.fileBrowser.resumeLocal = true
-	if got := labelFor(); got != "Back to files" {
-		t.Fatalf("file browser return = %q, want Back to files", got)
-	}
-	m.fileBrowser.resumeLocal = false
-	m.provider = nil
-	if got := labelFor(); got != "Back to provider" {
-		t.Fatalf("no provider = %q, want Back to provider", got)
-	}
-}
-
 func TestMainHelpBarEmptyPlaylist(t *testing.T) {
 	m := keybindingTestModel()
 	m.layout.panelWidth = 120
@@ -215,8 +187,8 @@ func TestContextHelpShowsTabCycleControlsUntilMainPane(t *testing.T) {
 	m := keybindingTestModel()
 	m.layout.panelWidth = 120
 	m.focus = focusPlaylist
-	if help := m.helpBar(commandModeMain); !strings.Contains(help, "Tab") || !strings.Contains(help, "Cycle settings") {
-		t.Fatalf("main help should advertise Tab Cycle settings: %q", help)
+	if help := m.helpBar(commandModeMain); !strings.Contains(help, "Tab") || !strings.Contains(help, "Settings") {
+		t.Fatalf("main help should advertise Tab Settings: %q", help)
 	}
 	for _, tc := range []struct {
 		focus focusArea
@@ -228,8 +200,8 @@ func TestContextHelpShowsTabCycleControlsUntilMainPane(t *testing.T) {
 		{focusShuffle, commandModeShuffle},
 	} {
 		m.focus = tc.focus
-		if help := m.helpBar(tc.mode); !strings.Contains(help, "Tab") || !strings.Contains(help, "Cycle settings") {
-			t.Fatalf("%s help should advertise Tab Cycle settings: %q", tc.focus.label(), help)
+		if help := m.helpBar(tc.mode); !strings.Contains(help, "Tab") || !strings.Contains(help, "Settings") {
+			t.Fatalf("%s help should advertise Tab Settings: %q", tc.focus.label(), help)
 		}
 	}
 	m.provider = podcast.New("")
