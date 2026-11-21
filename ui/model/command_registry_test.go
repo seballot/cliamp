@@ -139,6 +139,18 @@ func TestBackToProviderContextHelpLabel(t *testing.T) {
 	}
 }
 
+func TestMainHelpBarEmptyPlaylist(t *testing.T) {
+	m := keybindingTestModel()
+	m.layout.panelWidth = 120
+	m.focus = focusPlaylist
+	help := m.helpBar(commandModeMain)
+	for _, label := range []string{"Space", "Shift+↑↓", "Remove", "Favorite", "Add to playlist"} {
+		if strings.Contains(help, label) {
+			t.Fatalf("empty playlist help should not list %q: %q", label, help)
+		}
+	}
+}
+
 func TestContextHelpMoveAfterPrimaryOnce(t *testing.T) {
 	m := keybindingTestModel()
 	m.layout.panelWidth = 120
@@ -151,7 +163,7 @@ func TestContextHelpMoveAfterPrimaryOnce(t *testing.T) {
 
 func TestMainPaneSaveToPlaylistHintAfterFavorite(t *testing.T) {
 	m := keybindingTestModel()
-	m.layout.panelWidth = 120
+	m.layout.panelWidth = 160
 	m.focus = focusPlaylist
 	m.playlist.Add(playlist.Track{Title: "One", Path: "/a.mp3"})
 	local := &dirSourceTestProvider{commandsTestProvider: commandsTestProvider{name: "Local"}}

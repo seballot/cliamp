@@ -77,6 +77,11 @@ func (c commandSpec) enabled(m Model) bool {
 	return c.Enabled == nil || c.Enabled(m)
 }
 
+// mainPlaylistHasTracks matches renderPlaylist's empty-queue shortcut help state.
+func (m Model) mainPlaylistHasTracks() bool {
+	return m.playlist != nil && m.playlist.Len() > 0
+}
+
 // mainPlaylistEscHelp reports whether the main-screen help bar should list Esc
 // as the way back into the provider playlist pane.
 func (m Model) mainPlaylistEscHelp() bool {
@@ -164,7 +169,8 @@ var commandRegistry = []commandSpec{
 			}
 			return "Play"
 		},
-		Keymap: true,
+		Enabled: func(m Model) bool { return m.mainPlaylistHasTracks() },
+		Keymap:  true,
 	},
 	{
 		Mode:     commandModeMain,
@@ -257,6 +263,7 @@ var commandRegistry = []commandSpec{
 		Keys:     []string{"shift+up", "shift+down"},
 		KeyLabel: "Shift+↑↓",
 		Label:    "Move",
+		Enabled:  func(m Model) bool { return m.mainPlaylistHasTracks() },
 		Keymap:   true,
 	},
 	{
@@ -272,6 +279,7 @@ var commandRegistry = []commandSpec{
 		KeyLabel:    "x",
 		Label:       "Remove",
 		Destructive: true,
+		Enabled:     func(m Model) bool { return m.mainPlaylistHasTracks() },
 		Keymap:      true,
 	},
 	{
@@ -287,8 +295,10 @@ var commandRegistry = []commandSpec{
 		Keys:     []string{"f"},
 		KeyLabel: "f",
 		Label:    "Favorite",
-		Enabled:  func(m Model) bool { return m.selectedPlaylistStarAction() != starUnavailable },
-		Keymap:   true,
+		Enabled: func(m Model) bool {
+			return m.mainPlaylistHasTracks() && m.selectedPlaylistStarAction() != starUnavailable
+		},
+		Keymap: true,
 	},
 	{
 		Mode:     commandModeMain,
@@ -302,6 +312,7 @@ var commandRegistry = []commandSpec{
 		Keys:     []string{"w"},
 		KeyLabel: "w",
 		Label:    "Add to playlist",
+		Enabled:  func(m Model) bool { return m.mainPlaylistHasTracks() },
 		Keymap:   true,
 	},
 	{
@@ -485,7 +496,7 @@ var commandRegistry = []commandSpec{
 			commandModeShuffle | commandModeRepeat | commandModeSpeed | commandModeProvider,
 		Keys:     []string{"o"},
 		KeyLabel: "o",
-		Label:    "Open file browser",
+		Label:    "Local files",
 		Keymap:   true,
 	},
 	{
@@ -670,6 +681,13 @@ var commandRegistry = []commandSpec{
 		Keys:     []string{"R"},
 		KeyLabel: "R",
 		Label:    "Open radio provider",
+		Keymap:   true,
+	},
+	{
+		Mode:     commandModeMain,
+		Keys:     []string{"I"},
+		KeyLabel: "I",
+		Label:    "Open Cliamp Radios provider",
 		Keymap:   true,
 	},
 	{
@@ -1640,7 +1658,7 @@ var commandRegistry = []commandSpec{
 // display order. Each key resolves to the first matching command in
 // commandRegistry for that mode.
 var helpBarKeyOrder = map[commandMode][]string{
-	commandModeMain:                 {"esc", "space", "shift+up", "x", "f", "w", "tab"},
+	commandModeMain:                 {"esc", "tab", "space", "shift+up", "x", "f", "w"},
 	commandModeProvider:             {"esc", "enter", "l", "f", "ctrl+r", "/"},
 	commandModeEQ:                   {"esc", "left", "up", "tab"},
 	commandModeVolume:               {"esc", "left", "tab"},

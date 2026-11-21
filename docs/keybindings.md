@@ -137,6 +137,7 @@ and `Esc` clears it.
 | `w` | Add the highlighted track to a saved playlist |
 | `N` | Open the active provider browser. On Local, open the file browser; after you play a file from it, `Esc` returns to that directory. On a selected Mixcloud show, open that creator's Uploads/Favorites. In the radio pane, open the country browser. |
 | `L` | Open Local provider |
+| `I` | Open Cliamp Radios provider |
 | `R` | Open radio provider |
 | `O` (`Shift+O`) | Open Podcasts provider |
 | `S` | Open Spotify provider |
