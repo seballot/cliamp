@@ -150,6 +150,7 @@ func (m *Model) openFileBrowserForPlaylist(name string, purpose fbTargetPurpose)
 // and cursor left behind when playback closed it.
 func (m *Model) restoreLocalFileBrowser() {
 	cursor, scroll := m.fileBrowser.cursor, m.fileBrowser.scroll
+	m.noteProviderPaneVisit()
 	m.focus = focusProvider
 	m.openFileBrowser()
 	m.fileBrowser.cursor = cursor

@@ -565,7 +565,10 @@ func (m *Model) handleMainKey(msg tea.KeyPressMsg) tea.Cmd {
 			if m.tryRestoreLocalFileBrowserFromQueue() {
 				return nil
 			}
-			m.focus = focusProvider
+			if m.provider != nil {
+				m.noteProviderPaneVisit()
+				m.focus = focusProvider
+			}
 		} else {
 			m.focus = m.previousMainFocus(m.focus)
 		}
