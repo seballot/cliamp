@@ -348,6 +348,7 @@ type Model struct {
 	layout               frameLayout
 	textInput            textEditor
 	playlistUndo         playlistUndo
+	providerFavoriteUndo providerFavoriteUndo
 
 	// Provider state
 	provider                playlist.Provider

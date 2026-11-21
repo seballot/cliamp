@@ -128,7 +128,7 @@ var commandRegistry = []commandSpec{
 		Mode:     commandModeAny,
 		Keys:     []string{"ctrl+z"},
 		KeyLabel: "Ctrl+z",
-		Label:    "Undo last queue change",
+		Label:    "Undo last queue or favorite change",
 		Keymap:   true,
 	},
 	{
