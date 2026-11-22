@@ -1253,15 +1253,17 @@ var commandRegistry = []commandSpec{
 				}
 				return "Add to queue"
 			}
-			if m.fileBrowser.targetPlaylist != "" {
-				if m.fileBrowser.cursor >= m.fbCount() {
-					return ""
-				}
-				if m.fbEntry(m.fileBrowser.cursor).isAudio {
-					return "Add to playlist"
-				}
+			if m.fileBrowser.cursor >= m.fbCount() {
+				return ""
 			}
-			return ""
+			e := m.fbEntry(m.fileBrowser.cursor)
+			if !e.isAudio {
+				return ""
+			}
+			if m.fileBrowser.targetPlaylist != "" {
+				return "Add to playlist"
+			}
+			return "Add to queue"
 		},
 		Enabled: func(m Model) bool {
 			if len(m.fileBrowser.selected) > 0 {
