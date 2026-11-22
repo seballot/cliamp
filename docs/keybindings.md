@@ -14,7 +14,7 @@ entries, a status message tells you which key to press.
 
 | Key | Action |
 |---|---|
-| `Space` | Play / Pause |
+| `Space` | Pause or resume the loaded track |
 | `s` | Stop |
 | `>` `.` | Next track |
 | `<` `,` | Previous track |

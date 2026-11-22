@@ -82,17 +82,57 @@ func TestPreviousEQPresetRegistryEntry(t *testing.T) {
 
 func TestPlayPauseContextHelpLabel(t *testing.T) {
 	m := keybindingTestModel()
-	if got := registryContextLabel(t, commandModeMain, "space", "Play / Pause", m); got != "Play" {
+	if got := registryContextLabel(t, commandModeMain, "space", "Pause / Resume", m); got != "Play" {
 		t.Fatalf("stopped = %q, want Play", got)
 	}
 	eng := m.player.(*playbackFakeEngine)
 	eng.playing = true
-	if got := registryContextLabel(t, commandModeMain, "space", "Play / Pause", m); got != "Pause" {
+	if got := registryContextLabel(t, commandModeMain, "space", "Pause / Resume", m); got != "Pause" {
 		t.Fatalf("playing = %q, want Pause", got)
 	}
 	eng.paused = true
-	if got := registryContextLabel(t, commandModeMain, "space", "Play / Pause", m); got != "Play" {
-		t.Fatalf("paused = %q, want Play", got)
+	if got := registryContextLabel(t, commandModeMain, "space", "Pause / Resume", m); got != "Resume" {
+		t.Fatalf("paused = %q, want Resume", got)
+	}
+}
+
+func TestMainHelpBarPlayTransportHints(t *testing.T) {
+	m := keybindingTestModel()
+	m.layout.panelWidth = 120
+	m.focus = focusPlaylist
+	m.playlist.Add(playlist.Track{Title: "One"})
+	m.playlist.Add(playlist.Track{Title: "Two"})
+	m.playlist.SetIndex(0)
+	m.plCursor = 1
+
+	help := m.helpBar(commandModeMain)
+	if strings.Contains(help, "Space") {
+		t.Fatalf("stopped help should omit Space: %q", help)
+	}
+	if !strings.Contains(help, "Enter") || !strings.Contains(help, "Play") {
+		t.Fatalf("cursor on another row should list Enter Play: %q", help)
+	}
+
+	eng := m.player.(*playbackFakeEngine)
+	eng.playing = true
+	help = m.helpBar(commandModeMain)
+	if !strings.Contains(help, "Space") || !strings.Contains(help, "Pause") {
+		t.Fatalf("playing with moved cursor should list Space Pause: %q", help)
+	}
+	if !strings.Contains(help, "Enter") {
+		t.Fatalf("playing with moved cursor should still list Enter: %q", help)
+	}
+
+	eng.paused = true
+	help = m.helpBar(commandModeMain)
+	if !strings.Contains(help, "Resume") {
+		t.Fatalf("paused help should list Resume: %q", help)
+	}
+
+	m.plCursor = m.playlist.Index()
+	help = m.helpBar(commandModeMain)
+	if strings.Contains(help, "Enter") {
+		t.Fatalf("cursor on loaded row should omit Enter: %q", help)
 	}
 }
 

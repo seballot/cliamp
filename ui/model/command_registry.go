@@ -82,6 +82,15 @@ func (m Model) mainPlaylistHasTracks() bool {
 	return m.playlist != nil && m.playlist.Len() > 0
 }
 
+// mainPlaylistEnterPlayHelp reports whether the help bar should list Enter to
+// play the row under the playlist cursor.
+func (m Model) mainPlaylistEnterPlayHelp() bool {
+	if m.focus != focusPlaylist || !m.mainPlaylistHasTracks() {
+		return false
+	}
+	return m.plCursor != m.playlist.Index()
+}
+
 // mainPlaylistEscHelp reports whether the main-screen help bar should list Esc
 // as the way back into the provider playlist pane.
 func (m Model) mainPlaylistEscHelp() bool {
@@ -155,21 +164,28 @@ var commandRegistry = []commandSpec{
 		Keys:     []string{"enter"},
 		KeyLabel: "Enter",
 		Label:    "Play selected track",
+		LabelFor: func(Model) string { return "Play" },
+		Enabled:  func(m Model) bool { return m.mainPlaylistEnterPlayHelp() },
 		Keymap:   true,
 	},
 	{
 		Mode:     commandModeMain | commandModeEQ | commandModeSpeed,
 		Keys:     []string{"space"},
 		KeyLabel: "Space",
-		Label:    "Play / Pause",
+		Label:    "Pause / Resume",
 		LabelFor: func(m Model) string {
-			if m.player != nil && m.player.IsPlaying() && !m.player.IsPaused() {
+			if m.player == nil || !m.player.IsPlaying() {
+				return "Play"
+			}
+			if !m.player.IsPaused() {
 				return "Pause"
 			}
-			return "Play"
+			return "Resume"
 		},
-		Enabled: func(m Model) bool { return m.mainPlaylistHasTracks() },
-		Keymap:  true,
+		Enabled: func(m Model) bool {
+			return m.mainPlaylistHasTracks() && m.player != nil && m.player.IsPlaying()
+		},
+		Keymap: true,
 	},
 	{
 		Mode:     commandModeMain,
@@ -1691,7 +1707,7 @@ var commandRegistry = []commandSpec{
 		Mode:     commandModeFullVis,
 		Keys:     []string{"space"},
 		KeyLabel: "Space",
-		Label:    "Play / Pause",
+		Label:    "Pause / Resume",
 		Keymap:   true,
 	},
 	{
@@ -1751,7 +1767,7 @@ var commandRegistry = []commandSpec{
 // display order. Each key resolves to the first matching command in
 // commandRegistry for that mode.
 var helpBarKeyOrder = map[commandMode][]string{
-	commandModeMain:                 {"esc", "tab", "space", "shift+up", "x", "f", "w"},
+	commandModeMain:                 {"esc", "tab", "space", "enter", "shift+up", "x", "f", "w"},
 	commandModeProvider:             {"esc", "enter", "l", "f", "ctrl+r", "/"},
 	commandModeEQ:                   {"esc", "left", "up", "tab"},
 	commandModeVolume:               {"esc", "left", "tab"},
