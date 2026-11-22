@@ -1010,8 +1010,8 @@ func TestNextTrackNormalizesQueueAfterSkippingUnavailableEntry(t *testing.T) {
 		t.Fatal("queue overlay is not active after Next")
 	}
 	header := stripAnsi(view.header(&m))
-	if !strings.Contains(header, "Queue  1/1") {
-		t.Fatalf("queue header after Next = %q, want valid 1/1 selection", header)
+	if !strings.Contains(header, "Play next  1/1") {
+		t.Fatalf("play next header after Next = %q, want valid 1/1 selection", header)
 	}
 }
 

@@ -89,7 +89,7 @@ const (
 func (f focusArea) label() string {
 	switch f {
 	case focusPlaylist:
-		return "Playlist"
+		return "Queue"
 	case focusVolume:
 		return "Volume"
 	case focusEQ:
@@ -97,7 +97,7 @@ func (f focusArea) label() string {
 	case focusShuffle:
 		return "Shuffle"
 	case focusRepeat:
-		return "Repeat"
+		return "Repeat Mode"
 	case focusSpeed:
 		return "Speed"
 	case focusProvPill:
@@ -235,17 +235,17 @@ func (s topLevelScreen) label() string {
 	case screenDevicePicker:
 		return "Audio Device"
 	case screenPlaylistPicker:
-		return "Save to Playlist"
+		return "Add to playlist"
 	case screenFileBrowser:
 		return "Files"
 	case screenNavBrowser:
 		return "Browse"
 	case screenPlaylistManager:
-		return "Playlist"
+		return "Playlists"
 	case screenSearchOverlay, screenNetSearch:
 		return "Search"
 	case screenQueue:
-		return "Queue"
+		return "Play next"
 	case screenSubs:
 		return "Subscriptions"
 	case screenInfo:

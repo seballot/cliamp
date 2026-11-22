@@ -822,7 +822,7 @@ type Config struct {
 	ResampleQuality  int                          // beep resample quality factor (1–4)
 	BitDepth         int                          // PCM bit depth for FFmpeg output: 16 or 32
 	Simplified       bool                         // simplified playback view: track summary and time strip
-	HideHelpBar      bool                         // hide the key-binding hint bar above the status line
+	HideHelpBar      bool                         // hide the key-binding help bar above the status line
 	HideSettingsPane bool                         // close the settings pane beside the playlist
 	ShowMetadata     bool                         // expand highlighted-track metadata below settings (default false)
 	Expanded         bool                         // start with the playlist expanded (the Ctrl+X state)

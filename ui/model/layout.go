@@ -67,7 +67,7 @@ const (
 	playlistMinWidth  = 40
 	// twoColumnChromeRows counts the stacked rows the two-column body does not
 	// draw: the EQ/volume row, the source row, and the status line, which all
-	// move into the settings pane, plus the blank spacer above the hint bar,
+	// move into the settings pane, plus the blank spacer above the help bar,
 	// which the pane's own blank tail makes redundant.
 	twoColumnChromeRows = 4
 	// closedSettingsChromeRows counts what the closed-pane layout drops
@@ -82,7 +82,7 @@ const (
 const (
 	// fullBaseRows is the full tier's chrome without the visualizer: title,
 	// track line, time, a blank, the seek bar, the EQ/volume row, the source
-	// row, the playlist header, a blank, the hint bar, and the status line.
+	// row, the playlist header, a blank, the help bar, and the status line.
 	fullBaseRows = 11
 	// compactBaseRows is the same count for the compact tier, which drops the
 	// blank spacers and uses one-line controls.
@@ -199,7 +199,7 @@ func (m *Model) recomputeLayout() {
 	// Whatever the chrome gives up goes to the playlist, both as budget and as
 	// a higher cap so the reclaimed rows show tracks instead of blank space.
 	layout.fixedRows = max(0, layout.fixedRows-layout.chromeRowsFreed())
-	// The simplified view never draws the hint bar, so its fixedRows budget
+	// The simplified view never draws the help bar, so its fixedRows budget
 	// does not include that row and must not be reduced here.
 	if m.hideHelpBar && !simplified {
 		layout.fixedRows = max(0, layout.fixedRows-1)

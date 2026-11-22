@@ -110,7 +110,7 @@ low_power = false
 # No visualizer or playback controls are shown.
 simplified = false
 
-# Hide the key-binding hint bar above the status line.
+# Hide the key-binding help bar above the status line.
 hide_help_bar = false
 # Start with the playlist expanded, the state Ctrl+X toggles (default: false).
 # The simplified playback screen has no playlist, but its provider and overlay
@@ -165,7 +165,7 @@ and speed (`SPD`) — and last the live network counters for a stream (`NET`).
 Shuffle and repeat move out of the playlist header here, which keeps its
 counts: queue, favorites, and position. The rows those
 controls used to occupy above and below the playlist go to the playlist itself.
-The title, track line, time, visualizer, seek bar, and hint bar stay full width.
+The title, track line, time, visualizer, seek bar, and help bar stay full width.
 Narrower terminals, simplified mode, overlays, and list views keep the stacked
 single-column layout, with shuffle and repeat back in the header.
 
@@ -198,12 +198,12 @@ artist/title, time, and seek-progress strip. It hides the visualizer, playback
 controls, and playlist. Provider browsing and overlays keep their list-focused
 layout. Start one session with `cliamp --simplified`.
 
-`hide_help_bar = true` removes the key-binding hint bar above the status line
+`hide_help_bar = true` removes the key-binding help bar above the status line
 and gives that row back to the playlist. The full keymap stays available with
 `?`. `Ctrl+G` toggles the bar and writes the new value back to this key, so the
 bar comes back the way you left it. Use `cliamp --no-help-bar` to hide it for
 one session, or `cliamp --help-bar` to show it despite this setting. Simplified
-mode draws neither the hint bar nor a playlist, so it is unaffected by this
+mode draws neither the help bar nor a playlist, so it is unaffected by this
 setting.
 
 `expanded = true` starts with the playlist at the expanded height, so the list

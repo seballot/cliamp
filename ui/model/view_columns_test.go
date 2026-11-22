@@ -547,9 +547,14 @@ func TestClosedSettingsLayoutKeepsSourceAndVolume(t *testing.T) {
 			t.Fatalf("closed layout lost %q:\n%s", want, frame)
 		}
 	}
-	for _, gone := range []string{"EQ", "SPD", "↓"} {
+	for _, gone := range []string{"EQ", "SPD"} {
 		if strings.Contains(frame, gone) {
 			t.Fatalf("closed layout should not draw %q:\n%s", gone, frame)
+		}
+	}
+	for _, line := range strings.Split(frame, "\n") {
+		if strings.Contains(line, "↓") && !strings.Contains(line, "Shift+") {
+			t.Fatalf("closed layout should not draw download arrow:\n%s", line)
 		}
 	}
 
@@ -621,7 +626,7 @@ func TestSettingsPaneToggleIgnoredBelowFullTier(t *testing.T) {
 	for _, size := range []struct{ width, height int }{{56, 16}, {40, 10}} {
 		t.Run(fmt.Sprintf("%dx%d", size.width, size.height), func(t *testing.T) {
 			m := newColumnTestModel(size.width, size.height)
-			if strings.Contains(ansi.Strip(m.commandHelp(commandModeMain)), "Ctrl+B") {
+			if strings.Contains(ansi.Strip(m.helpBar(commandModeMain)), "Ctrl+b") {
 				t.Fatal("settings-pane binding advertised below the full tier")
 			}
 		})

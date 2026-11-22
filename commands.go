@@ -44,7 +44,7 @@ func buildApp() *cli.Command {
 		&cli.BoolWithInverseFlag{Name: "mono", Usage: "mono output"},
 		&cli.BoolWithInverseFlag{Name: "auto-play", Usage: "start playback immediately"},
 		&cli.BoolWithInverseFlag{Name: "simplified", Usage: "simplified playback view (no visualizer or playlist)"},
-		&cli.BoolWithInverseFlag{Name: "help-bar", Usage: "show the key-binding hint bar (? still opens the full keymap)", Value: true},
+		&cli.BoolWithInverseFlag{Name: "help-bar", Usage: "show the key-binding help bar (? still opens the full keymap)", Value: true},
 		&cli.BoolWithInverseFlag{Name: "expanded", Usage: "start with the playlist expanded (the Ctrl+X state)"},
 		&cli.StringFlag{Name: "provider", Usage: providerFlagUsage()},
 		&cli.StringFlag{Name: "start-theme", Usage: "UI theme name"},

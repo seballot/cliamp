@@ -943,7 +943,6 @@ func (m *Model) handleFullVisualizerKey(msg tea.KeyPressMsg) tea.Cmd {
 		// Hide the episode name so the full-screen visualizer can be put on a
 		// shared screen without naming what is playing.
 		m.hideTrackInfo = !m.hideTrackInfo
-
 	default:
 		// Plugin bindings are global: a pomodoro or sleep-timer key is about
 		// the session, not about which screen happens to be open. Without

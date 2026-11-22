@@ -263,7 +263,7 @@ local p = plugin.register({
     permissions = {"keymap"},
 })
 
--- Listed in the Ctrl+K overlay under "— plugins —":
+-- Listed in the Ctrl+K overlay under "—— Plugins ———":
 p:bind("ctrl+n", "Extract chapters", function(key) ... end)
 
 -- Not listed (hidden binding):
