@@ -322,8 +322,9 @@ genre Latest/Popular view replaces the main playlist and closes the browser. An
 empty result leaves the current playlist and browser unchanged.
 
 For Podcasts, **Browse Categories** opens **Genre**, then **Show**. `Enter` on a
-show replaces the main playlist with its episodes without starting playback.
-Then `Enter` plays an episode and `a` toggles its play-next queue entry.
+show opens its episode list in the browse overlay. On episodes, use the same
+keys as **Open local files**: `Space` to select, `Enter` to add, `R` to replace
+the queue, `w` to save to a playlist.
 
 ## Provider playlist list
 
@@ -337,7 +338,7 @@ playlists here:
 |---|---|
 | `↑` `↓` / `j` `k` | Move cursor (wraps) |
 | `Ctrl+U` `Ctrl+D` | Scroll by page |
-| `Enter` | Load the selected playlist tracks into the queue (Local: open files or manager) |
+| `Enter` | Load the selected playlist tracks into the queue (Local: open files or manager; Podcasts show: open episode list) |
 | `/` | Filter the playlist list. In Podcasts, type a show name or publisher RSS URL, then `Enter` to search; typing alone sends no search requests. |
 | `f` | In Podcasts, subscribe or unsubscribe from the selected show |
 | `Ctrl+F` | Run the provider online or server search (Spotify, Navidrome, NetEase, and others). |
@@ -357,9 +358,9 @@ Latest/Popular pair for each locally favorited genre under Music Styles. Leaving
 a provider-pane Browse shortcut returns to the provider pane.
 
 Podcasts lists subscriptions and Apple's top shows. `/` searches up to 100 shows;
-`Enter` on a show replaces the playlist without playing. `Ctrl+R` reloads a show
-opened from this list or the category browser; reopen `Ctrl+F` shows to fetch
-those feeds again. See [podcasts.md](podcasts.md) for startup and country settings.
+`Enter` on a show opens its episodes in the browse overlay; `a` and `l` still
+append from the provider list. `Ctrl+R` reloads a show whose episode list is
+open; reopen `Ctrl+F` shows to fetch those feeds again. See [podcasts.md](podcasts.md) for startup and country settings.
 
 ## Search results overlays
 

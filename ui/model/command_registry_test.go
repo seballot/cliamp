@@ -161,7 +161,7 @@ func TestPodcastProviderPaneHelpBar(t *testing.T) {
 	m.provPane.lists = []playlist.PlaylistInfo{{ID: "c:https://example.com/feed", Name: "Fresh Show"}}
 	m.provPane.cursor = 0
 	help := m.helpBar(commandModeProvider)
-	for _, want := range []string{"Enter", "Replace queue", "l", "Queue newest", "f", "Subscribe", "Ctrl+r", "Refresh", "/", "Filter", "?"} {
+	for _, want := range []string{"Enter", "Open episodes", "l", "Queue newest", "f", "Subscribe", "Ctrl+r", "Refresh", "/", "Filter", "?"} {
 		if !strings.Contains(help, want) {
 			t.Fatalf("podcast provider help missing %q: %q", want, help)
 		}
@@ -169,7 +169,7 @@ func TestPodcastProviderPaneHelpBar(t *testing.T) {
 	if strings.Contains(help, "Playlists") || strings.Contains(help, "Subscriptions") {
 		t.Fatalf("provider help should not show p Playlists or F Subscriptions: %q", help)
 	}
-	enter := strings.Index(help, "Replace queue")
+	enter := strings.Index(help, "Open episodes")
 	latest := strings.Index(help, "Queue newest")
 	slash := strings.Index(help, "Filter")
 	qm := strings.Index(help, "?")

@@ -1064,7 +1064,10 @@ var commandRegistry = []commandSpec{
 		Keys:     []string{"enter"},
 		KeyLabel: "Enter",
 		Label:    "Select",
-		Keymap:   true,
+		Enabled: func(m Model) bool {
+			return m.navView() != navViewTracks || !m.navTrackListFileStyle()
+		},
+		Keymap: true,
 	},
 	{
 		Mode:     commandModePlaylistPicker,
@@ -1134,8 +1137,87 @@ var commandRegistry = []commandSpec{
 		KeyLabel:    "R",
 		Label:       "Replace queue",
 		Destructive: true,
-		Enabled:     func(m Model) bool { return m.navView() == navViewTracks },
-		Keymap:      true,
+		Enabled: func(m Model) bool {
+			if m.navView() != navViewTracks {
+				return false
+			}
+			if m.navTrackListFileStyle() {
+				return len(m.navBrowser.selected) > 0
+			}
+			return true
+		},
+		Keymap: true,
+	},
+	{
+		Mode:     commandModeNavBrowser,
+		Keys:     []string{"space"},
+		KeyLabel: "Space",
+		Label:    "Select",
+		Enabled:  func(m Model) bool { return m.navTrackListFileStyle() },
+		Keymap:   true,
+	},
+	{
+		Mode:     commandModeNavBrowser,
+		Keys:     []string{"enter"},
+		KeyLabel: "Enter",
+		Label:    "Add to queue",
+		Enabled: func(m Model) bool {
+			if !m.navTrackListFileStyle() || m.navBrowser.confirmReplace {
+				return false
+			}
+			return len(m.navBrowser.selected) > 0 || m.navBrowser.cursor < len(m.navBrowser.tracks)
+		},
+		Keymap: true,
+	},
+	{
+		Mode:     commandModeNavBrowser,
+		Keys:     []string{"q"},
+		KeyLabel: "q",
+		Label:    "Queue next",
+		Enabled:  func(m Model) bool { return m.navTrackListFileStyle() && !m.navBrowser.confirmReplace },
+		Keymap:   true,
+	},
+	{
+		Mode:     commandModeNavBrowser,
+		Keys:     []string{"w"},
+		KeyLabel: "w",
+		Label:    "Add to playlist",
+		Enabled: func(m Model) bool {
+			return m.navTrackListFileStyle() && !m.navBrowser.confirmReplace &&
+				(len(m.navBrowser.selected) > 0 || m.navBrowser.cursor < len(m.navBrowser.tracks))
+		},
+		Keymap: true,
+	},
+	{
+		Mode:     commandModeNavBrowser,
+		Keys:     []string{"a"},
+		KeyLabel: "a",
+		Label:    "Select/unselect all",
+		Enabled:  func(m Model) bool { return m.navTrackListFileStyle() && !m.navBrowser.confirmReplace },
+		Keymap:   true,
+	},
+	{
+		Mode:     commandModeNavBrowser,
+		Keys:     []string{"a"},
+		KeyLabel: "a",
+		Label:    "Append all",
+		Enabled: func(m Model) bool {
+			return m.navView() == navViewTracks && !m.navTrackListFileStyle() && !m.navBrowser.confirmReplace
+		},
+		Keymap: true,
+	},
+	{
+		Mode:     commandModeNavBrowser,
+		Keys:     []string{"ctrl+r"},
+		KeyLabel: "Ctrl+r",
+		Label:    "Refresh",
+		Keymap:   true,
+		Enabled: func(m Model) bool {
+			if m.navBrowser.screen == navBrowseScreenTracks && m.refreshesInPlace() {
+				return true
+			}
+			return m.navBrowser.prov == m.provider
+		},
 	},
 	{
 		Mode:     commandModeNavBrowser,
@@ -1679,7 +1761,7 @@ var helpBarKeyOrder = map[commandMode][]string{
 	commandModeKeymapSearch:         {"esc", "enter"},
 	commandModeFileBrowser:          {"esc", "space", "enter", "R", "w", "/"},
 	commandModeFileBrowserSearch:    {"esc", "enter"},
-	commandModeNavBrowser:           {"esc", "enter", "f", "s", "R", "/"},
+	commandModeNavBrowser:           {"esc", "space", "enter", "f", "R", "w", "ctrl+r", "/"},
 	commandModeNavSearch:            {"esc", "enter"},
 	commandModePlaylistManager:      {"esc", "enter", "space", "A", "shift+up", "d", "o", "/"},
 	commandModePlaylistManagerInput: {"esc", "enter"},

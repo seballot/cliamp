@@ -105,7 +105,7 @@ func (m Model) providerEnterLabel() string {
 		return "Open"
 	}
 	if _, _, ok := m.selectedProviderShow(); ok {
-		return "Replace queue"
+		return "Open episodes"
 	}
 	return "Load"
 }
