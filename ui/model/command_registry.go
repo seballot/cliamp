@@ -82,21 +82,6 @@ func (m Model) mainPlaylistHasTracks() bool {
 	return m.playlist != nil && m.playlist.Len() > 0
 }
 
-// mainPlaylistEnterPlayHelp reports whether the help bar should list Enter to
-// play the row under the playlist cursor.
-func (m Model) mainPlaylistEnterPlayHelp() bool {
-	if m.focus != focusPlaylist || !m.mainPlaylistHasTracks() {
-		return false
-	}
-	return m.plCursor != m.playlist.Index()
-}
-
-// mainPlaylistEscHelp reports whether the main-screen help bar should list Esc
-// as the way back into the provider playlist pane.
-func (m Model) mainPlaylistEscHelp() bool {
-	return m.provider != nil && m.providerPaneSeen
-}
-
 // runKey returns the key that the keymap sends to run the command. It
 // returns "" when one key press cannot run the command.
 func (c commandSpec) runKey() string {
@@ -147,7 +132,7 @@ var commandRegistry = []commandSpec{
 		RunKey:   "esc",
 		Label:    "Back",
 		Keymap:   true,
-		Enabled:  func(m Model) bool { return m.mainPlaylistEscHelp() },
+		Enabled:  func(m Model) bool { return m.provider != nil && m.providerPaneSeen },
 	},
 	// q quits only from the player and its focused controls. Overlays use it
 	// to close or to queue, so the keymap must not run it as quit there.
@@ -165,8 +150,10 @@ var commandRegistry = []commandSpec{
 		KeyLabel: "Enter",
 		Label:    "Play selected track",
 		LabelFor: func(Model) string { return "Play" },
-		Enabled:  func(m Model) bool { return m.mainPlaylistEnterPlayHelp() },
-		Keymap:   true,
+		Enabled: func(m Model) bool {
+			return m.focus == focusPlaylist && m.mainPlaylistHasTracks() && m.plCursor != m.playlist.Index()
+		},
+		Keymap: true,
 	},
 	{
 		Mode:     commandModeMain | commandModeEQ | commandModeSpeed,
